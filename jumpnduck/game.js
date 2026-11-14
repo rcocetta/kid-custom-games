@@ -15,6 +15,7 @@
   const KID_ANCHOR_X = 20;
   const SPEED_START = 300, SPEED_ACCEL = 7, SPEED_MAX = 680, ATTRACT_SPEED = 150;
   const SCORE_PER_UNIT = 0.025, FOOD_POINTS = 100, MILESTONE = 500;
+  const STRONG_TIME = 3;       // seconds of muscly look after eating well (visual only)
   const JUMP_V = -860, GRAVITY = 2000, FASTFALL = 3, JUMP_BUFFER = 0.12;
   const BIRD_W = 84, BIRD_EXTRA_SPEED = 40, BIRD_MIN_SCORE = 250;
   const BIRD_LOW_BOTTOM = GROUND_Y - 40, BIRD_DUCK_BOTTOM = GROUND_Y - 104;
@@ -41,6 +42,11 @@
     for (const p of A.kidPoses) {
       const svg = A.kid(p);
       add('kid_' + p, svg, parseViewBox(svg).h * K);
+    }
+    // power-up (muscly) versions, same viewBoxes as the normal poses
+    for (const p of ['ride', 'push', 'jump', 'duck']) {
+      const svg = A.kid(p, { strong: true });
+      add('kid_' + p + '_strong', svg, parseViewBox(svg).h * K);
     }
     add('kidFace', A.kidFace(), 100);
     for (const f of A.seagullFrames) add('seagull_' + f, A.seagull(f), BIRD_W * 140 / 186);
@@ -98,14 +104,14 @@
     const world = { W: 711, H };
     const rr = (a, b) => a + rand() * (b - a);
 
-    let state, speed, distance, bonus, playT, kidOff, kidVy, onGround, jumpBuf, runT, overT;
+    let state, speed, distance, bonus, playT, kidOff, kidVy, onGround, jumpBuf, runT, overT, strongT;
     let obstacles, foods, popups, deco, clouds, gapLeft, lastMilestone, moved;
     let layerX, waits;
     let events = [];
 
     function reset() {
       state = 'ready'; speed = ATTRACT_SPEED; distance = 0; bonus = 0; playT = 0;
-      kidOff = 0; kidVy = 0; onGround = true; jumpBuf = 0; runT = 0; overT = 0;
+      kidOff = 0; kidVy = 0; onGround = true; jumpBuf = 0; runT = 0; overT = 0; strongT = 0;
       obstacles = []; foods = []; popups = []; deco = []; gapLeft = 0; lastMilestone = 0;
       layerX = { mountains: 0, sea: 0, ground: 0 };
       waits = { town: 0, boat: 0, fg: 0 };
@@ -253,6 +259,7 @@
       const playing = state === 'playing';
       if (playing) { playT += dt; speed = Math.min(SPEED_MAX, SPEED_START + SPEED_ACCEL * playT); }
       else speed = ATTRACT_SPEED;
+      strongT = Math.max(0, strongT - dt);
       const dx = speed * dt;
       moved = true;
       layerX.mountains += dx * 0.08; layerX.sea += dx * 0.2; layerX.ground += dx;
@@ -291,8 +298,10 @@
         const fy = f.cy + Math.sin(f.t * 5) * 4 - f.h / 2;
         if (hit(kr, { x: f.x, y: fy, w: f.w, h: f.h })) {
           bonus += FOOD_POINTS;
+          strongT = STRONG_TIME;   // eating well → muscly for a few seconds
           const px = f.x + f.w / 2, py = fy + f.h / 2;
-          popups.push({ x: px, y: py, age: 0 });
+          // show the popup above his head so it never hides the (now muscly) kid
+          popups.push({ x: px, y: Math.min(py, kr.y - 30), age: 0 });
           events.push({ type: 'food', x: px, y: py });
         } else if (f.x + f.w > -30) rest.push(f);
       }
@@ -357,7 +366,10 @@
       }
       // kid
       const kk = poseKey(), kr = kidRect(kk);
-      img(kk, kr.x, kr.y, kr.w, kr.h);
+      // strong look while powered up; flickers during the last 0.6 s so you see it ending
+      const strongOn = strongT > 0 && state !== 'over' && S[kk + '_strong'] &&
+        (strongT > 0.6 || Math.floor(strongT / 0.1) % 2 === 0);
+      img(strongOn ? kk + '_strong' : kk, kr.x, kr.y, kr.w, kr.h);
       // popups
       for (const p of popups) {
         const a = p.age;
@@ -398,7 +410,7 @@
       // test/debug access
       get obstacles() { return obstacles; },
       get foods() { return foods; },
-      get kid() { return { off: kidOff, onGround, hit: kidHit(), pose: poseKey() }; },
+      get kid() { return { off: kidOff, onGround, hit: kidHit(), pose: poseKey(), strong: strongT }; },
       obstacleRect, KID_X, GROUND_Y, BIRD_DUCK_BOTTOM, BIRD_LOW_BOTTOM,
     };
     reset();

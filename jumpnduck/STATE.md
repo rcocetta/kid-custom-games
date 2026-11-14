@@ -57,7 +57,7 @@ Ground obstacles: the bottom of each viewBox is the ground line.
 
 - [x] `index.html` + `game.js` in this folder, canvas-based, reusing `assets.js` via `toDataUrl`.
 - [x] Core loop like the Chrome runner: speed increases over time, random ground/flying obstacles,
-  jump (Space/Up/tap), duck (Down/hold bottom half), collect food for +100 bonus (show `scorePopup`), score badge with `kidFace()`.
+  jump (Space/Up/tap), duck (Down/hold bottom half), collect food for +100 bonus (show `scorePopup` above his head) and 3 s of strong look (`STRONG_TIME`, visual only, flickers in the last 0.6 s), score badge with `kidFace()`.
 - Rules will be amended gradually with the user — ask before inventing rule changes.
 
 ## Dev notes
