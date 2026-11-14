@@ -124,6 +124,8 @@
   /* duck viewBox is wider (204 vs 165 units): scale width so it matches the other poses */
   .stage .sprite.kid-duck { width: 185px; }
   .preview .stage .sprite.kid-duck { width: 235px; }
+  .stage .sprite.kid-gameover { width: 238px; margin-bottom: 10px; }
+  .preview .stage .sprite.kid-gameover { width: 302px; }
   .stage .sprite.kid-face { width: 130px; margin-bottom: 40px; }
   .hud {
     position: absolute; top: 14px; left: 14px; z-index: 3;
@@ -139,6 +141,7 @@
   .hud .points { font-size: 28px; font-weight: 700; min-width: 3.2ch; font-variant-numeric: tabular-nums; }
   .hud .points.pop { animation: pop .25s; }
   @keyframes pop { 50% { transform: scale(1.25); color: var(--accent); } }
+  .stage.paused, .stage.paused * , .stage.paused::after { animation-play-state: paused !important; }
   .cloud {
     position: absolute; background: #fff; border-radius: 999px; opacity: 0.9;
     animation: drift linear infinite;
@@ -231,6 +234,7 @@
     push: ['Push', 'Kicking the ground to go faster. Alternates with Ride.'],
     jump: ['Jump', 'Knees tucked, scooter tipped up.'],
     duck: ['Duck', 'Belly down, bum up, handlebar low. Slides under birds!'],
+    gameover: ['Game over', 'Fell off the scooter: X eyes, a tear and dizzy stars.'],
   };
 
   const grid = document.getElementById('kid-grid');
@@ -257,6 +261,7 @@
       <div class="controls">
         <button id="jump-btn">Jump!</button>
         <button id="duck-btn">Duck</button>
+        <button id="crash-btn">Crash</button>
         <span class="hint">Space / tap = jump · hold ↓ or the Duck button = duck</span>
       </div>
     </div>`);
@@ -270,17 +275,17 @@
   });
 
   const runner = document.getElementById('runner');
-  let frame = 0, jumping = false, ducking = false;
+  let frame = 0, jumping = false, ducking = false, crashed = false;
   const draw = (pose) => { runner.innerHTML = A.kid(pose); };
   draw('ride');
   setInterval(() => {
-    if (jumping || ducking) return;
+    if (jumping || ducking || crashed) return;
     frame = (frame + 1) % 4;
     draw(frame === 1 ? 'push' : 'ride'); // push briefly, then glide
   }, 220);
 
   function jump() {
-    if (jumping || ducking) return;
+    if (jumping || ducking || crashed) return;
     jumping = true;
     draw('jump');
     runner.classList.add('jumping');
@@ -294,10 +299,26 @@
   document.getElementById('jump-btn').addEventListener('click', jump);
   stage.addEventListener('click', jump);
   function duck(on) {
-    if (jumping || ducking === on) return;
+    if (jumping || crashed || ducking === on) return;
     ducking = on;
     draw(on ? 'duck' : 'ride');
   }
+  // Crash: show the game-over pose for a moment, freeze the scene, then ride again.
+  function crash() {
+    if (jumping || crashed) return;
+    crashed = true; ducking = false;
+    draw('gameover');
+    runner.classList.remove('spin');
+    stage.classList.add('paused');
+    setTimeout(() => {
+      crashed = false;
+      runner.classList.add('spin');
+      stage.classList.remove('paused');
+      draw('ride');
+    }, 2200);
+  }
+  document.getElementById('crash-btn').addEventListener('click', crash);
+
   const duckBtn = document.getElementById('duck-btn');
   duckBtn.addEventListener('pointerdown', () => duck(true));
   ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => duckBtn.addEventListener(ev, () => duck(false)));
@@ -391,6 +412,7 @@
   const pointsEl = document.getElementById('points');
   let points = 0;
   setInterval(() => {
+    if (crashed) return;
     points += 1;
     pointsEl.textContent = points;
     if (points % 50 === 0) {

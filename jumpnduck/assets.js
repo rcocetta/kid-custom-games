@@ -32,6 +32,8 @@
     hub: '#FFE6CC',
     mouth: '#8E2F3C',
     tongue: '#FF7F8E',
+    tear: '#7FD0FF',
+    star: '#FFD34E',
   };
   const O = C.outline;
   const SW = 4; // outline width
@@ -120,6 +122,10 @@
     );
   }
 
+  function xEye(cx, cy) {
+    return `<path d="M${cx - 6} ${cy - 6} L${cx + 6} ${cy + 6} M${cx + 6} ${cy - 6} L${cx - 6} ${cy + 6}" stroke="${O}" stroke-width="4" stroke-linecap="round"/>`;
+  }
+
   function eye(cx, cy) {
     return (
       `<ellipse cx="${cx}" cy="${cy}" rx="7.5" ry="9.5" fill="#FFFFFF" stroke="${O}" stroke-width="3"/>` +
@@ -129,7 +135,8 @@
     );
   }
 
-  function head() {
+  // ko = game-over face: X eyes, worried brows, wobbly frown, a tear.
+  function head(ko = false) {
     return (
       // head
       `<circle cx="98" cy="64" r="44" fill="${C.skin}" stroke="${O}" stroke-width="${SW}"/>` +
@@ -145,18 +152,28 @@
       `<circle cx="62" cy="72" r="10" fill="${C.skin}" stroke="${O}" stroke-width="${SW}"/>` +
       `<path d="M60 67 Q66 72 61 77" fill="none" stroke="${C.skinShade}" stroke-width="2.5" stroke-linecap="round"/>` +
       // eyebrows
-      `<path d="M99 55 Q105 51 112 54" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
-      `<path d="M122 53 Q128 50 134 53" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
-      eye(106, 68) +
-      eye(128, 66) +
+      (ko
+        ? `<path d="M99 52 Q105 52 112 47" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+          `<path d="M122 46 Q128 51 134 52" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+          xEye(106, 68) +
+          xEye(128, 66)
+        : `<path d="M99 55 Q105 51 112 54" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+          `<path d="M122 53 Q128 50 134 53" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+          eye(106, 68) +
+          eye(128, 66)) +
       // cheeks
       `<ellipse cx="98" cy="84" rx="7" ry="4.5" fill="${C.cheek}" opacity="0.55"/>` +
       `<ellipse cx="131" cy="82" rx="4.5" ry="4" fill="${C.cheek}" opacity="0.55"/>` +
       // nose
       `<path d="M136 74 Q141 78 135 82" fill="none" stroke="${C.skinShade}" stroke-width="3" stroke-linecap="round"/>` +
-      // big smile
-      `<path d="M108 88 Q120 106 135 86 Q121 93 108 88 Z" fill="${C.mouth}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
-      `<ellipse cx="121" cy="96" rx="5" ry="2.4" fill="${C.tongue}"/>`
+      (ko
+        ? // wobbly frown + a big tear rolling down
+          `<path d="M110 96 Q114 88 120 91 Q126 94 132 89 Q128 99 120 98 Q114 97 110 96 Z" fill="${C.mouth}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+          `<path d="M104 77 Q98 86 98 90 A6 6 0 0 0 110 90 Q110 86 104 77 Z" fill="${C.tear}" stroke="${O}" stroke-width="2.5" stroke-linejoin="round"/>` +
+          `<circle cx="102" cy="88" r="1.6" fill="#FFFFFF"/>`
+        : // big smile
+          `<path d="M108 88 Q120 106 135 86 Q121 93 108 88 Z" fill="${C.mouth}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+          `<ellipse cx="121" cy="96" rx="5" ry="2.4" fill="${C.tongue}"/>`)
     );
   }
 
@@ -222,9 +239,43 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 74 204 161" class="sprite kid kid-duck">${body}</svg>`;
   }
 
-  /** Kid on scooter. pose: 'ride' | 'push' | 'jump' | 'duck'. Returns an SVG string. */
+  function star(cx, cy, r) {
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      const a = (Math.PI / 5) * i - Math.PI / 2;
+      const rr = i % 2 ? r * 0.48 : r;
+      pts.push(`${(cx + Math.cos(a) * rr).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`);
+    }
+    return `<path d="M${pts.join(' L')} Z" fill="${C.star}" stroke="${O}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  }
+
+  // Game over: fell off the scooter, sitting on the ground, X eyes and a tear.
+  function kidGameOver() {
+    const body =
+      // the scooter tumbled behind him, front wheel in the air
+      `<g transform="translate(-112 0) rotate(-22 52 229)">${scooter()}</g>` +
+      // arm propped on the ground behind
+      arm([92, 178], [76, 200], [66, 222], true) +
+      // legs splayed out in front
+      limb([[98, 214], [142, 220]], C.jeansShade, 12) + shoe(146, 222) +
+      limb([[104, 210], [128, 196], [150, 218]], C.jeans, 12) + shoe(154, 220) +
+      // bum on the ground + torso leaning back
+      `<ellipse cx="100" cy="216" rx="19" ry="12" fill="${C.jeans}" stroke="${O}" stroke-width="${SW}"/>` +
+      limb([[102, 206], [95, 174]], C.shirt, 32) +
+      `<path d="M87 180 L92 204" stroke="${C.shirtShade}" stroke-width="5" stroke-linecap="round" opacity="0.6"/>` +
+      // head tilted back
+      `<g transform="translate(-6 62) rotate(-10 98 64)">${head(true)}</g>` +
+      // other arm propped on the ground in front
+      arm([104, 180], [122, 198], [124, 222], false) +
+      // dizzy stars
+      star(54, 46, 9) + star(92, 22, 7) + star(140, 36, 8);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-82 10 262 225" class="sprite kid kid-gameover">${body}</svg>`;
+  }
+
+  /** Kid on scooter. pose: 'ride' | 'push' | 'jump' | 'duck' | 'gameover'. Returns an SVG string. */
   function kid(pose = 'ride') {
     if (pose === 'duck') return kidDuck();
+    if (pose === 'gameover') return kidGameOver();
     const p = POSES[pose] || POSES.ride;
     const body =
       legs(p.behind, true) +
@@ -677,7 +728,7 @@
   window.GameAssets = {
     palette: C,
     kid,
-    kidPoses: [...Object.keys(POSES), 'duck'],
+    kidPoses: [...Object.keys(POSES), 'duck', 'gameover'],
     kidFace,
     seagull,
     seagullFrames: Object.keys(WINGS),
