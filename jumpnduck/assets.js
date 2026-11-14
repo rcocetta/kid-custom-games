@@ -916,6 +916,56 @@
     );
   }
 
+  /** Ferris wheel (like the one at the port). White frame, colourful gondolas, little lights.
+   *  The wheel is <g class="ferris-wheel"> (rotate around 100,96) and each gondola is <g class="gondola">
+   *  with its own transform-origin, so CSS can spin the wheel and counter-spin gondolas to keep them upright.
+   *  viewBox 200 x 230; base bottom (y = 226) is the ground line. */
+  function ferrisWheel() {
+    const cx = 100, cy = 96, R = 78;
+    const frame = '#F4F6FA', spoke = '#9AA3B5';
+    const cols = ['#FF5D5D', '#FFC93C', '#4A9BE8', '#5DBB63', '#FF8AC4', '#FF8A1F', '#9B6FC0', '#3CC6C0'];
+    let spokes = '', lights = '', gondolas = '';
+    for (let i = 0; i < 16; i++) {
+      const a = (Math.PI * 2 * i) / 16;
+      spokes += `M${cx} ${cy} L${f1(cx + Math.cos(a) * R)} ${f1(cy + Math.sin(a) * R)} `;
+    }
+    for (let i = 0; i < 24; i++) {
+      const a = (Math.PI * 2 * (i + 0.5)) / 24;
+      lights += `<circle cx="${f1(cx + Math.cos(a) * R)}" cy="${f1(cy + Math.sin(a) * R)}" r="2.3" fill="#FFE27A"/>`;
+    }
+    cols.forEach((col, i) => {
+      const a = (Math.PI * 2 * i) / cols.length - Math.PI / 2;
+      const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
+      gondolas +=
+        `<g class="gondola" style="transform-origin:${f1(x)}px ${f1(y)}px">` +
+        `<path d="M${f1(x)} ${f1(y)} L${f1(x)} ${f1(y + 6)}" stroke="${O}" stroke-width="2.5" stroke-linecap="round"/>` +
+        `<path d="M${f1(x - 11)} ${f1(y + 8)} Q${f1(x)} ${f1(y + 2)} ${f1(x + 11)} ${f1(y + 8)} Z" fill="${col}" stroke="${O}" stroke-width="2.5" stroke-linejoin="round"/>` +
+        `<rect x="${f1(x - 10)}" y="${f1(y + 8)}" width="20" height="14" rx="5" fill="${col}" stroke="${O}" stroke-width="2.5"/>` +
+        `<rect x="${f1(x - 6)}" y="${f1(y + 11)}" width="12" height="5" rx="2" fill="#FFFFFF" opacity="0.85"/>` +
+        `</g>`;
+    });
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 230" class="sprite ferris">` +
+      `<g class="ferris-wheel" style="transform-origin:${cx}px ${cy}px">` +
+      `<path d="${spokes}" stroke="${spoke}" stroke-width="2.5"/>` +
+      `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${O}" stroke-width="11"/>` +
+      `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${frame}" stroke-width="5"/>` +
+      `<circle cx="${cx}" cy="${cy}" r="${R - 14}" fill="none" stroke="${spoke}" stroke-width="2.5"/>` +
+      lights +
+      gondolas +
+      `</g>` +
+      // A-frame legs, hub and base
+      limb([[cx, cy], [64, 216]], frame, 7) +
+      limb([[cx, cy], [136, 216]], frame, 7) +
+      limb([[72, 202], [128, 202]], frame, 5) +
+      `<circle cx="${cx}" cy="${cy}" r="10" fill="${C.wheel}" stroke="${O}" stroke-width="3.5"/>` +
+      `<circle cx="${cx}" cy="${cy}" r="3.5" fill="${O}"/>` +
+      `<rect x="46" y="212" width="108" height="14" rx="5" fill="#E3C99A" stroke="${O}" stroke-width="3.5"/>` +
+      `<path d="M54 217 L146 217" stroke="#F3DDB4" stroke-width="2" stroke-linecap="round"/>` +
+      `</svg>`
+    );
+  }
+
   function toDataUrl(svg) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
@@ -936,7 +986,7 @@
     cactusVariants: Object.keys(CACTI),
     food,
     foodKinds: Object.keys(FOODS),
-    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, nomade, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
+    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, nomade, ferrisWheel, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
     toDataUrl,
   };
 })();

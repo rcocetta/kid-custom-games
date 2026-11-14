@@ -100,6 +100,14 @@
   .statue .sprite { width: 125px; margin: 0; display: block; }
   @keyframes statue { 0% { transform: translateX(0); } 50%, 100% { transform: translateX(-130vw); } }
   .stage:not(#preview-stage) .sprite.nomade { width: 170px; margin-bottom: 8px; }
+  /* Ferris wheel: wheel turns, gondolas counter-turn to stay upright */
+  .ferris-wheel, .gondola { transform-box: view-box; }
+  .ferris-wheel { animation: spin 40s linear infinite; }
+  .gondola { animation: spin 40s linear infinite reverse; }
+  .stage:not(#preview-stage) .sprite.ferris { width: 190px; margin-bottom: 8px; }
+  /* In the preview it alternates with the statue: same path & speed, half a cycle apart */
+  .ferris-by { position: absolute; bottom: 28px; left: 100%; animation: statue 24s linear infinite; animation-delay: -15s; }
+  .ferris-by .sprite { width: 150px; margin: 0; display: block; }
   .sail { position: absolute; bottom: 52px; left: 100%; animation: sail 45s linear infinite; animation-delay: -20s; }
   .sail .sprite { width: 46px; margin: 0; display: block; }
   @keyframes sail { to { transform: translateX(-130vw); } }
@@ -266,6 +274,7 @@
         <div class="town">${A.background.oldTown()}</div>
         <div class="sail">${A.background.boat()}</div>
         <div class="layer layer-ground"></div>
+        <div class="ferris-by">${A.background.ferrisWheel()}</div>
         <div class="statue">${A.background.nomade()}</div>
         <div class="hud"><div class="avatar">${A.kidFace()}</div><div class="points" id="points">0</div></div>
         <div class="runner spin" id="runner"></div>
@@ -451,6 +460,7 @@
     strip(B.ground(), 60, 400, 'City ground', 'Grey promenade sidewalk (the riding line), curb and road. Scrolls with the obstacles.', 'background.ground()') +
     `<div class="card wide"><div class="stage">${B.oldTown()}</div><h3>Antibes old town</h3><p>Ramparts, pastel houses with terracotta roofs, the two old towers, rocks and the jetty with its red lighthouse. A single landmark that drifts past on the sea.</p><span class="tag">background.oldTown()</span></div>` +
     card(B.nomade(), 'Nomade', 'The white letter statue on the bastion, on its pedestal. Stands on the promenade behind the kid.', 'background.nomade()') +
+    card(B.ferrisWheel(), 'Ferris wheel', 'White wheel with colourful gondolas and little lights. It turns slowly; the gondolas stay upright.', 'background.ferrisWheel()') +
     card(B.boat(), 'Sailboat', 'Drifts slowly across the sea.', 'background.boat()'));
 
   const names = { skin: 'Skin', hair: 'Blonde hair', eyeGreen: 'Green eyes', shirt: 'T-shirt', jeans: 'Jeans', shoe: 'Shoes', scooter: 'Scooter', wheel: 'Wheels', outline: 'Outline', cheek: 'Cheeks', gullWhite: 'Seagull', gullWing: 'Seagull wings', gullTip: 'Wing tips', gullBeak: 'Beak', pigeon: 'Pigeon', pigeonNeck: 'Pigeon neck', pigeonEye: 'Pigeon eye', cactus: 'Cactus', cactusFlower: 'Cactus flower', poop: 'Poop', rock: 'Rock', sky: 'Sky', mountains: 'Mountains', snow: 'Snow', sea: 'Sea', sidewalk: 'Sidewalk', asphalt: 'Road', chicken: 'Chicken', broccoli: 'Broccoli', carrot: 'Carrot', steak: 'Steak', yolk: 'Egg yolk' };
