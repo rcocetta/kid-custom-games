@@ -29,6 +29,8 @@ These apply to **every game** in this repo. Per-game details live in each game's
 - Games are developed in their own folders. `./build.sh` copies each game's runtime files into
   `docs/<game>/` and regenerates `docs/index.html` (the list of games). It is a plain copy step
   (no bundling/compiling).
+- The home page is installable as an app: `site/` holds its manifest, service worker (offline
+  cache of this site's own files only) and icons; `build.sh` copies them into the root of `docs/`.
 - **CI publishes, not people**: `.github/workflows/pages.yml` runs `build.sh` on every PR (build
   check only) and on every push to `main` builds and deploys `docs/` to GitHub Pages. So only what
   is merged to `main` goes live — keep unfinished work on branches.
