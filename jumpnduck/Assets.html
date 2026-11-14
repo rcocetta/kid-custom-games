@@ -92,21 +92,21 @@
   @keyframes panS { to { background-position: -600px 0; } }
   @keyframes panG { to { background-position: -220px 0; } }
   /* Old town drifts at the sea's speed (20px/s), so it feels part of the far coast */
-  .town { position: absolute; bottom: 46px; left: 100%; animation: sail 70s linear infinite; animation-delay: -52s; }
+  .town { position: absolute; bottom: 46px; left: 100%; animation: sail 70s linear infinite; animation-delay: -30s; }
   .town .sprite { width: 222px; margin: 0; display: block; }
-  .stage .sprite.oldtown { width: 100%; max-width: 520px; margin-bottom: 14px; }
+  .stage:not(#preview-stage) .sprite.oldtown { width: 100%; max-width: 520px; margin-bottom: 14px; }
   /* Nomade stands on the promenade, behind the kid; moves slower than the ground (it's further back) */
   .statue { position: absolute; bottom: 28px; left: 100%; animation: statue 24s linear infinite; animation-delay: -3s; }
   .statue .sprite { width: 125px; margin: 0; display: block; }
   @keyframes statue { 0% { transform: translateX(0); } 50%, 100% { transform: translateX(-130vw); } }
-  .stage .sprite.nomade { width: 170px; margin-bottom: 8px; }
+  .stage:not(#preview-stage) .sprite.nomade { width: 170px; margin-bottom: 8px; }
   .sail { position: absolute; bottom: 52px; left: 100%; animation: sail 45s linear infinite; animation-delay: -20s; }
   .sail .sprite { width: 46px; margin: 0; display: block; }
   @keyframes sail { to { transform: translateX(-130vw); } }
   /* Background asset cards */
   .wide { grid-column: 1 / -1; }
   .strip { border-radius: 16px; background-repeat: repeat-x; border: 3px solid var(--line); }
-  .stage .sprite.boat { width: 110px; margin-bottom: 40px; }
+  .stage:not(#preview-stage) .sprite.boat { width: 110px; margin-bottom: 40px; }
   .runner { position: relative; z-index: 1; }
   .runner.jumping { animation: hop 0.75s cubic-bezier(.3,.7,.4,1) both; }
   @keyframes hop {
@@ -116,12 +116,12 @@
   }
   .spin .wheel { animation: spin 0.45s linear infinite; transform-origin: 0 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .stage .sprite.seagull, .stage .sprite.pigeon { width: 170px; margin-bottom: 70px; }
-  .stage .sprite.poop { width: 110px; }
-  .stage .sprite.rock { width: 130px; }
-  .stage .sprite.cactus { width: 120px; }
-  .stage .sprite.cactus-small { width: 76px; }
-  .stage .sprite.cactus-double { width: 150px; }
+  .stage:not(#preview-stage) .sprite.seagull, .stage:not(#preview-stage) .sprite.pigeon { width: 170px; margin-bottom: 70px; }
+  .stage:not(#preview-stage) .sprite.poop { width: 110px; }
+  .stage:not(#preview-stage) .sprite.rock { width: 130px; }
+  .stage:not(#preview-stage) .sprite.cactus { width: 120px; }
+  .stage:not(#preview-stage) .sprite.cactus-small { width: 76px; }
+  .stage:not(#preview-stage) .sprite.cactus-double { width: 150px; }
   .flyby { position: absolute; top: 60px; left: 100%; z-index: 1; animation: flyby 4s linear infinite; }
   .flyby .sprite { width: 140px; margin: 0; }
   .groundby { position: absolute; bottom: 26px; left: 100%; z-index: 2; animation: groundby 5.5s linear infinite; animation-delay: 1.5s; }
@@ -134,16 +134,16 @@
     75% { transform: translate(-90vw, 14px); }
     100% { transform: translate(-130vw, 0); }
   }
-  .stage .sprite.food { width: 110px; margin-bottom: 50px; animation: bob 1.6s ease-in-out infinite; }
+  .stage:not(#preview-stage) .sprite.food { width: 110px; margin-bottom: 50px; animation: bob 1.6s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(-10px) rotate(4deg); } }
   .foodby { position: absolute; bottom: 120px; left: 100%; z-index: 1; animation: groundby 5.5s linear infinite; animation-delay: 4.2s; }
   .foodby .sprite { width: 60px; margin: 0; display: block; animation: bob 1.2s ease-in-out infinite; }
   /* duck viewBox is wider (204 vs 165 units): scale width so it matches the other poses */
-  .stage .sprite.kid-duck { width: 185px; }
+  .stage:not(#preview-stage) .sprite.kid-duck { width: 185px; }
   .preview .stage .sprite.kid-duck { width: 235px; }
-  .stage .sprite.kid-gameover { width: 238px; margin-bottom: 10px; }
+  .stage:not(#preview-stage) .sprite.kid-gameover { width: 238px; margin-bottom: 10px; }
   .preview .stage .sprite.kid-gameover { width: 302px; }
-  .stage .sprite.kid-face { width: 130px; margin-bottom: 40px; }
+  .stage:not(#preview-stage) .sprite.kid-face { width: 130px; margin-bottom: 40px; }
   .hud {
     position: absolute; top: 14px; left: 14px; z-index: 3;
     display: flex; align-items: center; gap: 10px;
