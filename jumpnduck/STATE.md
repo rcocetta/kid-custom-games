@@ -3,7 +3,7 @@
 A kid's endless-runner game (genre: Chrome-dino-style runner) with our own original cartoon assets.
 The kid rides a scooter, jumps over ground obstacles, ducks under flying ones, and collects food.
 
-**Status (2026-11-14):** asset phase. No game logic yet — only the asset portfolio page.
+**Status (2026-11-14):** assets done; game built (`index.html` + `game.js`), verified headless only (no real browser in this env).
 
 ## Files
 
@@ -54,9 +54,9 @@ Ground obstacles: the bottom of each viewBox is the ground line.
 
 ## Next phase (game)
 
-- `index.html` + `game.js` in this folder, canvas-based, reusing `assets.js` via `toDataUrl`.
-- Core loop like the Chrome runner: speed increases over time, random ground/flying obstacles,
-  jump (Space/Up/tap), duck (Down/swipe), collect food for +100 bonus (show `scorePopup`), score badge with `kidFace()`.
+- [x] `index.html` + `game.js` in this folder, canvas-based, reusing `assets.js` via `toDataUrl`.
+- [x] Core loop like the Chrome runner: speed increases over time, random ground/flying obstacles,
+  jump (Space/Up/tap), duck (Down/hold bottom half), collect food for +100 bonus (show `scorePopup`), score badge with `kidFace()`.
 - Rules will be amended gradually with the user — ask before inventing rule changes.
 
 ## Dev notes
@@ -64,3 +64,27 @@ Ground obstacles: the bottom of each viewBox is the ground line.
 - No headless browser works in this WSL env (Playwright Chromium lacks `libnspr4`).
   Visual checks were done by rendering SVGs to PNG with `@resvg/resvg-js` in a scratch dir:
   set `global.window = {}`, `require('./assets.js')`, render `GameAssets.*()` output.
+
+## Game
+
+Files: `index.html` (canvas + DOM overlays, inline CSS), `game.js` (DOM-free core `createGame` + browser shell), `fonts/Fredoka.ttf`.
+`window.JumpNDuck = { createGame, loadImages, prepareSprites }`; the shell only starts when `document` exists. Spec: `GAME_PLAN.md`.
+
+- **Controls:** Space / Up / W = jump (keydown edge, repeats ignored); Down / S = duck (held); Space/Enter start and restart.
+  Touch/mouse: top half of the screen = jump, bottom half held = duck (multi-pointer); on-screen DUCK/JUMP buttons on coarse-pointer devices
+  (they `stopPropagation`, so the half-screen rule never double-fires). Jump has a 0.12 s buffer before landing.
+- **Screens:** splash (attract scrolling scene, big `kidFace`, title, instructions, Play, best + reset) -> FLIP animation of the face into the HUD avatar
+  (650 ms, then `game.start()`) -> playing (HUD pill + Best) -> game over card (700 ms restart lockout) -> restart goes straight to playing.
+  Portrait shows a rotate notice and pauses (also paused on `visibilitychange`). Best score: `localStorage` `jumpnduck:best`.
+- **Core API:** `update(dt, {jump, duck})`, `render(ctx, images, scale)`, `resize(aspect)`, `start()`, `reset()`, `score`, `best`, `newBest`, `state`;
+  `game.events` is a draining getter (`food` / `crash` / `milestone`). `obstacles`, `foods`, `kid` getters exist for tests.
+- **Tuning constants (top of `game.js`):** `H=400`, `GROUND_Y=352`, `KID_X=70`, `K=0.6`, speed `300 + 7/s` max `680`, `JUMP_V=-760`, `GRAVITY=2300`,
+  fast-fall x3, score `0.025/unit`, food `+100`, milestone 500, birds from score 250 (~25% of spawns, width 84, +40 speed),
+  low bird bottom `GROUND_Y-40`, duck bird bottom `GROUND_Y-104`, `MIN_GAP=260`, food chance 0.45 (70% high / 30% low), obstacle heights in `OBSTACLES`.
+  Hitbox insets are in `kidHit()` and `spawnObstacle()`.
+- **Headless tests** (scripts live in the session scratch dir, not the repo): `global.window = {}`, `require('./assets.js')`, `require('./game.js')`; build images with
+  `prepareSprites(GameAssets)` + `@napi-rs/canvas` `loadImage(toDataUrl(svg))` into `{img, vb}`; drive `createGame({rand: seededRng})` with
+  `update(1/60, input)`, render with `ctx.setTransform(s,0,0,s,0,0); game.render(ctx, imgs, s)`. Asserted: food +100 while jumping, duck under duck-bird
+  survives, standing/jumping into it crashes, jump over low bird survives, 60 s bot survival, best/restart. A fake-DOM smoke test exercises the shell flow.
+- **Known limits:** wheels and the ferris wheel don't animate (SVG CSS animations don't apply to `<img>`/canvas); the popup sprite uses its fallback font
+  (SVG-in-`<img>` can't see page fonts); not tried in a real browser or on a real touch device.

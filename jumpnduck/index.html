@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Oli's Scooter Dash</title>
+<style>
+  @font-face { font-family: 'Fredoka'; src: url('fonts/Fredoka.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
+  :root {
+    --ink: #2E2A36;
+    --accent: #FF8A1F;
+    --accent-dark: #C9620A;
+    --sky: #BFE6FF;
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-r: env(safe-area-inset-right, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-l: env(safe-area-inset-left, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: var(--sky);
+    font-family: 'Fredoka', ui-rounded, 'Segoe UI', system-ui, sans-serif; color: var(--ink);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  #game { position: fixed; display: block; touch-action: none; }
+  [hidden] { display: none !important; }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    position: fixed; top: calc(var(--safe-t) + 10px); left: calc(var(--safe-l) + 12px); right: calc(var(--safe-r) + 12px);
+    display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
+    opacity: 0; transition: opacity .3s;
+  }
+  #hud.show { opacity: 1; }
+  .pill {
+    display: flex; align-items: center; gap: 10px; background: #fff; border: 4px solid var(--ink);
+    border-radius: 999px; box-shadow: 0 4px 0 rgba(46,42,54,.25);
+  }
+  .pill.score { padding: 3px 18px 3px 3px; }
+  #avatarSlot {
+    width: clamp(36px, 12vh, 56px); height: clamp(36px, 12vh, 56px); border-radius: 50%; overflow: hidden;
+    background: var(--sky); border: 3px solid var(--ink); flex: none;
+  }
+  #avatarSlot svg { width: 118%; height: 118%; margin: -9% 0 0 -9%; display: block; opacity: 0; }
+  #avatarSlot.filled svg { opacity: 1; }
+  #score { font-size: clamp(22px, 7vh, 32px); font-weight: 700; min-width: 3ch; font-variant-numeric: tabular-nums; display: inline-block; }
+  #score.pop { animation: pop .3s; }
+  @keyframes pop { 50% { transform: scale(1.3); color: var(--accent); } }
+  .pill.best { padding: 6px 16px; font-size: clamp(16px, 5vh, 22px); font-weight: 600; }
+
+  /* ---------- Splash ---------- */
+  #splash {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10;
+    padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+    background: radial-gradient(ellipse at center, rgba(255,255,255,.45), rgba(191,230,255,.15) 70%);
+    transition: background .5s;
+  }
+  #splash.leaving { background: transparent; pointer-events: none; }
+  .splash-inner { display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 48px); max-width: 96vw; }
+  #splashFace {
+    width: min(38vh, 34vw); height: min(38vh, 34vw); flex: none; transition: transform .65s cubic-bezier(.65, 0, .35, 1);
+    filter: drop-shadow(0 6px 0 rgba(46,42,54,.25)); z-index: 12; position: relative;
+    animation: bobface 1.8s ease-in-out infinite;
+  }
+  #splash.leaving #splashFace { animation: none; filter: none; }
+  #splashFace svg { width: 100%; height: 100%; display: block; }
+  @keyframes bobface { 50% { transform: translateY(-6px) rotate(-3deg); } }
+  .splash-text { display: flex; flex-direction: column; align-items: flex-start; gap: clamp(6px, 1.8vh, 14px); transition: opacity .35s; }
+  #splash.leaving .splash-text { opacity: 0; }
+  h1 {
+    margin: 0; font-size: clamp(30px, 11vh, 66px); line-height: 1; font-weight: 700; color: #fff; letter-spacing: .5px;
+    -webkit-text-stroke: clamp(5px, 1.6vh, 9px) var(--ink); paint-order: stroke fill;
+    text-shadow: 0 5px 0 rgba(46,42,54,.35);
+  }
+  .how { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: clamp(3px, 1vh, 8px); }
+  .how li {
+    background: rgba(255,255,255,.92); border: 3px solid var(--ink); border-radius: 999px;
+    padding: 2px 14px; font-size: clamp(13px, 4.2vh, 20px); font-weight: 600; white-space: nowrap;
+  }
+  .how b { color: var(--accent-dark); }
+  #playBtn {
+    font: inherit; font-weight: 700; color: #fff; background: var(--accent); border: 4px solid var(--ink);
+    border-radius: 999px; padding: clamp(4px, 1.4vh, 10px) clamp(28px, 6vh, 56px); cursor: pointer;
+    box-shadow: 0 6px 0 var(--accent-dark); display: flex; flex-direction: column; align-items: center; line-height: 1.1;
+    animation: wob 1.4s ease-in-out infinite;
+  }
+  #playBtn b { font-size: clamp(22px, 8vh, 38px); font-weight: 700; }
+  #playBtn small { font-size: clamp(11px, 3vh, 14px); font-weight: 500; opacity: .95; }
+  #playBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-dark); animation: none; }
+  #playBtn:disabled { opacity: .7; animation: none; cursor: default; }
+  @keyframes wob { 50% { transform: scale(1.05); } }
+  .best-line { display: flex; align-items: center; gap: 10px; min-height: 1.2em; font-weight: 600; font-size: clamp(13px, 4vh, 18px); }
+  #splashBest { text-shadow: 0 0 4px #fff, 0 0 4px #fff; }
+  #resetBest {
+    font: inherit; font-size: clamp(11px, 3vh, 13px); background: rgba(255,255,255,.7); color: #5b5566; border: 2px solid var(--ink);
+    border-radius: 999px; padding: 1px 10px; cursor: pointer;
+  }
+
+  /* ---------- Game over ---------- */
+  #over {
+    position: fixed; top: calc(var(--safe-t) + 5vh); left: 50%; z-index: 9; transform: translate(-50%, -30px) scale(.9); opacity: 0; pointer-events: none;
+    background: #fff; border: 5px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 rgba(46,42,54,.3);
+    padding: clamp(8px, 2.4vh, 18px) clamp(24px, 6vw, 48px); text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: clamp(2px, .8vh, 8px);
+    transition: opacity .25s, transform .3s cubic-bezier(.2, 1.4, .4, 1);
+  }
+  #over.show { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
+  #over h2 { margin: 0; font-size: clamp(24px, 8vh, 42px); color: var(--accent); line-height: 1.05; }
+  #overScore { font-size: clamp(28px, 11vh, 56px); font-weight: 700; line-height: 1; }
+  .over-line { font-size: clamp(13px, 4vh, 20px); font-weight: 600; color: #5b5566; }
+  #overNew { color: var(--accent-dark); font-weight: 700; }
+  #againBtn {
+    font: inherit; font-weight: 700; font-size: clamp(18px, 6vh, 26px); color: #fff; background: var(--accent);
+    border: 4px solid var(--ink); border-radius: 999px; padding: clamp(3px, 1vh, 8px) clamp(24px, 5vh, 44px);
+    cursor: pointer; box-shadow: 0 5px 0 var(--accent-dark); margin-top: 4px;
+  }
+  #againBtn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--accent-dark); }
+
+  /* ---------- Rotate notice ---------- */
+  #rotate {
+    position: fixed; inset: 0; z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+    background: var(--sky); text-align: center; padding: 24px; font-size: 26px; font-weight: 700;
+  }
+  #rotate.show { display: flex; }
+  .phone {
+    width: 56px; height: 96px; border: 6px solid var(--ink); border-radius: 14px; background: #fff; position: relative;
+    animation: turn 2.4s ease-in-out infinite;
+  }
+  .phone::after { content: ''; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--accent); }
+  @keyframes turn { 0%, 15% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+
+  /* ---------- Touch buttons ---------- */
+  #touch { display: none; }
+  @media (pointer: coarse) { body[data-phase="playing"] #touch { display: block; } }
+  .tbtn {
+    position: fixed; bottom: calc(var(--safe-b) + 12px); width: 18vh; height: 18vh; min-width: 64px; min-height: 64px; border-radius: 50%;
+    background: rgba(255,255,255,.5); border: 4px solid var(--ink); color: var(--ink);
+    font: 700 clamp(13px, 4vh, 20px) 'Fredoka', system-ui, sans-serif; display: flex; align-items: center; justify-content: center;
+    touch-action: none; z-index: 8; padding: 0;
+  }
+  .tbtn:active { background: rgba(255,255,255,.85); transform: scale(.94); }
+  #btnDuck { left: calc(var(--safe-l) + 14px); }
+  #btnJump { right: calc(var(--safe-r) + 14px); }
+</style>
+</head>
+<body data-phase="loading">
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="pill score"><div id="avatarSlot"></div><span id="score">0</span></div>
+  <div class="pill best" id="hudBest" hidden>Best 0</div>
+</div>
+
+<div id="splash">
+  <div class="splash-inner">
+    <div id="splashFace"></div>
+    <div class="splash-text">
+      <h1>Oli's Scooter Dash</h1>
+      <ul class="how">
+        <li>Tap the top &middot; Space &middot; &uarr; &mdash; <b>JUMP</b></li>
+        <li>Hold the bottom &middot; &darr; &mdash; <b>DUCK</b></li>
+        <li>Eat good food: <b>+100!</b></li>
+      </ul>
+      <button id="playBtn" type="button" disabled><b>Loading&hellip;</b><small>Tap to start &middot; Press Space</small></button>
+      <div class="best-line"><span id="splashBest"></span><button id="resetBest" type="button" hidden>Reset best score</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="over">
+  <h2>Oops!</h2>
+  <div id="overScore">0</div>
+  <div class="over-line"><span id="overBest">Best 0</span> <span id="overNew" hidden>&mdash; New best!</span></div>
+  <button id="againBtn" type="button">Play again</button>
+</div>
+
+<div id="touch">
+  <button class="tbtn" id="btnDuck" type="button" aria-label="Duck">DUCK</button>
+  <button class="tbtn" id="btnJump" type="button" aria-label="Jump">JUMP</button>
+</div>
+
+<div id="rotate"><div class="phone"></div><div>Turn your phone sideways to play</div></div>
+
+<script src="assets.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
