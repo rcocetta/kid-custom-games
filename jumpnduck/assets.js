@@ -89,7 +89,7 @@
       limb([[160, 214], st.top], C.scooter, 8) +
       limb([[138, 200], [154, 190]], C.scooter, 9) +
       // handlebar
-      limb(st.bar, C.scooter, 7) +
+      limb(st.bar, C.wheel, 7) +           // handlebar grips: same orange as the wheels
       // deck
       `<rect x="42" y="194" width="110" height="13" rx="6.5" fill="${C.scooter}" stroke="${O}" stroke-width="${SW}"/>` +
       `<path d="M52 198.5 L140 198.5" stroke="${C.scooterHi}" stroke-width="2.5" stroke-linecap="round"/>` +
