@@ -15,6 +15,7 @@
   const KID_ANCHOR_X = 20;
   const SPEED_START = 300, SPEED_ACCEL = 7, SPEED_MAX = 680, ATTRACT_SPEED = 150;
   const SCORE_PER_UNIT = 0.025, FOOD_POINTS = 100, MILESTONE = 500;
+  const BOOK_POINTS = 200, BOOK_EVERY = 5; // every 5th collectible is a red book: +200 LEARN!
   const STRONG_TIME = 3;       // seconds of muscly look after eating well (visual only)
   const JUMP_V = -860, GRAVITY = 2000, FASTFALL = 3, JUMP_BUFFER = 0.12;
   const BIRD_W = 84, BIRD_EXTRA_SPEED = 40, BIRD_MIN_SCORE = 250;
@@ -57,6 +58,8 @@
     for (const v of A.rockVariants) add('rock_' + v, A.rock(v), hOf['rock_' + v]);
     for (const k of A.foodKinds) add('food_' + k, A.food(k), FOOD_H);
     add('popup', A.scorePopup(FOOD_POINTS, 'EAT WELL!'), 80);
+    add('book', A.book(), FOOD_H);
+    add('popup_learn', A.scorePopup(BOOK_POINTS, 'LEARN!', '#E04848'), 80);
     const bg = A.background;
     add('bg_mountains', bg.mountains(), 120);
     add('bg_sea', bg.sea(), 58);
@@ -106,14 +109,14 @@
     const rr = (a, b) => a + rand() * (b - a);
 
     let state, speed, distance, bonus, playT, kidOff, kidVy, onGround, jumpBuf, runT, overT, strongT;
-    let obstacles, foods, popups, deco, clouds, gapLeft, lastMilestone, moved;
+    let obstacles, foods, popups, deco, clouds, gapLeft, lastMilestone, moved, collectN = 0;
     let layerX, waits;
     let events = [];
 
     function reset() {
       state = 'ready'; speed = ATTRACT_SPEED; distance = 0; bonus = 0; playT = 0;
       kidOff = 0; kidVy = 0; onGround = true; jumpBuf = 0; runT = 0; overT = 0; strongT = 0;
-      obstacles = []; foods = []; popups = []; deco = []; gapLeft = 0; lastMilestone = 0;
+      obstacles = []; foods = []; popups = []; deco = []; gapLeft = 0; lastMilestone = 0; collectN = 0;
       layerX = { mountains: 0, sea: 0, ground: 0 };
       waits = { town: 0, boat: 0, fg: 0, sun: 0 };
       moved = false;
@@ -227,7 +230,9 @@
       const gap = Math.max(MIN_GAP, speed * secs);
       gapLeft = o.w + gap;
       if (rand() < FOOD_CHANCE) {
-        const key = 'food_' + A.foodKinds[Math.floor(rand() * A.foodKinds.length)];
+        collectN++;
+        const isBook = collectN % BOOK_EVERY === 0;
+        const key = isBook ? 'book' : 'food_' + A.foodKinds[Math.floor(rand() * A.foodKinds.length)];
         const vb = VB(key), w = vb.w * FOOD_H / vb.h;
         const cy = rand() < 0.7 ? FOOD_HIGH_Y : FOOD_LOW_Y;
         foods.push({ key, x: x + o.w + gap / 2 - w / 2, w, h: FOOD_H, cy, t: rr(0, 6) });
@@ -304,12 +309,17 @@
       for (const f of foods) {
         const fy = f.cy + Math.sin(f.t * 5) * 4 - f.h / 2;
         if (hit(kr, { x: f.x, y: fy, w: f.w, h: f.h })) {
-          bonus += FOOD_POINTS;
-          strongT = STRONG_TIME;   // eating well → muscly for a few seconds
+          const isBook = f.key === 'book';
           const px = f.x + f.w / 2, py = fy + f.h / 2;
-          // show the popup above his head so it never hides the (now muscly) kid
-          popups.push({ x: px, y: Math.min(py, kr.y - 30), age: 0 });
-          events.push({ type: 'food', x: px, y: py });
+          if (isBook) {
+            bonus += BOOK_POINTS;                       // books: +200 LEARN!, no muscles
+          } else {
+            bonus += FOOD_POINTS;
+            strongT = STRONG_TIME;   // eating well → muscly for a few seconds
+          }
+          // show the popup above his head so it never hides the kid
+          popups.push({ x: px, y: Math.min(py, kr.y - 30), age: 0, key: isBook ? 'popup_learn' : 'popup' });
+          events.push({ type: isBook ? 'book' : 'food', x: px, y: py });
         } else if (f.x + f.w > -30) rest.push(f);
       }
       foods = rest;
@@ -388,7 +398,7 @@
         const w = 130 * sc, h = w * 130 / 220;
         const cx = Math.max(70, p.x), cy = p.y - rise;
         ctx.globalAlpha = alpha;
-        img('popup', cx - w / 2, cy - h / 2, w, h);
+        img(p.key || 'popup', cx - w / 2, cy - h / 2, w, h);
         ctx.globalAlpha = 1;
       }
     }
@@ -403,7 +413,7 @@
       // fresh run; the scenery (layers, clouds, landmarks) just keeps scrolling
       state = 'playing'; speed = SPEED_START; distance = 0; bonus = 0; playT = 0;
       kidOff = 0; kidVy = 0; onGround = true; jumpBuf = 0; overT = 0;
-      obstacles = []; foods = []; popups = []; lastMilestone = 0;
+      obstacles = []; foods = []; popups = []; lastMilestone = 0; collectN = 0;
       gapLeft = 900;   // first obstacle arrives after a short warm-up
       g.newBest = false;
       moved = true;
@@ -598,7 +608,7 @@
       input.duck = keysDown.size > 0 || duckPtrs.size > 0;
       game.update(dt, phase === 'playing' ? input : null);
       for (const ev of game.events) {
-        if (ev.type === 'food') bump(el.score);
+        if (ev.type === 'food' || ev.type === 'book') bump(el.score);
         else if (ev.type === 'milestone') bump(el.score);
         else if (ev.type === 'crash') onCrash();
       }
