@@ -129,13 +129,26 @@
     const d = `M${shoulder.join(' ')} L${elbow.join(' ')} L${hand.join(' ')}`;
     const common = 'fill="none" stroke-linecap="round" stroke-linejoin="round"';
     const bicep = (fill, extra) => `<ellipse cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" rx="13.5" ry="10" transform="rotate(${ang.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)})" fill="${fill}" ${extra}/>`;
-    const capEnd = [shoulder[0] + dx * 0.12, shoulder[1] + dy * 0.12];
+    const ux = dx / len, uy = dy / len;                    // along the upper arm
+    const fl = Math.hypot(hand[0] - elbow[0], hand[1] - elbow[1]) || 1;
+    const fx = (hand[0] - elbow[0]) / fl, fy = (hand[1] - elbow[1]) / fl;   // along the forearm
+    const P = (x, y) => `${x.toFixed(1)} ${y.toFixed(1)}`;
+    // dark crease from the bottom of the bicep running a little into the forearm
+    const crease =
+      `<path d="M${P(bx + nx * 9 - ux * 3, by + ny * 9 - uy * 3)} Q${P(bx + nx * 12 + ux * 9, by + ny * 12 + uy * 9)} ${P(elbow[0] + fx * 20 - nx * 2, elbow[1] + fy * 20 - ny * 2)}" ` +
+      `fill="none" stroke="${O}" stroke-width="3" stroke-linecap="round"/>`;
+    // big round shoulder in the t-shirt sleeve
+    const sx = shoulder[0] + nx * 2, sy = shoulder[1] + ny * 2;
+    const shoulderCap =
+      `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="12.5" fill="${shirt}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<path d="M${P(sx - 6, sy - 5)} Q${P(sx, sy - 9)} ${P(sx + 6, sy - 5)}" fill="none" stroke="#8BE08F" stroke-width="2.5" stroke-linecap="round" opacity="${back ? 0.4 : 0.8}"/>`;
     return (
       // outlines first, then fills, so arm + bicep read as one shape
       `<path d="${d}" ${common} stroke="${O}" stroke-width="${12 + SW * 2}"/>` + bicep(O, `stroke="${O}" stroke-width="${SW * 2}"`) +
       `<path d="${d}" ${common} stroke="${skin}" stroke-width="12"/>` + bicep(skin, '') +
       `<path d="M${(bx + nx * 4 - dx / len * 5).toFixed(1)} ${(by + ny * 4 - dy / len * 5).toFixed(1)} Q${(bx + nx * 7).toFixed(1)} ${(by + ny * 7).toFixed(1)} ${(bx + nx * 4 + dx / len * 5).toFixed(1)} ${(by + ny * 4 + dy / len * 5).toFixed(1)}" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>` +
-      limb([shoulder, capEnd], shirt, 15) +
+      crease +
+      shoulderCap +
       `<circle cx="${hand[0]}" cy="${hand[1]}" r="7.5" fill="${skin}" stroke="${O}" stroke-width="3.5"/>`
     );
   }
