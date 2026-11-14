@@ -28,7 +28,7 @@ The kid rides a scooter, jumps over ground obstacles, ducks under flying ones, a
 | Call | Variants | Notes |
 |---|---|---|
 | `kid(pose)` | `kidPoses`: `ride`, `push`, `jump` | Kid on scooter, big head, blonde, green eyes, green tee, jeans, white shoes; black scooter, orange wheels. Wheels are `<g class="wheel">` — spin with CSS. Ride/push alternate for the run cycle. |
-| `kidFace()` | — | Front-facing portrait, used in the score badge (HUD). |
+| `kidFace()` | — | Front-facing portrait. Standalone, general-purpose asset (menus, game over, etc.); the score badge (HUD) is just one user of it — keep it independent from the HUD. |
 | `seagull(frame)` | `seagullFrames`: `up`, `down` | Flying obstacle. Alternate frames to flap. |
 | `pigeon(frame)` | `pigeonFrames`: `up`, `down` | Flying obstacle, same wing shapes as seagull. |
 | `cactus(variant)` | `cactusVariants`: `tall`, `small`, `double` | Ground obstacle; tall one has a face + flower. |
