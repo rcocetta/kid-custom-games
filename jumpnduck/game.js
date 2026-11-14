@@ -168,8 +168,11 @@
       if (state === 'over') return 'kid_gameover';
       if (!onGround) return 'kid_jump';
       if (g._duck) return 'kid_duck';
-      const period = Math.max(0.12, 0.2 * SPEED_START / speed);
-      return Math.floor(runT / period) % 4 === 3 ? 'kid_push' : 'kid_ride';
+      // A short kick (0.2 s), then a glide that gets longer as he goes faster —
+      // like a real rider: one kick every ~0.8 s at the start, every ~1.6 s at top speed.
+      const d = Math.min(1, Math.max(0, (speed - SPEED_START) / (SPEED_MAX - SPEED_START)));
+      const cycle = 0.8 + 0.8 * d;
+      return (runT % cycle) < 0.2 ? 'kid_push' : 'kid_ride';
     }
     function kidRect(key) {
       const vb = VB(key), gy = GROUND_Y + kidOff;
