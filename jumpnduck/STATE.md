@@ -40,6 +40,7 @@ The kid rides a scooter, jumps over ground obstacles, ducks under flying ones, a
 | `background.ferrisWheel()` | — | Ferris wheel (port). `<g class="ferris-wheel">` spins around (100,96); each `<g class="gondola">` has its own transform-origin and counter-spins (CSS, `transform-box: view-box`). Decoration on the promenade, alternates with Nomade in the preview. viewBox `0 0 200 230`, base bottom = ground. |
 | `background.boat()` | — | Small sailboat drifting on the sea. |
 | `background.oldTown()` | — | Antibes old town landmark (ramparts, pastel houses, two towers, rocks, jetty + red lighthouse), cartoon version of the user's reference photo. Not a tile: one sprite drifting at sea speed; its base (y=160 of viewBox `-4 4 424 160`) sits just below the horizon in the sea. |
+| `scorePopup(points, label)` | default `100`, `'EAT WELL!'` | Bonus popup when a food collectible is caught (+100 points). Big gold number + green ribbon + stars. Text uses Fredoka when the page has it (fallback Arial Rounded/Black). Page animates it: burst in, float up, fade. |
 | `toDataUrl(svg)` | — | Turn an SVG string into an image URL for `<canvas>` drawing. |
 
 Ground obstacles: the bottom of each viewBox is the ground line.
@@ -55,7 +56,7 @@ Ground obstacles: the bottom of each viewBox is the ground line.
 
 - `index.html` + `game.js` in this folder, canvas-based, reusing `assets.js` via `toDataUrl`.
 - Core loop like the Chrome runner: speed increases over time, random ground/flying obstacles,
-  jump (Space/Up/tap), duck (Down/swipe), collect food for points, score badge with `kidFace()`.
+  jump (Space/Up/tap), duck (Down/swipe), collect food for +100 bonus (show `scorePopup`), score badge with `kidFace()`.
 - Rules will be amended gradually with the user — ask before inventing rule changes.
 
 ## Dev notes

@@ -80,7 +80,7 @@
 
   /* Animated preview */
   .preview { grid-column: 1 / -1; }
-  .preview .stage { height: 300px; }
+  .preview .stage { height: 380px; }
   .preview .stage::after { display: none; }
   .preview .sprite { width: 190px; margin-bottom: 26px; }
   /* Parallax layers: far things move slowly, the ground moves fastest */
@@ -108,6 +108,18 @@
   /* In the preview it alternates with the statue: same path & speed, half a cycle apart */
   .ferris-by { position: absolute; bottom: 28px; left: 100%; animation: statue 24s linear infinite; animation-delay: -15s; }
   .ferris-by .sprite { width: 150px; margin: 0; display: block; }
+  /* +100 EAT WELL popup */
+  .stage:not(#preview-stage) .sprite.popup { width: 200px; margin-bottom: 60px; animation: wiggle 1.6s ease-in-out infinite; }
+  @keyframes wiggle { 50% { transform: scale(1.08) rotate(-3deg); } }
+  .bonus { position: absolute; z-index: 4; width: 150px; pointer-events: none; transform: translate(-50%, -50%); }
+  .bonus .sprite { width: 100%; margin: 0; display: block; animation: bonus 1.2s ease-out forwards; }
+  @keyframes bonus {
+    0% { transform: scale(0.2); opacity: 0; }
+    18% { transform: scale(1.2); opacity: 1; }
+    32% { transform: scale(1); }
+    70% { opacity: 1; }
+    100% { transform: translateY(-70px) scale(0.95); opacity: 0; }
+  }
   .sail { position: absolute; bottom: 52px; left: 100%; animation: sail 45s linear infinite; animation-delay: -20s; }
   .sail .sprite { width: 46px; margin: 0; display: block; }
   @keyframes sail { to { transform: translateX(-130vw); } }
@@ -144,7 +156,7 @@
   }
   .stage:not(#preview-stage) .sprite.food { width: 110px; margin-bottom: 50px; animation: bob 1.6s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(-10px) rotate(4deg); } }
-  .foodby { position: absolute; bottom: 120px; left: 100%; z-index: 1; animation: groundby 5.5s linear infinite; animation-delay: 4.2s; }
+  .foodby { position: absolute; bottom: 300px; left: 100%; z-index: 1; animation: groundby 5.5s linear infinite; animation-delay: 4.2s; }
   .foodby .sprite { width: 60px; margin: 0; display: block; animation: bob 1.2s ease-in-out infinite; }
   /* duck viewBox is wider (204 vs 165 units): scale width so it matches the other poses */
   .stage:not(#preview-stage) .sprite.kid-duck { width: 185px; }
@@ -220,6 +232,11 @@
   <section>
     <h2>⭐ Collectibles</h2>
     <div class="grid" id="food-grid"></div>
+  </section>
+
+  <section>
+    <h2>✨ Effects</h2>
+    <div class="grid" id="fx-grid"></div>
   </section>
 
   <section>
@@ -425,21 +442,58 @@
   treat.className = 'foodby';
   stage.appendChild(treat);
   let fi = 0;
-  const nextFood = () => { treat.innerHTML = A.food(A.foodKinds[fi]); fi = (fi + 1) % A.foodKinds.length; };
+  let eaten = false;
+  const nextFood = () => {
+    treat.innerHTML = A.food(A.foodKinds[fi]);
+    fi = (fi + 1) % A.foodKinds.length;
+    treat.style.visibility = 'visible';
+    eaten = false;
+  };
   nextFood();
   treat.addEventListener('animationiteration', nextFood);
 
   // Score badge: points tick up while riding.
   const pointsEl = document.getElementById('points');
   let points = 0;
+  const bumpScore = (n) => {
+    points += n;
+    pointsEl.textContent = points;
+    pointsEl.classList.remove('pop'); void pointsEl.offsetWidth; pointsEl.classList.add('pop');
+  };
   setInterval(() => {
     if (crashed) return;
     points += 1;
     pointsEl.textContent = points;
-    if (points % 50 === 0) {
-      pointsEl.classList.remove('pop'); void pointsEl.offsetWidth; pointsEl.classList.add('pop');
-    }
+    if (points % 50 === 0) bumpScore(0);
   }, 100);
+
+  // Catching food: if the kid touches the floating food, it disappears, +100 EAT WELL pops up.
+  function showBonus(x, y) {
+    const el = document.createElement('div');
+    el.className = 'bonus';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.innerHTML = A.scorePopup(100, 'EAT WELL!');
+    stage.appendChild(el);
+    el.firstChild.addEventListener('animationend', () => el.remove());
+  }
+  (function checkCatch() {
+    if (!eaten && !crashed && treat.firstChild) {
+      const k = runner.getBoundingClientRect(), f = treat.getBoundingClientRect(), s0 = stage.getBoundingClientRect();
+      // shrink the kid's box a little so only real touches count
+      const hit = f.left < k.right - 30 && f.right > k.left + 30 && f.top < k.bottom - 40 && f.bottom > k.top + 30;
+      if (hit) {
+        eaten = true;
+        treat.style.visibility = 'hidden';
+        showBonus(f.left + f.width / 2 - s0.left, f.top + f.height / 2 - s0.top);
+        bumpScore(100);
+      }
+    }
+    requestAnimationFrame(checkCatch);
+  })();
+
+  document.getElementById('fx-grid').insertAdjacentHTML('beforeend',
+    card(A.scorePopup(100, 'EAT WELL!'), '+100 Eat Well!', 'Pops up when he catches food: 100 bonus points. In the preview above, jump into the floating food to try it!', "scorePopup(100, 'EAT WELL!')"));
 
   // ---------- Background ----------
   const B = A.background;

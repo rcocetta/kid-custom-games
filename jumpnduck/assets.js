@@ -966,6 +966,26 @@
     );
   }
 
+  // ---------- Effects ----------
+  /** "+100 EAT WELL!" bonus popup, shown when a food collectible is caught.
+   *  points / label are customisable. viewBox 220 x 130. Uses the page font (Fredoka) when available. */
+  function scorePopup(points = 100, label = 'EAT WELL!') {
+    const font = `font-family="Fredoka, 'Arial Rounded MT Bold', 'Arial Black', Arial, sans-serif" font-weight="700" text-anchor="middle"`;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 130" class="sprite popup">` +
+      star(24, 30, 10) + star(198, 22, 8) + star(204, 92, 9) + star(16, 96, 7) +
+      `<path d="M30 54 l6 -6 M190 50 l-6 -6 M40 16 l3 8 M178 112 l-4 -6" stroke="${C.wheel}" stroke-width="3.5" stroke-linecap="round"/>` +
+      // big +100
+      `<text x="110" y="70" ${font} font-size="58" fill="${C.star}" stroke="${O}" stroke-width="9" stroke-linejoin="round" paint-order="stroke">+${points}</text>` +
+      // green ribbon with the label
+      `<g transform="rotate(-4 110 98)">` +
+      `<rect x="44" y="80" width="132" height="34" rx="17" fill="${C.shirt}" stroke="${O}" stroke-width="4"/>` +
+      `<path d="M58 86 L162 86" stroke="#8BE08F" stroke-width="3" stroke-linecap="round"/>` +
+      `<text x="110" y="105" ${font} font-size="20" fill="#FFFFFF" stroke="${O}" stroke-width="4" stroke-linejoin="round" paint-order="stroke" letter-spacing="1">${label}</text>` +
+      `</g></svg>`
+    );
+  }
+
   function toDataUrl(svg) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
@@ -987,6 +1007,7 @@
     food,
     foodKinds: Object.keys(FOODS),
     background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, nomade, ferrisWheel, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
+    scorePopup,
     toDataUrl,
   };
 })();
