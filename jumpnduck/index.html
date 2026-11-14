@@ -52,11 +52,22 @@
   #splash {
     position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10;
     padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
-    background: radial-gradient(ellipse at center, rgba(255,255,255,.45), rgba(191,230,255,.15) 70%);
-    transition: background .5s;
+    /* frosted: blur + light white wash over the running scene */
+    background: rgba(255,255,255,.3);
+    -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
+    transition: background .5s, backdrop-filter .5s, -webkit-backdrop-filter .5s;
   }
-  #splash.leaving { background: transparent; pointer-events: none; }
-  .splash-inner { display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 48px); max-width: 96vw; }
+  #splash.leaving { background: transparent; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); pointer-events: none; }
+  /* white translucent card holding face + title + instructions */
+  .splash-inner {
+    display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 48px); max-width: 96vw;
+    background: rgba(255,255,255,.72); border: 4px solid var(--ink); border-radius: clamp(20px, 6vh, 40px);
+    padding: clamp(10px, 3.5vh, 30px) clamp(16px, 4vw, 44px);
+    box-shadow: 0 8px 0 rgba(46,42,54,.22);
+    transition: background .35s, border-color .35s, box-shadow .35s;
+  }
+  /* while the face flies to the HUD, the card dissolves but the face stays visible */
+  #splash.leaving .splash-inner { background: transparent; border-color: transparent; box-shadow: none; }
   #splashFace {
     width: min(38vh, 34vw); height: min(38vh, 34vw); flex: none; transition: transform .65s cubic-bezier(.65, 0, .35, 1);
     filter: drop-shadow(0 6px 0 rgba(46,42,54,.25)); z-index: 12; position: relative;
