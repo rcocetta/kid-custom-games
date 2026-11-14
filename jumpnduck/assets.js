@@ -200,15 +200,15 @@
       `<path d="M60 67 Q66 72 61 77" fill="none" stroke="${C.skinShade}" stroke-width="2.5" stroke-linecap="round"/>` +
       // eyebrows
       (ko
-        ? `<path d="M99 52 Q105 52 112 47" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
-          `<path d="M122 46 Q128 51 134 52" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+        ? `<path d="M99 52 Q105 52 112 47" fill="none" stroke="${C.brow}" stroke-width="3.5" stroke-linecap="round"/>` +
+          `<path d="M122 46 Q128 51 134 52" fill="none" stroke="${C.brow}" stroke-width="3.5" stroke-linecap="round"/>` +
           xEye(106, 68) +
           xEye(128, 66)
         : strong
-        ? `<path d="M98 53 Q105 54 112 57" fill="none" stroke="${C.hairShade}" stroke-width="4.5" stroke-linecap="round"/>` +
-          `<path d="M121 55 Q128 51 135 50" fill="none" stroke="${C.hairShade}" stroke-width="4.5" stroke-linecap="round"/>`
-        : `<path d="M99 55 Q105 51 112 54" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
-          `<path d="M122 53 Q128 50 134 53" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>`) +
+        ? `<path d="M98 53 Q105 54 112 57" fill="none" stroke="${C.brow}" stroke-width="4.5" stroke-linecap="round"/>` +
+          `<path d="M121 55 Q128 51 135 50" fill="none" stroke="${C.brow}" stroke-width="4.5" stroke-linecap="round"/>`
+        : `<path d="M99 55 Q105 51 112 54" fill="none" stroke="${C.brow}" stroke-width="3.5" stroke-linecap="round"/>` +
+          `<path d="M122 53 Q128 50 134 53" fill="none" stroke="${C.brow}" stroke-width="3.5" stroke-linecap="round"/>`) +
       (ko ? '' :
           eye(106, 68) +
           eye(128, 66)) +
