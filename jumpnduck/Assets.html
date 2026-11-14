@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game Assets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF8EC;
+    --card: #FFFFFF;
+    --ink: #2E2A36;
+    --muted: #7A7486;
+    --line: #F0E4CF;
+    --accent: #FF8A1F;
+    --sky-top: #BFE6FF;
+    --sky-bottom: #EAF7FF;
+    --ground: #C5C9D0;
+    --ground-dark: #5E636D;
+    --radius: 28px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Fredoka', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  header {
+    padding: 40px 16px 8px;
+    text-align: center;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(32px, 6vw, 52px);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  h1 span { color: var(--accent); }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 18px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  section { margin: 32px 0 48px; }
+  h2 {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 26px; font-weight: 600; margin: 0 0 16px;
+    background: var(--card); padding: 8px 20px; border-radius: 999px;
+    box-shadow: 0 4px 0 var(--line);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: 0 6px 0 var(--line);
+    border: 3px solid var(--line);
+  }
+  .stage {
+    background: linear-gradient(var(--sky-top), var(--sky-bottom));
+    border-radius: 20px;
+    height: 240px;
+    display: flex; align-items: flex-end; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .stage::after { /* ground strip */
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26px;
+    background: var(--ground); border-top: 3px solid var(--ground-dark);
+  }
+  .stage .sprite { width: 150px; height: auto; position: relative; z-index: 1; margin-bottom: 18px; }
+  .card h3 { margin: 14px 4px 2px; font-size: 20px; font-weight: 600; }
+  .card p { margin: 0 4px; color: var(--muted); font-size: 15px; }
+  .tag {
+    display: inline-block; font-size: 13px; font-weight: 500;
+    background: #FFF0DD; color: #B35A00; padding: 2px 10px; border-radius: 999px; margin-top: 8px;
+  }
+
+  /* Animated preview */
+  .preview { grid-column: 1 / -1; }
+  .preview .stage { height: 380px; }
+  .preview .stage::after { display: none; }
+  .preview .sprite { width: 190px; margin-bottom: 26px; }
+  /* Parallax layers: far things move slowly, the ground moves fastest */
+  .layer { position: absolute; left: 0; right: 0; background-repeat: repeat-x; background-position: 0 0; }
+  .layer-mountains { bottom: 76px; height: 100px; background-size: 500px 100%; animation: panM 50s linear infinite; }
+  .layer-sea { bottom: 32px; height: 46px; background-size: 600px 100%; animation: panS 30s linear infinite; }
+  .layer-ground { bottom: 0; height: 34px; background-size: 220px 100%; animation: panG 0.88s linear infinite; }
+  @keyframes panM { to { background-position: -500px 0; } }
+  @keyframes panS { to { background-position: -600px 0; } }
+  @keyframes panG { to { background-position: -220px 0; } }
+  /* Old town drifts at the sea's speed (20px/s), so it feels part of the far coast */
+  .town { position: absolute; bottom: 46px; left: 100%; animation: sail 70s linear infinite; animation-delay: -30s; }
+  .town .sprite { width: 222px; margin: 0; display: block; }
+  .stage:not(#preview-stage) .sprite.oldtown { width: 100%; max-width: 520px; margin-bottom: 14px; }
+  /* Nomade stands on the promenade, behind the kid; moves slower than the ground (it's further back) */
+  .statue { position: absolute; bottom: 28px; left: 100%; animation: statue 24s linear infinite; animation-delay: -3s; }
+  .statue .sprite { width: 125px; margin: 0; display: block; }
+  @keyframes statue { 0% { transform: translateX(0); } 50%, 100% { transform: translateX(-130vw); } }
+  .stage:not(#preview-stage) .sprite.nomade { width: 170px; margin-bottom: 8px; }
+  /* Ferris wheel: wheel turns, gondolas counter-turn to stay upright */
+  .ferris-wheel, .gondola { transform-box: view-box; }
+  .ferris-wheel { animation: spin 40s linear infinite; }
+  .gondola { animation: spin 40s linear infinite reverse; }
+  .stage:not(#preview-stage) .sprite.ferris { width: 190px; margin-bottom: 8px; }
+  /* In the preview it alternates with the statue: same path & speed, half a cycle apart */
+  .ferris-by { position: absolute; bottom: 28px; left: 100%; animation: statue 24s linear infinite; animation-delay: -15s; }
+  .ferris-by .sprite { width: 150px; margin: 0; display: block; }
+  /* +100 EAT WELL popup */
+  .stage:not(#preview-stage) .sprite.popup { width: 200px; margin-bottom: 60px; animation: wiggle 1.6s ease-in-out infinite; }
+  @keyframes wiggle { 50% { transform: scale(1.08) rotate(-3deg); } }
+  .bonus { position: absolute; z-index: 4; width: 150px; pointer-events: none; transform: translate(-50%, -50%); }
+  .bonus .sprite { width: 100%; margin: 0; display: block; animation: bonus 1.2s ease-out forwards; }
+  @keyframes bonus {
+    0% { transform: scale(0.2); opacity: 0; }
+    18% { transform: scale(1.2); opacity: 1; }
+    32% { transform: scale(1); }
+    70% { opacity: 1; }
+    100% { transform: translateY(-70px) scale(0.95); opacity: 0; }
+  }
+  .sail { position: absolute; bottom: 52px; left: 100%; animation: sail 45s linear infinite; animation-delay: -20s; }
+  .sail .sprite { width: 46px; margin: 0; display: block; }
+  @keyframes sail { to { transform: translateX(-130vw); } }
+  /* Background asset cards */
+  .wide { grid-column: 1 / -1; }
+  .strip { border-radius: 16px; background-repeat: repeat-x; border: 3px solid var(--line); }
+  .stage:not(#preview-stage) .sprite.boat { width: 110px; margin-bottom: 40px; }
+  .runner { position: relative; z-index: 1; }
+  .runner.jumping { animation: hop 0.75s cubic-bezier(.3,.7,.4,1) both; }
+  @keyframes hop {
+    0% { transform: translateY(0); }
+    45% { transform: translateY(-120px); }
+    100% { transform: translateY(0); }
+  }
+  .spin .wheel { animation: spin 0.45s linear infinite; transform-origin: 0 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .stage:not(#preview-stage) .sprite.seagull, .stage:not(#preview-stage) .sprite.pigeon { width: 170px; margin-bottom: 70px; }
+  .stage:not(#preview-stage) .sprite.poop { width: 110px; }
+  .stage:not(#preview-stage) .sprite.rock { width: 130px; }
+  .stage:not(#preview-stage) .sprite.cactus { width: 120px; }
+  .stage:not(#preview-stage) .sprite.cactus-small { width: 76px; }
+  .stage:not(#preview-stage) .sprite.cactus-double { width: 150px; }
+  .flyby { position: absolute; top: 60px; left: 100%; z-index: 1; animation: flyby 4s linear infinite; }
+  .flyby .sprite { width: 140px; margin: 0; }
+  .groundby { position: absolute; bottom: 26px; left: 100%; z-index: 2; animation: groundby 5.5s linear infinite; animation-delay: 1.5s; }
+  .groundby .sprite { margin: 0; display: block; }
+  @keyframes groundby { to { transform: translateX(-130vw); } }
+  @keyframes flyby {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(-30vw, 14px); }
+    50% { transform: translate(-60vw, 0); }
+    75% { transform: translate(-90vw, 14px); }
+    100% { transform: translate(-130vw, 0); }
+  }
+  .stage:not(#preview-stage) .sprite.food { width: 110px; margin-bottom: 50px; animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-10px) rotate(4deg); } }
+  .foodby { position: absolute; bottom: 300px; left: 100%; z-index: 1; animation: groundby 5.5s linear infinite; animation-delay: 4.2s; }
+  .foodby .sprite { width: 60px; margin: 0; display: block; animation: bob 1.2s ease-in-out infinite; }
+  /* duck viewBox is wider (204 vs 165 units): scale width so it matches the other poses */
+  .stage:not(#preview-stage) .sprite.kid-duck { width: 185px; }
+  .preview .stage .sprite.kid-duck { width: 235px; }
+  .stage:not(#preview-stage) .sprite.kid-gameover { width: 238px; margin-bottom: 10px; }
+  .preview .stage .sprite.kid-gameover { width: 302px; }
+  .stage:not(#preview-stage) .sprite.kid-face { width: 130px; margin-bottom: 40px; }
+  .hud {
+    position: absolute; top: 14px; left: 14px; z-index: 3;
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 4px solid var(--ink); border-radius: 999px;
+    padding: 4px 18px 4px 4px; box-shadow: 0 4px 0 rgba(46,42,54,0.25);
+  }
+  .hud .avatar {
+    width: 52px; height: 52px; border-radius: 50%; overflow: hidden;
+    background: var(--sky-top); border: 3px solid var(--ink);
+  }
+  .hud .avatar .sprite { width: 100%; height: 100%; margin: 0; display: block; }
+  .hud .points { font-size: 28px; font-weight: 700; min-width: 3.2ch; font-variant-numeric: tabular-nums; }
+  .hud .points.pop { animation: pop .25s; }
+  @keyframes pop { 50% { transform: scale(1.25); color: var(--accent); } }
+  .stage.paused, .stage.paused * , .stage.paused::after { animation-play-state: paused !important; }
+  .cloud {
+    position: absolute; background: #fff; border-radius: 999px; opacity: 0.9;
+    animation: drift linear infinite;
+  }
+  .cloud::before, .cloud::after { content: ''; position: absolute; background: #fff; border-radius: 50%; }
+  .cloud::before { width: 50%; height: 160%; left: 15%; bottom: 20%; }
+  .cloud::after { width: 35%; height: 120%; right: 15%; bottom: 25%; }
+  @keyframes drift { from { transform: translateX(0); } to { transform: translateX(-1400px); } }
+  .controls { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  button {
+    font: inherit; font-size: 18px; font-weight: 600;
+    background: var(--accent); color: #fff; border: 0;
+    padding: 10px 26px; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 5px 0 #C9620A;
+    transition: transform .08s, box-shadow .08s;
+  }
+  button:active { transform: translateY(4px); box-shadow: 0 1px 0 #C9620A; }
+  .hint { color: var(--muted); font-size: 15px; }
+
+  /* Palette */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px; }
+  .swatch { background: var(--card); border-radius: 20px; padding: 10px; border: 3px solid var(--line); text-align: center; }
+  .chip { height: 56px; border-radius: 14px; border: 3px solid var(--ink); }
+  .swatch b { display: block; font-weight: 500; font-size: 14px; margin-top: 6px; }
+  .swatch code { font-size: 12px; color: var(--muted); }
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Scooter Dash <span>Assets</span></h1>
+  <p>Every character, obstacle and decoration in the game</p>
+</header>
+
+<main>
+  <section>
+    <h2>🛴 Main character</h2>
+    <div class="grid" id="kid-grid"></div>
+  </section>
+
+  <section>
+    <h2>🐦 Flying obstacles</h2>
+    <div class="grid" id="flying-grid"></div>
+  </section>
+
+  <section>
+    <h2>🌵 Ground obstacles</h2>
+    <div class="grid" id="ground-grid"></div>
+  </section>
+
+  <section>
+    <h2>⭐ Collectibles</h2>
+    <div class="grid" id="food-grid"></div>
+  </section>
+
+  <section>
+    <h2>✨ Effects</h2>
+    <div class="grid" id="fx-grid"></div>
+  </section>
+
+  <section>
+    <h2>🏖️ Background · Antibes</h2>
+    <div class="grid" id="bg-grid"></div>
+  </section>
+
+  <section>
+    <h2>🎨 Palette</h2>
+    <div class="swatches" id="palette"></div>
+  </section>
+</main>
+
+<script src="assets.js"></script>
+<script>
+  const A = window.GameAssets;
+  const card = (svg, title, desc, tag) => `
+    <div class="card">
+      <div class="stage">${svg}</div>
+      <h3>${title}</h3>
+      <p>${desc}</p>
+      <span class="tag">${tag}</span>
+    </div>`;
+  const info = {
+    ride: ['Ride', 'Cruising with both feet on the deck.'],
+    push: ['Push', 'Kicking the ground to go faster. Alternates with Ride.'],
+    jump: ['Jump', 'Knees tucked, scooter tipped up.'],
+    duck: ['Duck', 'Belly down, bum up, handlebar low. Slides under birds!'],
+    gameover: ['Game over', 'Fell off the scooter: X eyes, a tear and dizzy stars.'],
+  };
+
+  const grid = document.getElementById('kid-grid');
+  for (const pose of A.kidPoses) {
+    const [title, desc] = info[pose] || [pose, ''];
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="card">
+        <div class="stage">${A.kid(pose)}</div>
+        <h3>${title}</h3>
+        <p>${desc}</p>
+        <span class="tag">kid('${pose}')</span>
+      </div>`);
+  }
+
+  grid.insertAdjacentHTML('beforeend', card(A.kidFace(), 'Face', 'Looking at you! Shown next to the points.', 'kidFace()'));
+
+  // Animated preview: alternate ride/push, wheels spinning, jump on demand.
+  grid.insertAdjacentHTML('beforeend', `
+    <div class="card preview">
+      <div class="stage" id="preview-stage">
+        <div class="layer layer-mountains"></div>
+        <div class="layer layer-sea"></div>
+        <div class="town">${A.background.oldTown()}</div>
+        <div class="sail">${A.background.boat()}</div>
+        <div class="layer layer-ground"></div>
+        <div class="ferris-by">${A.background.ferrisWheel()}</div>
+        <div class="statue">${A.background.nomade()}</div>
+        <div class="hud"><div class="avatar">${A.kidFace()}</div><div class="points" id="points">0</div></div>
+        <div class="runner spin" id="runner"></div>
+      </div>
+      <div class="controls">
+        <button id="jump-btn">Jump!</button>
+        <button id="duck-btn">Duck</button>
+        <button id="crash-btn">Crash</button>
+        <span class="hint">Space / tap = jump · hold ↓ or the Duck button = duck</span>
+      </div>
+    </div>`);
+
+  const stage = document.getElementById('preview-stage');
+  [[40, 120, 22, 24], [90, 260, 16, 34], [20, 520, 26, 28]].forEach(([top, left, h, dur], i) => {
+    const c = document.createElement('div');
+    c.className = 'cloud';
+    Object.assign(c.style, { top: top + 'px', left: (left + 700) + 'px', width: h * 3.2 + 'px', height: h + 'px', animationDuration: dur + 's', animationDelay: (-i * 7) + 's' });
+    stage.appendChild(c);
+  });
+
+  const runner = document.getElementById('runner');
+  let frame = 0, jumping = false, ducking = false, crashed = false;
+  const draw = (pose) => { runner.innerHTML = A.kid(pose); };
+  draw('ride');
+  setInterval(() => {
+    if (jumping || ducking || crashed) return;
+    frame = (frame + 1) % 4;
+    draw(frame === 1 ? 'push' : 'ride'); // push briefly, then glide
+  }, 220);
+
+  function jump() {
+    if (jumping || ducking || crashed) return;
+    jumping = true;
+    draw('jump');
+    runner.classList.add('jumping');
+  }
+  runner.addEventListener('animationend', (e) => {
+    if (e.animationName !== 'hop') return;
+    runner.classList.remove('jumping');
+    jumping = false;
+    draw('ride');
+  });
+  document.getElementById('jump-btn').addEventListener('click', jump);
+  stage.addEventListener('click', jump);
+  function duck(on) {
+    if (jumping || crashed || ducking === on) return;
+    ducking = on;
+    draw(on ? 'duck' : 'ride');
+  }
+  // Crash: show the game-over pose for a moment, freeze the scene, then ride again.
+  function crash() {
+    if (jumping || crashed) return;
+    crashed = true; ducking = false;
+    draw('gameover');
+    runner.classList.remove('spin');
+    stage.classList.add('paused');
+    setTimeout(() => {
+      crashed = false;
+      runner.classList.add('spin');
+      stage.classList.remove('paused');
+      draw('ride');
+    }, 2200);
+  }
+  document.getElementById('crash-btn').addEventListener('click', crash);
+
+  const duckBtn = document.getElementById('duck-btn');
+  duckBtn.addEventListener('pointerdown', () => duck(true));
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => duckBtn.addEventListener(ev, () => duck(false)));
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') { e.preventDefault(); jump(); }
+    if (e.code === 'ArrowDown') { e.preventDefault(); duck(true); }
+  });
+  document.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowDown') duck(false);
+  });
+
+  // ---------- Obstacles ----------
+
+  const flying = document.getElementById('flying-grid');
+  const birds = [
+    ['seagull', 'Seagull', A.seagull],
+    ['pigeon', 'Pigeon', A.pigeon],
+  ];
+  const frameDesc = {
+    up: 'Wings up. Duck under it or jump over it.',
+    down: 'Wings down. Alternate with wings up to flap.',
+  };
+  for (const [key, name, fn] of birds) {
+    for (const f of A.seagullFrames) {
+      flying.insertAdjacentHTML('beforeend', card(fn(f), `${name} · wings ${f}`, frameDesc[f], `${key}('${f}')`));
+    }
+  }
+
+  const ground = document.getElementById('ground-grid');
+  const cactusDesc = { tall: 'Big friendly cactus with a flower.', small: 'Little cactus, easy jump.', double: 'Two cacti: a long jump!' };
+  for (const v of A.cactusVariants) {
+    ground.insertAdjacentHTML('beforeend', card(A.cactus(v), `Cactus · ${v}`, cactusDesc[v], `cactus('${v}')`));
+  }
+  ground.insertAdjacentHTML('beforeend', card(A.poop(), 'Poop', 'Smiling and stinky. Jump over it!', 'poop()'));
+  const rockDesc = { small: 'Low rock, easy jump.', big: 'Tall boulder with a bit of moss.', pile: 'Two rocks side by side.' };
+  for (const v of A.rockVariants) {
+    ground.insertAdjacentHTML('beforeend', card(A.rock(v), `Rock · ${v}`, rockDesc[v], `rock('${v}')`));
+  }
+
+  // In the preview scene: a bird flies over (seagull/pigeon in turn) ...
+  const bird = document.createElement('div');
+  bird.className = 'flyby';
+  stage.appendChild(bird);
+  let birdIdx = 0, wing = 0;
+  const flap = () => { bird.innerHTML = birds[birdIdx][2](A.seagullFrames[wing]); wing = 1 - wing; };
+  flap();
+  setInterval(flap, 180);
+  bird.addEventListener('animationiteration', () => { birdIdx = (birdIdx + 1) % birds.length; });
+
+  // ... and ground obstacles scroll past, a different one each time.
+  const groundPool = [
+    [() => A.cactus('tall'), 70], [() => A.cactus('small'), 46], [() => A.cactus('double'), 92],
+    [() => A.poop(), 66], [() => A.rock('small'), 80], [() => A.rock('big'), 80], [() => A.rock('pile'), 84],
+  ];
+  const obstacle = document.createElement('div');
+  obstacle.className = 'groundby';
+  stage.appendChild(obstacle);
+  let gi = 0;
+  const nextObstacle = () => {
+    const [fn, w] = groundPool[gi];
+    obstacle.innerHTML = fn();
+    obstacle.firstChild.style.width = w + 'px';
+    gi = (gi + 1) % groundPool.length;
+  };
+  nextObstacle();
+  obstacle.addEventListener('animationiteration', nextObstacle);
+
+  // ---------- Collectibles ----------
+  const foodInfo = {
+    chicken: ['Chicken leg', 'Crispy and golden.'],
+    broccoli: ['Broccoli', 'A little green tree.'],
+    carrot: ['Carrot', 'Crunchy and orange.'],
+    steak: ['Steak', 'Grilled, with nice grill marks.'],
+    egg: ['Fried egg', 'Sunny side up.'],
+  };
+  const foodGrid = document.getElementById('food-grid');
+  for (const k of A.foodKinds) {
+    const [title, desc] = foodInfo[k] || [k, ''];
+    foodGrid.insertAdjacentHTML('beforeend', card(A.food(k), title, desc, `food('${k}')`));
+  }
+  // A food floats through the preview scene at jump height, a different one each pass.
+  const treat = document.createElement('div');
+  treat.className = 'foodby';
+  stage.appendChild(treat);
+  let fi = 0;
+  let eaten = false;
+  const nextFood = () => {
+    treat.innerHTML = A.food(A.foodKinds[fi]);
+    fi = (fi + 1) % A.foodKinds.length;
+    treat.style.visibility = 'visible';
+    eaten = false;
+  };
+  nextFood();
+  treat.addEventListener('animationiteration', nextFood);
+
+  // Score badge: points tick up while riding.
+  const pointsEl = document.getElementById('points');
+  let points = 0;
+  const bumpScore = (n) => {
+    points += n;
+    pointsEl.textContent = points;
+    pointsEl.classList.remove('pop'); void pointsEl.offsetWidth; pointsEl.classList.add('pop');
+  };
+  setInterval(() => {
+    if (crashed) return;
+    points += 1;
+    pointsEl.textContent = points;
+    if (points % 50 === 0) bumpScore(0);
+  }, 100);
+
+  // Catching food: if the kid touches the floating food, it disappears, +100 EAT WELL pops up.
+  function showBonus(x, y) {
+    const el = document.createElement('div');
+    el.className = 'bonus';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.innerHTML = A.scorePopup(100, 'EAT WELL!');
+    stage.appendChild(el);
+    el.firstChild.addEventListener('animationend', () => el.remove());
+  }
+  (function checkCatch() {
+    if (!eaten && !crashed && treat.firstChild) {
+      const k = runner.getBoundingClientRect(), f = treat.getBoundingClientRect(), s0 = stage.getBoundingClientRect();
+      // shrink the kid's box a little so only real touches count
+      const hit = f.left < k.right - 30 && f.right > k.left + 30 && f.top < k.bottom - 40 && f.bottom > k.top + 30;
+      if (hit) {
+        eaten = true;
+        treat.style.visibility = 'hidden';
+        showBonus(f.left + f.width / 2 - s0.left, f.top + f.height / 2 - s0.top);
+        bumpScore(100);
+      }
+    }
+    requestAnimationFrame(checkCatch);
+  })();
+
+  document.getElementById('fx-grid').insertAdjacentHTML('beforeend',
+    card(A.scorePopup(100, 'EAT WELL!'), '+100 Eat Well!', 'Pops up when he catches food: 100 bonus points. In the preview above, jump into the floating food to try it!', "scorePopup(100, 'EAT WELL!')"));
+
+  // ---------- Background ----------
+  const B = A.background;
+  const bgUrl = (svg) => `url("${A.toDataUrl(svg)}")`;
+  stage.querySelector('.layer-mountains').style.backgroundImage = bgUrl(B.mountains());
+  stage.querySelector('.layer-sea').style.backgroundImage = bgUrl(B.sea());
+  stage.querySelector('.layer-ground').style.backgroundImage = bgUrl(B.ground());
+
+  const bgGrid = document.getElementById('bg-grid');
+  const strip = (svg, h, tileW, title, desc, tag) => `
+    <div class="card wide">
+      <div class="strip" style="height:${h}px;background-image:${bgUrl(svg).replace(/"/g, "'")};background-size:${tileW}px 100%;background-color:var(--sky-bottom)"></div>
+      <h3>${title}</h3><p>${desc}</p><span class="tag">${tag}</span>
+    </div>`;
+  bgGrid.insertAdjacentHTML('beforeend',
+    strip(B.mountains(), 140, 700, 'Snowy mountains', 'The Alps across the bay. Farthest layer, scrolls slowest.', 'background.mountains()') +
+    strip(B.sea(), 70, 900, 'The sea', 'The Mediterranean with little waves and sparkles.', 'background.sea()') +
+    strip(B.ground(), 60, 400, 'City ground', 'Grey promenade sidewalk (the riding line), curb and road. Scrolls with the obstacles.', 'background.ground()') +
+    `<div class="card wide"><div class="stage">${B.oldTown()}</div><h3>Antibes old town</h3><p>Ramparts, pastel houses with terracotta roofs, the two old towers, rocks and the jetty with its red lighthouse. A single landmark that drifts past on the sea.</p><span class="tag">background.oldTown()</span></div>` +
+    card(B.nomade(), 'Nomade', 'The white letter statue on the bastion, on its pedestal. Stands on the promenade behind the kid.', 'background.nomade()') +
+    card(B.ferrisWheel(), 'Ferris wheel', 'White wheel with colourful gondolas and little lights. It turns slowly; the gondolas stay upright.', 'background.ferrisWheel()') +
+    card(B.boat(), 'Sailboat', 'Drifts slowly across the sea.', 'background.boat()'));
+
+  const names = { skin: 'Skin', hair: 'Blonde hair', eyeGreen: 'Green eyes', shirt: 'T-shirt', jeans: 'Jeans', shoe: 'Shoes', scooter: 'Scooter', wheel: 'Wheels', outline: 'Outline', cheek: 'Cheeks', gullWhite: 'Seagull', gullWing: 'Seagull wings', gullTip: 'Wing tips', gullBeak: 'Beak', pigeon: 'Pigeon', pigeonNeck: 'Pigeon neck', pigeonEye: 'Pigeon eye', cactus: 'Cactus', cactusFlower: 'Cactus flower', poop: 'Poop', rock: 'Rock', sky: 'Sky', mountains: 'Mountains', snow: 'Snow', sea: 'Sea', sidewalk: 'Sidewalk', asphalt: 'Road', chicken: 'Chicken', broccoli: 'Broccoli', carrot: 'Carrot', steak: 'Steak', yolk: 'Egg yolk' };
+  document.getElementById('palette').innerHTML = Object.entries(names)
+    .map(([k, label]) => `<div class="swatch"><div class="chip" style="background:${A.palette[k]}"></div><b>${label}</b><code>${A.palette[k]}</code></div>`)
+    .join('');
+</script>
+</body>
+</html>
