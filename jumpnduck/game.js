@@ -65,6 +65,7 @@
     add('bg_nomade', bg.nomade(), 130);
     add('bg_ferris', bg.ferrisWheel(), 150);
     add('bg_boat', bg.boat(), 30);
+    add('bg_sun', bg.sun(), 70);
     const out = {};
     for (const key of Object.keys(defs)) {
       const d = defs[key];
@@ -114,7 +115,7 @@
       kidOff = 0; kidVy = 0; onGround = true; jumpBuf = 0; runT = 0; overT = 0; strongT = 0;
       obstacles = []; foods = []; popups = []; deco = []; gapLeft = 0; lastMilestone = 0;
       layerX = { mountains: 0, sea: 0, ground: 0 };
-      waits = { town: 0, boat: 0, fg: 0 };
+      waits = { town: 0, boat: 0, fg: 0, sun: 0 };
       moved = false;
       g.newBest = false;
       clouds = [];
@@ -125,6 +126,11 @@
     function addTown(x) {
       const vb = VB('bg_oldTown'), s = 80 / vb.h;
       deco.push({ kind: 'town', key: 'bg_oldTown', par: 0.12, x, w: vb.w * s, h: 80, y: 300 - 80 });
+    }
+    // The sun drifts very slowly across the sky every now and then (behind the clouds).
+    function addSun(x) {
+      const h = 70;
+      deco.push({ kind: 'sun', key: 'bg_sun', par: 0.04, x, w: h, h, y: rr(26, 80) });
     }
     function addBoat(x) {
       const vb = VB('bg_boat'), s = 30 / vb.h;
@@ -145,7 +151,7 @@
       addTown(world.W * 0.55);
       addBoat(world.W * 0.22);
       addFg(world.W * 0.06, rand() < 0.5 ? 'nomade' : 'ferris');
-      waits = { town: 0, boat: 3000, fg: 0 };
+      waits = { town: 0, boat: 3000, fg: 0, sun: 1500 };
     }
 
     function updateDeco(dx, dt) {
@@ -154,13 +160,14 @@
       const has = (k) => deco.some((d) => d.kind === k);
       // town and far landmarks share the shoreline: don't spawn one while the other is still entering
       const entering = (k) => deco.some((d) => d.kind === k && d.x + d.w > world.W - 60);
-      for (const k of ['town', 'boat', 'fg']) {
+      for (const k of ['town', 'boat', 'fg', 'sun']) {
         if (has(k)) continue;
         if ((k === 'town' && entering('fg')) || (k === 'fg' && entering('town'))) continue;
         waits[k] -= dx;
         if (waits[k] > 0) continue;
         if (k === 'town') { addTown(world.W + 10); waits.town = rr(3000, 8000); }
         else if (k === 'boat') { addBoat(world.W + 10); waits.boat = rr(1500, 4000); }
+        else if (k === 'sun') { addSun(world.W + 10); waits.sun = rr(16000, 32000); }
         else { addFg(world.W + 10, rand() < 0.5 ? 'nomade' : 'ferris'); waits.fg = rr(800, 2500); }
       }
       for (const c of clouds) {
@@ -335,6 +342,8 @@
       sky.addColorStop(0, '#BFE6FF'); sky.addColorStop(1, '#EAF7FF');
       ctx.fillStyle = sky; ctx.fillRect(0, 0, W + 4, 300);
       ctx.fillStyle = '#EAF7FF'; ctx.fillRect(0, 300, W + 4, H - 300);
+      // sun (behind the clouds)
+      for (const d of deco) if (d.kind === 'sun') img(d.key, d.x, d.y, d.w, d.h);
       // clouds
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       for (const c of clouds) {
@@ -410,6 +419,7 @@
       // test/debug access
       get obstacles() { return obstacles; },
       get foods() { return foods; },
+      get deco() { return deco; },
       get kid() { return { off: kidOff, onGround, hit: kidHit(), pose: poseKey(), strong: strongT }; },
       obstacleRect, KID_X, GROUND_Y, BIRD_DUCK_BOTTOM, BIRD_LOW_BOTTOM,
     };

@@ -125,6 +125,7 @@
   /* Background asset cards */
   .wide { grid-column: 1 / -1; }
   .strip { border-radius: 16px; background-repeat: repeat-x; border: 3px solid var(--line); }
+  .stage:not(#preview-stage) .sprite.sun { width: 130px; margin-bottom: 70px; }
   .stage:not(#preview-stage) .sprite.boat { width: 110px; margin-bottom: 40px; }
   .runner { position: relative; z-index: 1; }
   .runner.jumping { animation: hop 0.75s cubic-bezier(.3,.7,.4,1) both; }
@@ -537,6 +538,7 @@
     `<div class="card wide"><div class="stage">${B.oldTown()}</div><h3>Antibes old town</h3><p>Ramparts, pastel houses with terracotta roofs, the two old towers, rocks and the jetty with its red lighthouse. A single landmark that drifts past on the sea.</p><span class="tag">background.oldTown()</span></div>` +
     card(B.nomade(), 'Nomade', 'The white letter statue on the bastion, on its pedestal. Stands on the promenade behind the kid.', 'background.nomade()') +
     card(B.ferrisWheel(), 'Ferris wheel', 'White wheel with colourful gondolas and little lights. It turns slowly; the gondolas stay upright.', 'background.ferrisWheel()') +
+    card(B.sun(), 'Sun', 'Smiling sun with a soft glow. Drifts slowly across the sky, behind the clouds, every now and then.', 'background.sun()') +
     card(B.boat(), 'Sailboat', 'Drifts slowly across the sea.', 'background.boat()'));
 
   const names = { skin: 'Skin', hair: 'Blonde hair', eyeGreen: 'Green eyes', shirt: 'T-shirt', jeans: 'Jeans', shoe: 'Shoes', scooter: 'Scooter', wheel: 'Wheels', outline: 'Outline', cheek: 'Cheeks', gullWhite: 'Seagull', gullWing: 'Seagull wings', gullTip: 'Wing tips', gullBeak: 'Beak', pigeon: 'Pigeon', pigeonNeck: 'Pigeon neck', pigeonEye: 'Pigeon eye', cactus: 'Cactus', cactusFlower: 'Cactus flower', poop: 'Poop', rock: 'Rock', sky: 'Sky', mountains: 'Mountains', snow: 'Snow', sea: 'Sea', sidewalk: 'Sidewalk', asphalt: 'Road', chicken: 'Chicken', broccoli: 'Broccoli', carrot: 'Carrot', steak: 'Steak', yolk: 'Egg yolk' };

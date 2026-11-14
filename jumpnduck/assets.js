@@ -1051,6 +1051,30 @@
     );
   }
 
+  /** Cartoon sun for the sky: soft glow, rounded rays, gentle happy face. viewBox 120 x 120. */
+  function sun() {
+    let rays = '';
+    for (let i = 0; i < 12; i++) {
+      const a = (Math.PI * 2 * i) / 12;
+      const r1 = 36, r2 = i % 2 ? 50 : 55;
+      rays += `M${f1(60 + Math.cos(a) * r1)} ${f1(60 + Math.sin(a) * r1)} L${f1(60 + Math.cos(a) * r2)} ${f1(60 + Math.sin(a) * r2)} `;
+    }
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" class="sprite sun">` +
+      `<defs><radialGradient id="sun-glow"><stop offset="0.45" stop-color="#FFF6C8" stop-opacity="0.85"/><stop offset="1" stop-color="#FFF6C8" stop-opacity="0"/></radialGradient></defs>` +
+      `<circle cx="60" cy="60" r="60" fill="url(#sun-glow)"/>` +
+      `<path d="${rays}" stroke="#E0A21C" stroke-width="9" stroke-linecap="round"/>` +
+      `<path d="${rays}" stroke="#FFC93C" stroke-width="5" stroke-linecap="round"/>` +
+      `<circle cx="60" cy="60" r="32" fill="#FFD34E" stroke="#E0A21C" stroke-width="3.5"/>` +
+      `<path d="M42 50 Q52 38 66 38" fill="none" stroke="#FFF1B8" stroke-width="4" stroke-linecap="round"/>` +
+      // closed happy eyes + smile + cheeks
+      `<path d="M47 60 Q51 55 55 60 M65 60 Q69 55 73 60" fill="none" stroke="#C47A12" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="M50 68 Q60 77 70 68" fill="none" stroke="#C47A12" stroke-width="3" stroke-linecap="round"/>` +
+      `<ellipse cx="44" cy="67" rx="4.5" ry="3" fill="#FF9A6A" opacity="0.6"/><ellipse cx="76" cy="67" rx="4.5" ry="3" fill="#FF9A6A" opacity="0.6"/>` +
+      `</svg>`
+    );
+  }
+
   function toDataUrl(svg) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
@@ -1071,7 +1095,7 @@
     cactusVariants: Object.keys(CACTI),
     food,
     foodKinds: Object.keys(FOODS),
-    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, nomade, ferrisWheel, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
+    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, nomade, ferrisWheel, sun, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
     scorePopup,
     toDataUrl,
   };
