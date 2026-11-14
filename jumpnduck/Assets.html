@@ -219,6 +219,11 @@
   </section>
 
   <section>
+    <h2>💪 Power-up · after eating well</h2>
+    <div class="grid" id="strong-grid"></div>
+  </section>
+
+  <section>
     <h2>🐦 Flying obstacles</h2>
     <div class="grid" id="flying-grid"></div>
   </section>
@@ -313,7 +318,11 @@
 
   const runner = document.getElementById('runner');
   let frame = 0, jumping = false, ducking = false, crashed = false;
-  const draw = (pose) => { runner.innerHTML = A.kid(pose); };
+  // After catching food he's muscly for 3 seconds (except in the crash pose).
+  let strongUntil = 0;
+  const draw = (pose) => {
+    runner.innerHTML = A.kid(pose, { strong: pose !== 'gameover' && performance.now() < strongUntil });
+  };
   draw('ride');
   setInterval(() => {
     if (jumping || ducking || crashed) return;
@@ -423,6 +432,18 @@
   nextObstacle();
   obstacle.addEventListener('animationiteration', nextObstacle);
 
+  // ---------- Power-up (strong) ----------
+  const strongInfo = {
+    ride: 'Big biceps, broad shoulders, determined eyebrows and power sparkles.',
+    push: 'Kicking with muscles.',
+    jump: 'Strong jump.',
+    duck: 'Even lying down, the biceps show under his chin.',
+  };
+  const strongGrid = document.getElementById('strong-grid');
+  for (const pose of ['ride', 'push', 'jump', 'duck']) {
+    strongGrid.insertAdjacentHTML('beforeend', card(A.kid(pose, { strong: true }), `Strong · ${pose}`, strongInfo[pose], `kid('${pose}', { strong: true })`));
+  }
+
   // ---------- Collectibles ----------
   const foodInfo = {
     chicken: ['Chicken leg', 'Crispy and golden.'],
@@ -486,6 +507,8 @@
         treat.style.visibility = 'hidden';
         showBonus(f.left + f.width / 2 - s0.left, f.top + f.height / 2 - s0.top);
         bumpScore(100);
+        strongUntil = performance.now() + 3000;
+        if (jumping) draw('jump');
       }
     }
     requestAnimationFrame(checkCatch);
