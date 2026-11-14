@@ -35,6 +35,8 @@ The kid rides a scooter, jumps over ground obstacles, ducks under flying ones, a
 | `poop()` | — | Ground obstacle, original drawing (not the emoji glyph), smiling, stink lines. |
 | `rock(variant)` | `rockVariants`: `small`, `big`, `pile` | Ground obstacle. |
 | `food(kind)` | `foodKinds`: `chicken`, `broccoli`, `carrot`, `steak`, `egg` | Collectibles with happy faces. |
+| `background.mountains()` / `.sea()` / `.ground()` | tiles in `background.tiles` (800×160, 800×60, 400×60) | Antibes seafront parallax layers, each seamlessly tileable horizontally (preserveAspectRatio none). Grey city ground: kid rides on the sidewalk, top ≈ `background.groundRideLine` (6 of 60). Sky = CSS gradient `#BFE6FF → #EAF7FF`; clouds are CSS blobs in Assets.html. |
+| `background.boat()` | — | Small sailboat drifting on the sea. |
 | `toDataUrl(svg)` | — | Turn an SVG string into an image URL for `<canvas>` drawing. |
 
 Ground obstacles: the bottom of each viewBox is the ground line.
@@ -43,7 +45,7 @@ Ground obstacles: the bottom of each viewBox is the ground line.
 
 - [x] Duck pose (belly down, bum up on the deck).
 - [x] Game-over pose (fallen off, X eyes, tear).
-- [ ] **Background**: sky, clouds, hills/trees/buildings, ground tile.
+- [x] Background: Antibes — snowy mountains, sea + sailboat, grey city ground (sky/clouds kept from the page).
 - [ ] Decide the final page title (currently says "Scooter Dash" in `Assets.html` header; game name is "Jump n Duck").
 
 ## Next phase (game)

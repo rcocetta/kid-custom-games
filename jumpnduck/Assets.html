@@ -16,8 +16,8 @@
     --accent: #FF8A1F;
     --sky-top: #BFE6FF;
     --sky-bottom: #EAF7FF;
-    --ground: #9BD46B;
-    --ground-dark: #7BB84E;
+    --ground: #C5C9D0;
+    --ground-dark: #5E636D;
     --radius: 28px;
   }
   * { box-sizing: border-box; }
@@ -68,7 +68,7 @@
   }
   .stage::after { /* ground strip */
     content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26px;
-    background: var(--ground); border-top: 4px solid var(--ground-dark);
+    background: var(--ground); border-top: 3px solid var(--ground-dark);
   }
   .stage .sprite { width: 150px; height: auto; position: relative; z-index: 1; margin-bottom: 18px; }
   .card h3 { margin: 14px 4px 2px; font-size: 20px; font-weight: 600; }
@@ -81,15 +81,23 @@
   /* Animated preview */
   .preview { grid-column: 1 / -1; }
   .preview .stage { height: 300px; }
-  .preview .stage::after {
-    background:
-      repeating-linear-gradient(90deg, transparent 0 60px, rgba(0,0,0,0.06) 60px 90px),
-      var(--ground);
-    background-size: 150px 100%;
-    animation: scroll 0.6s linear infinite;
-  }
-  @keyframes scroll { to { background-position: -150px 0; } }
-  .preview .sprite { width: 190px; margin-bottom: 20px; }
+  .preview .stage::after { display: none; }
+  .preview .sprite { width: 190px; margin-bottom: 26px; }
+  /* Parallax layers: far things move slowly, the ground moves fastest */
+  .layer { position: absolute; left: 0; right: 0; background-repeat: repeat-x; background-position: 0 0; }
+  .layer-mountains { bottom: 76px; height: 100px; background-size: 500px 100%; animation: panM 50s linear infinite; }
+  .layer-sea { bottom: 32px; height: 46px; background-size: 600px 100%; animation: panS 30s linear infinite; }
+  .layer-ground { bottom: 0; height: 34px; background-size: 220px 100%; animation: panG 0.88s linear infinite; }
+  @keyframes panM { to { background-position: -500px 0; } }
+  @keyframes panS { to { background-position: -600px 0; } }
+  @keyframes panG { to { background-position: -220px 0; } }
+  .sail { position: absolute; bottom: 52px; left: 100%; animation: sail 45s linear infinite; animation-delay: -20s; }
+  .sail .sprite { width: 46px; margin: 0; display: block; }
+  @keyframes sail { to { transform: translateX(-130vw); } }
+  /* Background asset cards */
+  .wide { grid-column: 1 / -1; }
+  .strip { border-radius: 16px; background-repeat: repeat-x; border: 3px solid var(--line); }
+  .stage .sprite.boat { width: 110px; margin-bottom: 40px; }
   .runner { position: relative; z-index: 1; }
   .runner.jumping { animation: hop 0.75s cubic-bezier(.3,.7,.4,1) both; }
   @keyframes hop {
@@ -107,7 +115,7 @@
   .stage .sprite.cactus-double { width: 150px; }
   .flyby { position: absolute; top: 60px; left: 100%; z-index: 1; animation: flyby 4s linear infinite; }
   .flyby .sprite { width: 140px; margin: 0; }
-  .groundby { position: absolute; bottom: 20px; left: 100%; z-index: 2; animation: groundby 5.5s linear infinite; animation-delay: 1.5s; }
+  .groundby { position: absolute; bottom: 26px; left: 100%; z-index: 2; animation: groundby 5.5s linear infinite; animation-delay: 1.5s; }
   .groundby .sprite { margin: 0; display: block; }
   @keyframes groundby { to { transform: translateX(-130vw); } }
   @keyframes flyby {
@@ -168,14 +176,6 @@
   .swatch b { display: block; font-weight: 500; font-size: 14px; margin-top: 6px; }
   .swatch code { font-size: 12px; color: var(--muted); }
 
-  /* Coming soon */
-  .soon {
-    border: 3px dashed #E6D6BA; border-radius: var(--radius);
-    min-height: 140px; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; color: var(--muted);
-    font-size: 18px; text-align: center; padding: 16px;
-  }
-  .soon span { font-size: 34px; }
 </style>
 </head>
 <body>
@@ -206,16 +206,13 @@
   </section>
 
   <section>
-    <h2>🎨 Palette</h2>
-    <div class="swatches" id="palette"></div>
+    <h2>🏖️ Background · Antibes</h2>
+    <div class="grid" id="bg-grid"></div>
   </section>
 
   <section>
-    <h2>🧱 Coming soon</h2>
-    <div class="grid">
-      <div class="soon"><span>🌳</span>Background</div>
-      <div class="soon"><span>💥</span>Game over pose</div>
-    </div>
+    <h2>🎨 Palette</h2>
+    <div class="swatches" id="palette"></div>
   </section>
 </main>
 
@@ -255,6 +252,10 @@
   grid.insertAdjacentHTML('beforeend', `
     <div class="card preview">
       <div class="stage" id="preview-stage">
+        <div class="layer layer-mountains"></div>
+        <div class="layer layer-sea"></div>
+        <div class="sail">${A.background.boat()}</div>
+        <div class="layer layer-ground"></div>
         <div class="hud"><div class="avatar">${A.kidFace()}</div><div class="points" id="points">0</div></div>
         <div class="runner spin" id="runner"></div>
       </div>
@@ -420,7 +421,26 @@
     }
   }, 100);
 
-  const names = { skin: 'Skin', hair: 'Blonde hair', eyeGreen: 'Green eyes', shirt: 'T-shirt', jeans: 'Jeans', shoe: 'Shoes', scooter: 'Scooter', wheel: 'Wheels', outline: 'Outline', cheek: 'Cheeks', gullWhite: 'Seagull', gullWing: 'Seagull wings', gullTip: 'Wing tips', gullBeak: 'Beak', pigeon: 'Pigeon', pigeonNeck: 'Pigeon neck', pigeonEye: 'Pigeon eye', cactus: 'Cactus', cactusFlower: 'Cactus flower', poop: 'Poop', rock: 'Rock', chicken: 'Chicken', broccoli: 'Broccoli', carrot: 'Carrot', steak: 'Steak', yolk: 'Egg yolk' };
+  // ---------- Background ----------
+  const B = A.background;
+  const bgUrl = (svg) => `url("${A.toDataUrl(svg)}")`;
+  stage.querySelector('.layer-mountains').style.backgroundImage = bgUrl(B.mountains());
+  stage.querySelector('.layer-sea').style.backgroundImage = bgUrl(B.sea());
+  stage.querySelector('.layer-ground').style.backgroundImage = bgUrl(B.ground());
+
+  const bgGrid = document.getElementById('bg-grid');
+  const strip = (svg, h, tileW, title, desc, tag) => `
+    <div class="card wide">
+      <div class="strip" style="height:${h}px;background-image:${bgUrl(svg).replace(/"/g, "'")};background-size:${tileW}px 100%;background-color:var(--sky-bottom)"></div>
+      <h3>${title}</h3><p>${desc}</p><span class="tag">${tag}</span>
+    </div>`;
+  bgGrid.insertAdjacentHTML('beforeend',
+    strip(B.mountains(), 140, 700, 'Snowy mountains', 'The Alps across the bay. Farthest layer, scrolls slowest.', 'background.mountains()') +
+    strip(B.sea(), 70, 900, 'The sea', 'The Mediterranean with little waves and sparkles.', 'background.sea()') +
+    strip(B.ground(), 60, 400, 'City ground', 'Grey promenade sidewalk (the riding line), curb and road. Scrolls with the obstacles.', 'background.ground()') +
+    card(B.boat(), 'Sailboat', 'Drifts slowly across the sea.', 'background.boat()'));
+
+  const names = { skin: 'Skin', hair: 'Blonde hair', eyeGreen: 'Green eyes', shirt: 'T-shirt', jeans: 'Jeans', shoe: 'Shoes', scooter: 'Scooter', wheel: 'Wheels', outline: 'Outline', cheek: 'Cheeks', gullWhite: 'Seagull', gullWing: 'Seagull wings', gullTip: 'Wing tips', gullBeak: 'Beak', pigeon: 'Pigeon', pigeonNeck: 'Pigeon neck', pigeonEye: 'Pigeon eye', cactus: 'Cactus', cactusFlower: 'Cactus flower', poop: 'Poop', rock: 'Rock', sky: 'Sky', mountains: 'Mountains', snow: 'Snow', sea: 'Sea', sidewalk: 'Sidewalk', asphalt: 'Road', chicken: 'Chicken', broccoli: 'Broccoli', carrot: 'Carrot', steak: 'Steak', yolk: 'Egg yolk' };
   document.getElementById('palette').innerHTML = Object.entries(names)
     .map(([k, label]) => `<div class="swatch"><div class="chip" style="background:${A.palette[k]}"></div><b>${label}</b><code>${A.palette[k]}</code></div>`)
     .join('');

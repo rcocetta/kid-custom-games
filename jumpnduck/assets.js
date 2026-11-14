@@ -721,6 +721,108 @@
     );
   }
 
+  // ---------- Background: Antibes seafront (tileable layers for parallax) ----------
+  // Each layer's left and right edges match, so it can repeat horizontally forever.
+  const BG = {
+    sky: '#BFE6FF', skyLow: '#EAF7FF',
+    mountFar: '#B8C5E0', mountNear: '#8FA3C8', mountLine: '#6F80A6', snow: '#FFFFFF', snowShade: '#DCE6F5',
+    sea: '#3FA2DE', seaDeep: '#2C88C9', seaLight: '#8FD3F5',
+    curb: '#C5C9D0', curbLine: '#A9AEB7', curbFace: '#9DA2AC', asphalt: '#7E838D', asphaltDot: '#727780', lane: '#F4F4F4', groundLine: '#5E636D',
+    hull: '#FFFFFF', sail: '#FFFFFF', boatStripe: '#2C88C9', mast: '#5E636D',
+  };
+  Object.assign(C, { sky: BG.sky, mountains: BG.mountNear, snow: BG.snow, sea: BG.sea, sidewalk: BG.curb, asphalt: BG.asphalt });
+
+  const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const f1 = (n) => n.toFixed(1);
+
+  // Ridge of peaks + snowcaps. pts alternate valley/peak and start/end at the same height.
+  function ridge(pts, fill, snowFill, bottom, snowMinHeight) {
+    const top = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]} ${p[1]}`).join(' ');
+    // fill without outline (so tile edges don't show a seam), then outline only the ridge line
+    let out =
+      `<path d="${top} L${pts[pts.length - 1][0]} ${bottom} L${pts[0][0]} ${bottom} Z" fill="${fill}"/>` +
+      `<path d="${top}" fill="none" stroke="${BG.mountLine}" stroke-width="3" stroke-linejoin="round"/>`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const pk = pts[i], l = pts[i - 1], r = pts[i + 1];
+      if (pk[1] > l[1] || pk[1] > r[1] || Math.min(l[1], r[1]) - pk[1] < snowMinHeight) continue; // only real peaks
+      const t = 0.55;
+      const L = lerp(pk, l, t), R = lerp(pk, r, t);
+      const m1 = lerp(L, R, 0.33), m2 = lerp(L, R, 0.66);
+      const zig = `L${f1(m1[0])} ${f1(m1[1] - 6)} L${f1((m1[0] + m2[0]) / 2)} ${f1((m1[1] + m2[1]) / 2 + 4)} L${f1(m2[0])} ${f1(m2[1] - 6)}`;
+      out += `<path d="M${pk[0]} ${pk[1]} L${f1(L[0])} ${f1(L[1])} ${zig} L${f1(R[0])} ${f1(R[1])} Z" fill="${snowFill}" stroke="${BG.mountLine}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    }
+    return out;
+  }
+
+  /** Snowy mountains across the sea. Tile: 800 x 160. */
+  function bgMountains() {
+    const far = [[0, 100], [90, 52], [170, 88], [260, 26], [340, 82], [420, 48], [500, 86], [600, 22], [680, 78], [760, 52], [800, 100]];
+    const near = [[0, 124], [60, 74], [120, 114], [190, 44], [250, 100], [310, 66], [370, 110], [450, 34], [520, 104], [580, 70], [640, 114], [710, 48], [770, 104], [800, 124]];
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 160" preserveAspectRatio="none" class="bg bg-mountains">` +
+      ridge(far, BG.mountFar, BG.snowShade, 162, 30) +
+      ridge(near, BG.mountNear, BG.snow, 162, 30) +
+      `</svg>`
+    );
+  }
+
+  /** The Mediterranean: calm bands, little waves and sparkles. Tile: 800 x 60. */
+  function bgSea() {
+    const waves = [[60, 20], [210, 38], [330, 16], [470, 44], [560, 26], [700, 40], [130, 50], [400, 30], [640, 12]]
+      .map(([x, y]) => `<path d="M${x} ${y} q6 -5 12 0 q6 5 12 0" fill="none" stroke="${BG.seaLight}" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>`)
+      .join('');
+    const sparkles = [[160, 14], [520, 22], [740, 30], [290, 46]]
+      .map(([x, y]) => `<path d="M${x} ${y - 4} L${x + 1.2} ${y - 1.2} L${x + 4} ${y} L${x + 1.2} ${y + 1.2} L${x} ${y + 4} L${x - 1.2} ${y + 1.2} L${x - 4} ${y} L${x - 1.2} ${y - 1.2} Z" fill="#FFFFFF"/>`)
+      .join('');
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 60" preserveAspectRatio="none" class="bg bg-sea">` +
+      `<rect width="800" height="60" fill="${BG.sea}"/>` +
+      `<rect y="34" width="800" height="26" fill="${BG.seaDeep}" opacity="0.5"/>` +
+      `<rect width="800" height="5" fill="${BG.seaLight}"/>` +
+      `<path d="M0 1.5 L800 1.5" stroke="${BG.mountLine}" stroke-width="3"/>` +
+      waves + sparkles +
+      `</svg>`
+    );
+  }
+
+  /** Grey city ground: sidewalk/promenade on top (the riding line), curb, asphalt with lane dashes. Tile: 400 x 60. */
+  function bgGround() {
+    let joints = '', dashes = '', dots = '';
+    for (let x = 0; x < 400; x += 50) {
+      joints += `M${x + 25} 4 L${x + 25} 20 `;
+      dashes += `M${x + 12} 44 L${x + 38} 44 `;
+    }
+    [[30, 34], [95, 52], [160, 38], [230, 56], [290, 33], [350, 50], [70, 56], [200, 48], [380, 37]].forEach(([x, y]) => {
+      dots += `<circle cx="${x}" cy="${y}" r="1.6" fill="${BG.asphaltDot}"/>`;
+    });
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 60" preserveAspectRatio="none" class="bg bg-ground">` +
+      `<rect width="400" height="60" fill="${BG.asphalt}"/>` +
+      `<rect width="400" height="22" fill="${BG.curb}"/>` +
+      `<path d="${joints}" stroke="${BG.curbLine}" stroke-width="2"/>` +
+      `<path d="M0 8 L400 8" stroke="#D6D9DF" stroke-width="2"/>` +
+      `<rect y="22" width="400" height="6" fill="${BG.curbFace}"/>` +
+      `<path d="M0 22 L400 22 M0 28 L400 28" stroke="${BG.groundLine}" stroke-width="1.5"/>` +
+      `<path d="${dashes}" stroke="${BG.lane}" stroke-width="3.5" stroke-linecap="round"/>` +
+      dots +
+      `<path d="M0 1.5 L400 1.5" stroke="${BG.groundLine}" stroke-width="3"/>` +
+      `</svg>`
+    );
+  }
+
+  /** Little sailboat that drifts on the sea. */
+  function boat() {
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" class="sprite boat">` +
+      `<path d="M38 8 L38 52" stroke="${BG.mast}" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="M41 10 Q62 30 64 48 L41 48 Z" fill="${BG.sail}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<path d="M35 16 Q22 34 18 48 L35 48 Z" fill="${BG.sail}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<path d="M8 52 L72 52 Q66 64 56 64 L22 64 Q12 64 8 52 Z" fill="${BG.hull}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<path d="M14 57 L67 57" stroke="${BG.boatStripe}" stroke-width="3" stroke-linecap="round"/>` +
+      `</svg>`
+    );
+  }
+
   function toDataUrl(svg) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
@@ -741,6 +843,7 @@
     cactusVariants: Object.keys(CACTI),
     food,
     foodKinds: Object.keys(FOODS),
+    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
     toDataUrl,
   };
 })();
