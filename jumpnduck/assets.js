@@ -1,0 +1,662 @@
+/*
+ * Game assets: every sprite is drawn as SVG in code, so the same file feeds
+ * both Assets.html (the portfolio) and, later, the game itself.
+ *
+ * Load with a plain <script src="assets.js"></script> (works from file://).
+ * Everything is exposed on window.GameAssets.
+ *
+ * To use a sprite on a <canvas> later:
+ *   const img = new Image();
+ *   img.src = GameAssets.toDataUrl(GameAssets.kid('ride'));
+ */
+(function () {
+  // ---------- Palette ----------
+  const C = {
+    outline: '#2E2A36',
+    skin: '#FFDCC2',
+    skinShade: '#F2B996',
+    cheek: '#FF9AA2',
+    hair: '#FFD34E',
+    hairShade: '#E5A82A',
+    eyeGreen: '#3FAE5A',
+    shirt: '#52C25A',
+    shirtShade: '#3E9C47',
+    jeans: '#4A7BD0',
+    jeansShade: '#3A62A8',
+    shoe: '#FFFFFF',
+    sole: '#D5D9E2',
+    scooter: '#26262E',
+    scooterHi: '#55555F',
+    wheel: '#FF8A1F',
+    wheelShade: '#D9650A',
+    hub: '#FFE6CC',
+    mouth: '#8E2F3C',
+    tongue: '#FF7F8E',
+  };
+  const O = C.outline;
+  const SW = 4; // outline width
+
+  // ---------- Drawing helpers ----------
+  // A limb drawn as a thick rounded stroke with an outline around it.
+  function limb(points, color, width) {
+    const d = 'M' + points.map((p) => p.join(' ')).join(' L');
+    const common = 'fill="none" stroke-linecap="round" stroke-linejoin="round"';
+    return (
+      `<path d="${d}" ${common} stroke="${O}" stroke-width="${width + SW * 2}"/>` +
+      `<path d="${d}" ${common} stroke="${color}" stroke-width="${width}"/>`
+    );
+  }
+
+  // Shoe pointing right; (x, y) is roughly the heel-top. Sole bottom = y + 6.
+  function shoe(x, y) {
+    return (
+      `<path d="M${x - 9} ${y + 3} Q${x - 10} ${y - 7} ${x} ${y - 7} Q${x + 12} ${y - 6} ${x + 15} ${y + 2} ` +
+      `Q${x + 15} ${y + 6} ${x + 9} ${y + 6} L${x - 5} ${y + 6} Q${x - 9} ${y + 6} ${x - 9} ${y + 3} Z" ` +
+      `fill="${C.shoe}" stroke="${O}" stroke-width="3.5" stroke-linejoin="round"/>` +
+      `<path d="M${x - 6} ${y + 2.5} L${x + 11} ${y + 2.5}" stroke="${C.sole}" stroke-width="2.5" stroke-linecap="round"/>`
+    );
+  }
+
+  function wheel(cx, cy) {
+    // Outer group positions the wheel; inner .wheel group can be spun with CSS.
+    return (
+      `<g transform="translate(${cx} ${cy})"><g class="wheel">` +
+      `<circle r="15" fill="${C.wheel}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<circle r="9" fill="none" stroke="${C.wheelShade}" stroke-width="2.5"/>` +
+      `<path d="M-9 0 L9 0 M0 -9 L0 9" stroke="${C.wheelShade}" stroke-width="2.5" stroke-linecap="round"/>` +
+      `<circle r="4.5" fill="${C.hub}" stroke="${O}" stroke-width="2.5"/>` +
+      `<circle cx="-5" cy="-7" r="2.2" fill="#FFFFFF" opacity="0.7"/>` +
+      `</g></g>`
+    );
+  }
+
+  // ---------- Parts of the kid on the scooter ----------
+  function scooter() {
+    return (
+      // rear fender / brake
+      limb([[38, 204], [44, 194], [60, 192]], C.scooter, 6) +
+      // stem + joint to deck
+      limb([[160, 214], [151, 118]], C.scooter, 8) +
+      limb([[138, 200], [154, 190]], C.scooter, 9) +
+      // handlebar
+      limb([[140, 119], [164, 116]], C.scooter, 7) +
+      // deck
+      `<rect x="42" y="194" width="110" height="13" rx="6.5" fill="${C.scooter}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<path d="M52 198.5 L140 198.5" stroke="${C.scooterHi}" stroke-width="2.5" stroke-linecap="round"/>` +
+      `<path d="M153 130 L156 150" stroke="${C.scooterHi}" stroke-width="2.5" stroke-linecap="round"/>` +
+      wheel(52, 214) +
+      wheel(160, 214)
+    );
+  }
+
+  function torso() {
+    return (
+      // jeans waist
+      `<path d="M81 148 L120 148 L120 160 Q120 167 113 167 L88 167 Q81 167 81 160 Z" fill="${C.jeans}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      // t-shirt
+      `<path d="M83 118 Q83 106 95 106 L107 106 Q119 106 119 118 L121 150 Q121 157 114 157 L88 157 Q81 157 81 150 Z" fill="${C.shirt}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="M89 120 L88 150" stroke="${C.shirtShade}" stroke-width="5" stroke-linecap="round" opacity="0.6"/>`
+    );
+  }
+
+  function arm(shoulder, elbow, hand, back) {
+    const skin = back ? C.skinShade : C.skin;
+    const shirt = back ? C.shirtShade : C.shirt;
+    const sleeveEnd = [
+      shoulder[0] + (elbow[0] - shoulder[0]) * 0.55,
+      shoulder[1] + (elbow[1] - shoulder[1]) * 0.55,
+    ];
+    return (
+      limb([shoulder, elbow, hand], skin, 9) +
+      limb([shoulder, sleeveEnd], shirt, 14) +
+      `<circle cx="${hand[0]}" cy="${hand[1]}" r="6.5" fill="${skin}" stroke="${O}" stroke-width="3.5"/>`
+    );
+  }
+
+  function eye(cx, cy) {
+    return (
+      `<ellipse cx="${cx}" cy="${cy}" rx="7.5" ry="9.5" fill="#FFFFFF" stroke="${O}" stroke-width="3"/>` +
+      `<circle cx="${cx + 1.5}" cy="${cy + 1}" r="5.5" fill="${C.eyeGreen}"/>` +
+      `<circle cx="${cx + 1.8}" cy="${cy + 1.3}" r="2.8" fill="${O}"/>` +
+      `<circle cx="${cx - 0.5}" cy="${cy - 2}" r="1.9" fill="#FFFFFF"/>`
+    );
+  }
+
+  function head() {
+    return (
+      // head
+      `<circle cx="98" cy="64" r="44" fill="${C.skin}" stroke="${O}" stroke-width="${SW}"/>` +
+      // hair (back + fringe)
+      `<path d="M56 76 C44 40 66 13 100 15 C131 15 151 34 144 60 C136 48 126 46 118 51 C113 42 103 40 96 49 C89 42 79 45 73 55 C69 61 66 68 64 76 Z" ` +
+      `fill="${C.hair}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      // top tuft
+      `<path d="M92 18 C86 4 99 -4 110 3 C103 7 102 11 107 17" fill="${C.hair}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round" stroke-linecap="round"/>` +
+      // hair shine
+      `<path d="M72 34 Q84 24 98 24" fill="none" stroke="#FFF1B8" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M120 26 Q132 32 137 42" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+      // ear
+      `<circle cx="62" cy="72" r="10" fill="${C.skin}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<path d="M60 67 Q66 72 61 77" fill="none" stroke="${C.skinShade}" stroke-width="2.5" stroke-linecap="round"/>` +
+      // eyebrows
+      `<path d="M99 55 Q105 51 112 54" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+      `<path d="M122 53 Q128 50 134 53" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+      eye(106, 68) +
+      eye(128, 66) +
+      // cheeks
+      `<ellipse cx="98" cy="84" rx="7" ry="4.5" fill="${C.cheek}" opacity="0.55"/>` +
+      `<ellipse cx="131" cy="82" rx="4.5" ry="4" fill="${C.cheek}" opacity="0.55"/>` +
+      // nose
+      `<path d="M136 74 Q141 78 135 82" fill="none" stroke="${C.skinShade}" stroke-width="3" stroke-linecap="round"/>` +
+      // big smile
+      `<path d="M108 88 Q120 106 135 86 Q121 93 108 88 Z" fill="${C.mouth}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<ellipse cx="121" cy="96" rx="5" ry="2.4" fill="${C.tongue}"/>`
+    );
+  }
+
+  // Leg layouts per pose: [hip, (knee), foot]; shoe drawn at the foot.
+  const POSES = {
+    // both feet on the deck, cruising
+    ride: {
+      behind: [],
+      onDeck: [
+        [[90, 162], [86, 186]],
+        [[110, 162], [114, 186]],
+      ],
+      tilt: 0,
+    },
+    // back foot kicking the ground
+    push: {
+      behind: [[[92, 162], [80, 192], [66, 220]]],
+      onDeck: [[[110, 162], [116, 186]]],
+      tilt: 0,
+    },
+    // knees tucked, scooter tilted up
+    jump: {
+      behind: [],
+      onDeck: [
+        [[90, 162], [102, 174], [86, 186]],
+        [[110, 162], [126, 172], [114, 186]],
+      ],
+      tilt: -8,
+    },
+  };
+
+  function legs(list, back) {
+    return list
+      .map((pts) => {
+        const foot = pts[pts.length - 1];
+        return limb(pts, back ? C.jeansShade : C.jeans, 12) + shoe(foot[0], foot[1] + 2);
+      })
+      .join('');
+  }
+
+  /** Kid on scooter. pose: 'ride' | 'push' | 'jump'. Returns an SVG string. */
+  function kid(pose = 'ride') {
+    const p = POSES[pose] || POSES.ride;
+    const body =
+      legs(p.behind, true) +
+      scooter() +
+      legs(p.onDeck, false) +
+      arm([93, 120], [112, 132], [143, 120], true) +
+      torso() +
+      head() +
+      arm([110, 120], [126, 132], [154, 117], false);
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 -10 165 245" class="sprite kid kid-${pose}">` +
+      `<g transform="rotate(${p.tilt} 100 170)">${body}</g></svg>`
+    );
+  }
+
+  // ---------- Seagull (flying obstacle, faces left toward the kid) ----------
+  const G = {
+    white: '#FFFFFF',
+    belly: '#E9EEF5',
+    wing: '#B9C4D2',
+    wingFar: '#97A3B3',
+    wingTip: '#3A3F4A',
+    beak: '#FFC93C',
+    beakDot: '#E8413C',
+    feet: '#FF9A3C',
+  };
+  Object.assign(C, {
+    gullWhite: G.white, gullWing: G.wing, gullTip: G.wingTip, gullBeak: G.beak, gullFeet: G.feet,
+  });
+
+  // Wing shapes per frame: [main wing path, black tip path]
+  const WINGS = {
+    up: [
+      'M80 74 C80 42 98 18 128 6 C140 1 146 8 141 17 C135 28 138 34 131 43 C126 51 129 58 123 65 L124 76 Z',
+      'M119 12 C129 4 144 0 141 17 C138 24 136 28 132 34 C125 28 121 21 119 12 Z',
+    ],
+    down: [
+      'M82 78 L124 76 C129 85 126 92 133 100 C139 107 136 114 142 123 C145 132 136 137 127 131 C104 119 88 102 82 78 Z',
+      'M125 115 C132 110 139 115 142 123 C145 132 136 137 127 131 C123 126 122 120 125 115 Z',
+    ],
+  };
+
+  // Shared wing drawer for all birds. extra = additional markings drawn on the wing.
+  function birdWing(frame, far, colors, extra = '') {
+    const [main, tip] = WINGS[frame];
+    const t = far ? ' transform="translate(-16 2) scale(0.98)"' : '';
+    const fill = far ? colors.wingFar : colors.wing;
+    return (
+      `<g${t}>` +
+      `<path d="${main}" fill="${fill}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      extra +
+      `<path d="${tip}" fill="${colors.wingTip}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `</g>`
+    );
+  }
+  const gullWing = (frame, far) => birdWing(frame, far, G);
+
+  // Body + head + tail drawn as one silhouette: all outlines first, then all fills on top.
+  function birdBody(headR, color) {
+    const shapes = [
+      '<ellipse cx="104" cy="82" rx="46" ry="27"/>',
+      `<circle cx="${62 + (25 - headR) * 0.6}" cy="${64 + (25 - headR) * 0.4}" r="${headR}"/>`,
+      '<path d="M140 74 L176 64 Q182 76 172 82 Q182 88 176 96 L140 94 Z" stroke-linejoin="round"/>',
+    ];
+    return (
+      `<g fill="${O}" stroke="${O}" stroke-width="${SW * 2}" stroke-linejoin="round">${shapes.join('')}</g>` +
+      `<g fill="${color}">${shapes.join('')}</g>`
+    );
+  }
+
+  /** Seagull. frame: 'up' | 'down' (alternate them to flap). Returns an SVG string. */
+  function seagull(frame = 'up') {
+    if (!WINGS[frame]) frame = 'up';
+    // Body + head + tail share one silhouette: draw all outlines first, then all fills on top.
+    const shapes = [
+      '<ellipse cx="104" cy="82" rx="46" ry="27"/>',
+      '<circle cx="62" cy="64" r="25"/>',
+      '<path d="M140 74 L176 64 Q182 76 172 82 Q182 88 176 96 L140 94 Z" stroke-linejoin="round"/>',
+    ];
+    const outline = `<g fill="${O}" stroke="${O}" stroke-width="${SW * 2}" stroke-linejoin="round">${shapes.join('')}</g>`;
+    const fill = `<g fill="${G.white}">${shapes.join('')}</g>`;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 0 186 140" class="sprite seagull seagull-${frame}">` +
+      gullWing(frame, true) +
+      // tucked orange feet
+      `<path d="M106 104 Q110 116 118 112 Q116 106 114 102 Z M120 104 Q126 116 133 110 Q130 105 127 101 Z" fill="${G.feet}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      outline +
+      fill +
+      // belly shade + grey tail tips
+      `<ellipse cx="110" cy="96" rx="30" ry="8" fill="${G.belly}"/>` +
+      `<path d="M166 68 L176 64 Q182 76 172 82 Q182 88 176 96 L166 95" fill="${G.wing}"/>` +
+      // beak with the red dot
+      `<path d="M42 60 Q24 60 14 69 Q24 77 42 74 Z" fill="${G.beak}" stroke="${O}" stroke-width="3.5" stroke-linejoin="round"/>` +
+      `<path d="M18 69 L40 68" stroke="${O}" stroke-width="2.5" stroke-linecap="round"/>` +
+      `<circle cx="28" cy="72" r="2.8" fill="${G.beakDot}"/>` +
+      // cheeky eye + eyebrow
+      `<ellipse cx="56" cy="58" rx="7.5" ry="8.5" fill="#FFFFFF" stroke="${O}" stroke-width="3"/>` +
+      `<circle cx="53.5" cy="59" r="4.2" fill="${O}"/>` +
+      `<circle cx="52" cy="56.5" r="1.6" fill="#FFFFFF"/>` +
+      `<path d="M46 45 Q55 45 66 51" fill="none" stroke="${G.wingFar}" stroke-width="4" stroke-linecap="round"/>` +
+      `<ellipse cx="66" cy="72" rx="6" ry="3.8" fill="${C.cheek}" opacity="0.5"/>` +
+      gullWing(frame, false) +
+      `</svg>`
+    );
+  }
+
+  // ---------- Pigeon (second flying obstacle, same flight frames as the seagull) ----------
+  const PG = {
+    body: '#9AA7BD',
+    head: '#808DA6',
+    belly: '#B9C3D4',
+    wing: '#AEB9CB',
+    wingFar: '#8793A8',
+    wingTip: '#4A5263',
+    bar: '#3E4555',
+    neckGreen: '#4FB89A',
+    neckPurple: '#9B6FC0',
+    eye: '#FF8A3D',
+    beak: '#4A4450',
+    cere: '#EEF0F4',
+    tailBand: '#3E4555',
+  };
+  Object.assign(C, { pigeon: PG.body, pigeonNeck: PG.neckGreen, pigeonEye: PG.eye });
+
+  // Two dark bars across each wing, per frame
+  const PIGEON_BARS = {
+    up: 'M90 50 L124 47 M88 61 L120 61',
+    down: 'M98 94 L124 94 M106 106 L132 106',
+  };
+
+  /** Pigeon. frame: 'up' | 'down'. Returns an SVG string. */
+  function pigeon(frame = 'up') {
+    if (!WINGS[frame]) frame = 'up';
+    const bars = `<path d="${PIGEON_BARS[frame]}" stroke="${PG.bar}" stroke-width="4" stroke-linecap="round"/>`;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 0 186 140" class="sprite pigeon pigeon-${frame}">` +
+      birdWing(frame, true, PG, bars) +
+      // tucked pink feet
+      `<path d="M106 104 Q110 116 118 112 Q116 106 114 102 Z M120 104 Q126 116 133 110 Q130 105 127 101 Z" fill="#F08A9A" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      birdBody(21, PG.body) +
+      // head colour, belly, dark tail band
+      `<circle cx="64.4" cy="65.6" r="21" fill="${PG.head}"/>` +
+      `<ellipse cx="108" cy="96" rx="32" ry="8" fill="${PG.belly}"/>` +
+      `<path d="M166 68 L176 64 Q182 76 172 82 Q182 88 176 96 L166 95" fill="${PG.tailBand}"/>` +
+      // shiny green/purple neck
+      `<path d="M50 80 Q68 94 88 80" fill="none" stroke="${PG.neckGreen}" stroke-width="8" stroke-linecap="round"/>` +
+      `<path d="M54 86 Q70 96 86 86" fill="none" stroke="${PG.neckPurple}" stroke-width="4" stroke-linecap="round"/>` +
+      // short beak with white bump
+      `<path d="M47 64 Q36 66 31 71 Q37 74 47 72 Z" fill="${PG.beak}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<ellipse cx="45" cy="64" rx="4" ry="2.6" fill="${PG.cere}" stroke="${O}" stroke-width="1.5"/>` +
+      // big orange eye, slightly surprised
+      `<circle cx="58" cy="60" r="8" fill="#FFFFFF" stroke="${O}" stroke-width="3"/>` +
+      `<circle cx="57" cy="60.5" r="5" fill="${PG.eye}"/>` +
+      `<circle cx="56.5" cy="60.8" r="2.6" fill="${O}"/>` +
+      `<circle cx="55" cy="58" r="1.5" fill="#FFFFFF"/>` +
+      `<ellipse cx="70" cy="73" rx="5" ry="3.2" fill="${C.cheek}" opacity="0.45"/>` +
+      birdWing(frame, false, PG, bars) +
+      `</svg>`
+    );
+  }
+
+  // ---------- Ground obstacles: poop + rocks ----------
+  const P = { poop: '#8B5A2B', poopShade: '#6B4220', poopShine: '#B9844E', stink: '#9BCB5A' };
+  const R = { rock: '#A7AEBB', rockShade: '#848C9A', rockShine: '#D3D8E0', moss: '#8CC56A' };
+  Object.assign(C, { poop: P.poop, rock: R.rock });
+
+  // Ground line is at the bottom of each viewBox, so sprites can sit on y = ground.
+  /** Smiling poop. Returns an SVG string. */
+  function poop() {
+    const tier = (cx, cy, rx, ry) =>
+      `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${P.poop}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<path d="M${cx - rx + 8} ${cy + ry * 0.35} Q${cx} ${cy + ry + 1} ${cx + rx - 8} ${cy + ry * 0.35}" fill="none" stroke="${P.poopShade}" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M${cx - rx * 0.62} ${cy - ry * 0.35} Q${cx - rx * 0.35} ${cy - ry * 0.75} ${cx - rx * 0.05} ${cy - ry * 0.72}" fill="none" stroke="${P.poopShine}" stroke-width="3.5" stroke-linecap="round"/>`;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -8 120 108" class="sprite poop">` +
+      // stink wiggles
+      `<path d="M30 30 Q24 22 30 14 Q36 6 30 -2" fill="none" stroke="${P.stink}" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>` +
+      `<path d="M92 32 Q86 24 92 16 Q98 8 92 0" fill="none" stroke="${P.stink}" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>` +
+      tier(60, 80, 46, 16) +
+      tier(60, 60, 34, 14) +
+      tier(60, 42, 22, 11) +
+      // swirly tip
+      `<path d="M54 33 Q54 20 64 18 Q72 17 70 24" fill="${P.poop}" stroke="${O}" stroke-width="${SW}" stroke-linecap="round" stroke-linejoin="round"/>` +
+      // happy face
+      `<ellipse cx="49" cy="59" rx="5.5" ry="6.5" fill="#FFFFFF" stroke="${O}" stroke-width="2.5"/>` +
+      `<ellipse cx="71" cy="59" rx="5.5" ry="6.5" fill="#FFFFFF" stroke="${O}" stroke-width="2.5"/>` +
+      `<circle cx="50" cy="60" r="3" fill="${O}"/><circle cx="72" cy="60" r="3" fill="${O}"/>` +
+      `<circle cx="48.8" cy="57.8" r="1.2" fill="#FFFFFF"/><circle cx="70.8" cy="57.8" r="1.2" fill="#FFFFFF"/>` +
+      `<path d="M49 77 Q60 90 71 77 Q60 81 49 77 Z" fill="${C.mouth}" stroke="${O}" stroke-width="2.8" stroke-linejoin="round"/>` +
+      `<ellipse cx="40" cy="71" rx="5" ry="3" fill="${C.cheek}" opacity="0.45"/>` +
+      `<ellipse cx="80" cy="71" rx="5" ry="3" fill="${C.cheek}" opacity="0.45"/>` +
+      `</svg>`
+    );
+  }
+
+  // Each rock: list of [outline path, shine path, crack path]
+  const ROCKS = {
+    small: {
+      viewBox: '0 30 120 60',
+      parts: [[
+        'M14 86 C8 70 18 56 34 52 C40 44 56 42 66 46 C80 44 96 52 100 64 C108 70 108 80 104 86 Z',
+        'M30 60 Q40 52 54 52',
+        'M78 56 L84 64 L80 70',
+      ]],
+    },
+    big: {
+      viewBox: '0 4 120 86',
+      parts: [[
+        'M10 86 C4 66 10 44 26 34 C30 20 46 12 62 16 C80 10 100 24 104 42 C114 52 114 74 108 86 Z',
+        'M26 46 Q36 28 56 24',
+        'M70 40 L78 52 L72 60 L78 70',
+      ]],
+    },
+    pile: {
+      viewBox: '0 30 120 60',
+      parts: [
+        ['M44 86 C40 66 50 48 66 44 C76 36 96 38 104 52 C112 60 114 74 112 86 Z', 'M58 56 Q66 48 78 48', 'M94 52 L98 62 L94 68'],
+        ['M6 86 C4 70 16 58 34 58 C50 58 62 72 60 86 Z', 'M16 70 Q22 64 30 64', ''],
+      ],
+    },
+  };
+
+  function rockPart([d, shine, crack]) {
+    return (
+      `<path d="${d}" fill="${R.rock}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="${shine}" fill="none" stroke="${R.rockShine}" stroke-width="4" stroke-linecap="round"/>` +
+      (crack ? `<path d="${crack}" fill="none" stroke="${R.rockShade}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>` : '')
+    );
+  }
+
+  /** Rock. variant: 'small' | 'big' | 'pile'. Returns an SVG string. */
+  function rock(variant = 'small') {
+    const r = ROCKS[variant] || ROCKS.small;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${r.viewBox}" class="sprite rock rock-${variant}">` +
+      r.parts.map(rockPart).join('') +
+      (variant === 'big'
+        ? `<path d="M40 22 Q48 12 58 18 Q66 12 72 20 Q62 26 50 26 Q42 26 40 22 Z" fill="${R.moss}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>`
+        : '') +
+      `</svg>`
+    );
+  }
+
+  // ---------- Cactus ----------
+  const K = { green: '#5DBB63', shade: '#46984C', shine: '#8FD98F', flower: '#FF7EB6', flowerMid: '#FFD34E' };
+  Object.assign(C, { cactus: K.green, cactusFlower: K.flower });
+  const CACTUS_BASE = 78; // trunk bottom; rounded end sits on the ground at ~y 92
+
+  function cactusPlant(x, top, w, arms, face) {
+    const armW = Math.round(w * 0.55);
+    let s = arms.map((a) => limb(a, K.green, armW)).join('');
+    s += limb([[x, CACTUS_BASE], [x, top]], K.green, w);
+    // ribs + shine
+    s += `<path d="M${x - w * 0.22} ${CACTUS_BASE + 4} L${x - w * 0.22} ${top + (face ? 34 : 6)} M${x + w * 0.22} ${CACTUS_BASE + 4} L${x + w * 0.22} ${top + (face ? 34 : 6)}" stroke="${K.shade}" stroke-width="2.5" stroke-linecap="round"/>`;
+    s += `<path d="M${x - w * 0.3} ${top + 2} Q${x - w * 0.2} ${top - w * 0.3} ${x} ${top - w * 0.38}" fill="none" stroke="${K.shine}" stroke-width="3" stroke-linecap="round"/>`;
+    // little spines along the edges
+    const spines = [];
+    for (let y = top + 8; y < CACTUS_BASE; y += 14) {
+      spines.push(`M${x - w / 2 - 2} ${y} l-5 -2`, `M${x + w / 2 + 2} ${y + 7} l5 -2`);
+    }
+    for (const a of arms) {
+      const tip = a[a.length - 1];
+      spines.push(`M${tip[0] - armW / 2 - 2} ${tip[1] + 6} l-4 -2`, `M${tip[0] + armW / 2 + 2} ${tip[1] + 10} l4 -2`);
+    }
+    s += `<path d="${spines.join(' ')}" stroke="${O}" stroke-width="2.2" stroke-linecap="round"/>`;
+    if (face) {
+      s += `<circle cx="${x - 6}" cy="${top + 16}" r="2.8" fill="${O}"/><circle cx="${x + 6}" cy="${top + 16}" r="2.8" fill="${O}"/>` +
+        `<circle cx="${x - 6.8}" cy="${top + 15}" r="1" fill="#FFFFFF"/><circle cx="${x + 5.2}" cy="${top + 15}" r="1" fill="#FFFFFF"/>` +
+        `<path d="M${x - 5} ${top + 23} Q${x} ${top + 28} ${x + 5} ${top + 23}" fill="none" stroke="${O}" stroke-width="2.5" stroke-linecap="round"/>` +
+        `<ellipse cx="${x - 10}" cy="${top + 22}" rx="3.5" ry="2.2" fill="${C.cheek}" opacity="0.6"/>` +
+        `<ellipse cx="${x + 10}" cy="${top + 22}" rx="3.5" ry="2.2" fill="${C.cheek}" opacity="0.6"/>`;
+    }
+    return s;
+  }
+
+  function cactusFlower(x, y) {
+    const petals = [0, 72, 144, 216, 288]
+      .map((a) => {
+        const r = (a * Math.PI) / 180;
+        return `<circle cx="${(x + Math.sin(r) * 5).toFixed(1)}" cy="${(y - Math.cos(r) * 5).toFixed(1)}" r="4.2" fill="${K.flower}" stroke="${O}" stroke-width="2"/>`;
+      })
+      .join('');
+    return petals + `<circle cx="${x}" cy="${y}" r="3" fill="${K.flowerMid}"/>`;
+  }
+
+  const CACTI = {
+    tall: {
+      viewBox: '6 -4 108 100',
+      draw: () =>
+        cactusPlant(60, 22, 26, [[[60, 62], [34, 62], [34, 42]], [[60, 50], [86, 50], [86, 30]]], true) +
+        cactusFlower(60, 6),
+    },
+    small: {
+      viewBox: '28 30 64 66',
+      draw: () => cactusPlant(60, 56, 24, [[[60, 70], [78, 70], [78, 58]]], false) + cactusFlower(60, 42),
+    },
+    double: {
+      viewBox: '6 4 130 92',
+      draw: () =>
+        cactusPlant(108, 54, 22, [[[108, 68], [124, 68], [124, 56]]], false) +
+        cactusPlant(56, 30, 26, [[[56, 64], [32, 64], [32, 46]], [[56, 52], [80, 52], [80, 38]]], true),
+    },
+  };
+
+  /** Cactus. variant: 'tall' | 'small' | 'double'. Returns an SVG string. */
+  function cactus(variant = 'tall') {
+    const c = CACTI[variant] || CACTI.tall;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${c.viewBox}" class="sprite cactus cactus-${variant}">${c.draw()}</svg>`;
+  }
+
+  // ---------- Collectibles: yummy food ----------
+  const F = {
+    meat: '#D98A3D', meatShade: '#B86A28', meatShine: '#F5BC72', bone: '#FFF4DC',
+    broc: '#4CAF50', brocShade: '#3A8F3E', brocShine: '#7FD17F', stem: '#A8D86E',
+    carrot: '#FF8A2A', carrotShade: '#E0680F', leaf: '#5DBB63',
+    steak: '#B5482E', steakShade: '#8E3320', fat: '#FFE3C8', grill: '#6E2416',
+    eggWhite: '#FFFFFF', eggShade: '#EEF0F4', yolk: '#FFC21A', yolkShine: '#FFE27A',
+  };
+  Object.assign(C, { chicken: F.meat, broccoli: F.broc, carrot: F.carrot, steak: F.steak, yolk: F.yolk });
+
+  // Little happy face shared by all foods; (x, y) is between the eyes.
+  function foodFace(x, y) {
+    return (
+      `<circle cx="${x - 7}" cy="${y}" r="2.8" fill="${O}"/><circle cx="${x + 7}" cy="${y}" r="2.8" fill="${O}"/>` +
+      `<circle cx="${x - 7.8}" cy="${y - 1}" r="1" fill="#FFFFFF"/><circle cx="${x + 6.2}" cy="${y - 1}" r="1" fill="#FFFFFF"/>` +
+      `<path d="M${x - 5} ${y + 5} Q${x} ${y + 10} ${x + 5} ${y + 5}" fill="none" stroke="${O}" stroke-width="2.5" stroke-linecap="round"/>` +
+      `<ellipse cx="${x - 12}" cy="${y + 5}" rx="3.5" ry="2.2" fill="${C.cheek}" opacity="0.6"/>` +
+      `<ellipse cx="${x + 12}" cy="${y + 5}" rx="3.5" ry="2.2" fill="${C.cheek}" opacity="0.6"/>`
+    );
+  }
+
+  // Draw several shapes as one silhouette: outlines first, then fills.
+  function blob(shapes, fill) {
+    return (
+      `<g fill="${O}" stroke="${O}" stroke-width="${SW * 2}" stroke-linejoin="round">${shapes}</g>` +
+      `<g fill="${fill}">${shapes}</g>`
+    );
+  }
+
+  const FOODS = {
+    chicken: () =>
+      // bone with two knobs
+      limb([[56, 62], [78, 84]], F.bone, 10) +
+      `<circle cx="84" cy="80" r="6.5" fill="${F.bone}" stroke="${O}" stroke-width="3.5"/>` +
+      `<circle cx="78" cy="90" r="6.5" fill="${F.bone}" stroke="${O}" stroke-width="3.5"/>` +
+      // meat
+      `<path d="M30 16 C52 6 78 20 76 44 C75 58 66 64 58 68 C48 74 26 72 18 58 C10 42 14 24 30 16 Z" fill="${F.meat}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="M22 56 Q36 70 58 64" fill="none" stroke="${F.meatShade}" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M26 26 Q34 18 46 17" fill="none" stroke="${F.meatShine}" stroke-width="4" stroke-linecap="round"/>` +
+      `<circle cx="64" cy="30" r="2.2" fill="${F.meatShade}"/><circle cx="22" cy="42" r="2" fill="${F.meatShade}"/><circle cx="68" cy="52" r="1.8" fill="${F.meatShade}"/>` +
+      foodFace(44, 40),
+
+    broccoli: () =>
+      limb([[50, 86], [50, 60]], F.stem, 18) +
+      blob(
+        '<circle cx="32" cy="42" r="15"/><circle cx="50" cy="30" r="17"/><circle cx="68" cy="42" r="15"/>' +
+          '<circle cx="40" cy="54" r="12"/><circle cx="60" cy="54" r="12"/><circle cx="50" cy="46" r="14"/>',
+        F.broc
+      ) +
+      `<path d="M24 50 Q32 58 40 56 M60 58 Q70 58 76 48" fill="none" stroke="${F.brocShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+      `<circle cx="42" cy="22" r="3" fill="${F.brocShine}"/><circle cx="26" cy="36" r="2.5" fill="${F.brocShine}"/><circle cx="64" cy="32" r="2.5" fill="${F.brocShine}"/>` +
+      `<path d="M44 78 L44 86" stroke="#8FC257" stroke-width="3" stroke-linecap="round"/>` +
+      foodFace(50, 42),
+
+    carrot: () =>
+      // leaves
+      `<g fill="${F.leaf}" stroke="${O}" stroke-width="3.5" stroke-linejoin="round">` +
+      `<ellipse cx="40" cy="18" rx="6" ry="13" transform="rotate(-30 40 18)"/>` +
+      `<ellipse cx="60" cy="18" rx="6" ry="13" transform="rotate(30 60 18)"/>` +
+      `<ellipse cx="50" cy="13" rx="6.5" ry="14"/></g>` +
+      // body
+      `<path d="M30 32 Q50 20 70 32 Q68 62 54 90 Q50 96 46 90 Q32 62 30 32 Z" fill="${F.carrot}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="M54 56 L60 55 M50 72 L55 71 M40 60 L45 62 M47 80 L51 80" stroke="${F.carrotShade}" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="M36 36 Q38 46 40 52" fill="none" stroke="#FFB673" stroke-width="3.5" stroke-linecap="round"/>` +
+      foodFace(50, 42),
+
+    steak: () =>
+      // fat rim + meat
+      `<path d="M14 48 C12 26 38 14 60 18 C84 22 92 44 86 62 C80 80 54 84 34 78 C18 72 16 62 14 48 Z" fill="${F.fat}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="M22 48 C21 32 40 24 58 26 C76 29 82 45 78 58 C73 72 54 75 38 70 C26 66 23 58 22 48 Z" fill="${F.steak}"/>` +
+      // marbling
+      `<path d="M60 34 Q68 40 66 50 M70 60 Q62 64 58 70" fill="none" stroke="${F.fat}" stroke-width="3" stroke-linecap="round" opacity="0.8"/>` +
+      // grill marks
+      `<path d="M28 40 L44 30 M26 56 L50 38 M34 66 L54 52" stroke="${F.grill}" stroke-width="4" stroke-linecap="round" opacity="0.85"/>` +
+      `<path d="M28 30 Q38 22 50 22" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.7"/>` +
+      foodFace(44, 50),
+
+    egg: () =>
+      `<path d="M18 52 C12 32 30 16 48 22 C64 12 88 24 84 44 C92 62 76 82 56 78 C38 88 14 74 18 52 Z" fill="${F.eggWhite}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="M24 64 Q34 76 50 74" fill="none" stroke="${F.eggShade}" stroke-width="4" stroke-linecap="round"/>` +
+      `<circle cx="50" cy="48" r="18" fill="${F.yolk}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<path d="M38 42 Q41 34 49 32" fill="none" stroke="${F.yolkShine}" stroke-width="3.5" stroke-linecap="round"/>` +
+      foodFace(50, 48),
+  };
+
+  /** Food collectible. kind: 'chicken' | 'broccoli' | 'carrot' | 'steak' | 'egg'. Returns an SVG string. */
+  function food(kind = 'chicken') {
+    const draw = FOODS[kind] || FOODS.chicken;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 0 96 100" class="sprite food food-${kind}">${draw()}</svg>`;
+  }
+
+  // ---------- Front-facing portrait (for the score / HUD) ----------
+  function frontEye(cx, cy) {
+    return (
+      `<ellipse cx="${cx}" cy="${cy}" rx="8" ry="10" fill="#FFFFFF" stroke="${O}" stroke-width="3"/>` +
+      `<circle cx="${cx}" cy="${cy + 1}" r="6" fill="${C.eyeGreen}"/>` +
+      `<circle cx="${cx}" cy="${cy + 1.3}" r="3" fill="${O}"/>` +
+      `<circle cx="${cx - 2}" cy="${cy - 1.8}" r="2" fill="#FFFFFF"/>`
+    );
+  }
+
+  /** Kid's face looking at the player. Returns an SVG string. */
+  function kidFace() {
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -6 120 126" class="sprite kid-face">` +
+      // shoulders in the green t-shirt + neck
+      `<path d="M20 122 Q22 98 44 93 L76 93 Q98 98 100 122 Z" fill="${C.shirt}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<rect x="51" y="86" width="18" height="14" rx="5" fill="${C.skinShade}" stroke="${O}" stroke-width="3"/>` +
+      `<path d="M48 94 Q60 104 72 94" fill="none" stroke="${C.shirtShade}" stroke-width="4" stroke-linecap="round"/>` +
+      // ears
+      `<circle cx="21" cy="62" r="9" fill="${C.skin}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<circle cx="99" cy="62" r="9" fill="${C.skin}" stroke="${O}" stroke-width="${SW}"/>` +
+      // head
+      `<circle cx="60" cy="56" r="40" fill="${C.skin}" stroke="${O}" stroke-width="${SW}"/>` +
+      // hair: cap + fringe, and the top tuft
+      `<path d="M20 60 C14 24 40 8 60 10 C82 8 106 24 100 60 C96 48 90 41 82 39 C78 32 70 30 62 37 C56 30 46 31 40 39 C31 41 24 49 20 60 Z" ` +
+      `fill="${C.hair}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="M55 12 C51 0 63 -6 72 0 C66 3 65 7 68 12" fill="${C.hair}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<path d="M30 30 Q40 20 54 18" fill="none" stroke="#FFF1B8" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M84 20 Q94 28 97 40" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+      // eyebrows + eyes
+      `<path d="M38 48 Q45 44 52 47" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+      `<path d="M68 47 Q75 44 82 48" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+      frontEye(45, 60) +
+      frontEye(75, 60) +
+      // nose, cheeks, big smile
+      `<path d="M57 70 Q60 73 63 70" fill="none" stroke="${C.skinShade}" stroke-width="3" stroke-linecap="round"/>` +
+      `<ellipse cx="34" cy="75" rx="6.5" ry="4.2" fill="${C.cheek}" opacity="0.55"/>` +
+      `<ellipse cx="86" cy="75" rx="6.5" ry="4.2" fill="${C.cheek}" opacity="0.55"/>` +
+      `<path d="M46 77 Q60 96 74 77 Q60 83 46 77 Z" fill="${C.mouth}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<ellipse cx="60" cy="86" rx="5.5" ry="2.6" fill="${C.tongue}"/>` +
+      `</svg>`
+    );
+  }
+
+  function toDataUrl(svg) {
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  window.GameAssets = {
+    palette: C,
+    kid,
+    kidPoses: Object.keys(POSES),
+    kidFace,
+    seagull,
+    seagullFrames: Object.keys(WINGS),
+    pigeon,
+    pigeonFrames: Object.keys(WINGS),
+    poop,
+    rock,
+    rockVariants: Object.keys(ROCKS),
+    cactus,
+    cactusVariants: Object.keys(CACTI),
+    food,
+    foodKinds: Object.keys(FOODS),
+    toDataUrl,
+  };
+})();
