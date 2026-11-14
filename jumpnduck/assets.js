@@ -18,6 +18,7 @@
     cheek: '#FF9AA2',
     hair: '#FFD34E',
     hairShade: '#E5A82A',
+    brow: '#B07A1E',      // eyebrows: darker golden-brown so they read on the front face
     eyeGreen: '#3FAE5A',
     shirt: '#52C25A',
     shirtShade: '#3E9C47',
@@ -771,8 +772,8 @@
       `<path d="M30 30 Q40 20 54 18" fill="none" stroke="#FFF1B8" stroke-width="4" stroke-linecap="round"/>` +
       `<path d="M84 20 Q94 28 97 40" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
       // eyebrows + eyes
-      `<path d="M38 48 Q45 44 52 47" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
-      `<path d="M68 47 Q75 44 82 48" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+      `<path d="M38 48 Q45 44 52 47" fill="none" stroke="${C.brow}" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M68 47 Q75 44 82 48" fill="none" stroke="${C.brow}" stroke-width="4" stroke-linecap="round"/>` +
       frontEye(45, 60) +
       frontEye(75, 60) +
       // nose, cheeks, big smile
