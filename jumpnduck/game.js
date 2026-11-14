@@ -124,18 +124,21 @@
       const vb = VB('bg_boat'), s = 30 / vb.h;
       deco.push({ kind: 'boat', key: 'bg_boat', par: 0.25, x, w: vb.w * s, h: 30, y: rr(318, 334) - 30 });
     }
+    // Nomade / ferris wheel: far away on the shore across the water (like the old town),
+    // small, slow and semi-transparent so they read as scenery, not obstacles.
+    const FAR_BASE_Y = 300;      // same waterline as the old town
     function addFg(x, kind) {
       const nomade = kind === 'nomade';
       const key = nomade ? 'bg_nomade' : 'bg_ferris', vb = VB(key);
-      const hh = nomade ? 130 : 150, s = hh / vb.h;
+      const hh = nomade ? 62 : 78, s = hh / vb.h;
       // the sprite's ground line is at viewBox y = 226
-      deco.push({ kind: 'fg', key, par: 0.5, x, w: vb.w * s, h: vb.h * s, y: GROUND_Y - (226 - vb.y) * s });
+      deco.push({ kind: 'fg', key, par: 0.12, alpha: nomade ? 0.6 : 0.45, x, w: vb.w * s, h: vb.h * s, y: FAR_BASE_Y - (226 - vb.y) * s });
     }
     function layoutInitial() {
       deco = [];
       addTown(world.W * 0.55);
       addBoat(world.W * 0.22);
-      addFg(world.W * 0.72, rand() < 0.5 ? 'nomade' : 'ferris');
+      addFg(world.W * 0.06, rand() < 0.5 ? 'nomade' : 'ferris');
       waits = { town: 0, boat: 3000, fg: 0 };
     }
 
@@ -143,8 +146,11 @@
       for (const d of deco) d.x -= dx * d.par;
       deco = deco.filter((d) => d.x + d.w > -10);
       const has = (k) => deco.some((d) => d.kind === k);
+      // town and far landmarks share the shoreline: don't spawn one while the other is still entering
+      const entering = (k) => deco.some((d) => d.kind === k && d.x + d.w > world.W - 60);
       for (const k of ['town', 'boat', 'fg']) {
         if (has(k)) continue;
+        if ((k === 'town' && entering('fg')) || (k === 'fg' && entering('town'))) continue;
         waits[k] -= dx;
         if (waits[k] > 0) continue;
         if (k === 'town') { addTown(world.W + 10); waits.town = rr(3000, 8000); }
@@ -325,9 +331,11 @@
       tiles('bg_mountains', 300 - 120, 120, 600, layerX.mountains);
       tiles('bg_sea', 292, 58, 800 * 58 / 60, layerX.sea);
       for (const d of deco) if (d.kind === 'town') img(d.key, d.x, d.y, d.w, d.h);
+      for (const d of deco) if (d.kind === 'fg') {
+        ctx.save(); ctx.globalAlpha = d.alpha; img(d.key, d.x, d.y, d.w, d.h); ctx.restore();
+      }
       for (const d of deco) if (d.kind === 'boat') img(d.key, d.x, d.y, d.w, d.h);
       tiles('bg_ground', GROUND_Y - 5, 54, 400 * 54 / 60, layerX.ground);
-      for (const d of deco) if (d.kind === 'fg') img(d.key, d.x, d.y, d.w, d.h);
 
       // food
       for (const f of foods) {
