@@ -27,7 +27,7 @@ The kid rides a scooter, jumps over ground obstacles, ducks under flying ones, a
 
 | Call | Variants | Notes |
 |---|---|---|
-| `kid(pose)` | `kidPoses`: `ride`, `push`, `jump` | Kid on scooter, big head, blonde, green eyes, green tee, jeans, white shoes; black scooter, orange wheels. Wheels are `<g class="wheel">` — spin with CSS. Ride/push alternate for the run cycle. |
+| `kid(pose)` | `kidPoses`: `ride`, `push`, `jump`, `duck` | Kid on scooter, big head, blonde, green eyes, green tee, jeans, white shoes; black scooter, orange wheels. Wheels are `<g class="wheel">` — spin with CSS. Ride/push alternate for the run cycle. `duck` = lying belly-down, bum up, stem tipped forward low; same drawing scale but a lower/wider viewBox (`20 74 204 161` vs `20 -10 165 245`), so size it by viewBox units, not by a fixed pixel width. |
 | `kidFace()` | — | Front-facing portrait. Standalone, general-purpose asset (menus, game over, etc.); the score badge (HUD) is just one user of it — keep it independent from the HUD. |
 | `seagull(frame)` | `seagullFrames`: `up`, `down` | Flying obstacle. Alternate frames to flap. |
 | `pigeon(frame)` | `pigeonFrames`: `up`, `down` | Flying obstacle, same wing shapes as seagull. |
@@ -41,7 +41,7 @@ Ground obstacles: the bottom of each viewBox is the ground line.
 
 ## Still to do (assets)
 
-- [ ] **Duck pose** for the kid (crouched low on the scooter) — needed to pass under birds.
+- [x] Duck pose (belly down, bum up on the deck).
 - [ ] **Game-over pose** (e.g. dizzy / fallen off).
 - [ ] **Background**: sky, clouds, hills/trees/buildings, ground tile.
 - [ ] Decide the final page title (currently says "Scooter Dash" in `Assets.html` header; game name is "Jump n Duck").

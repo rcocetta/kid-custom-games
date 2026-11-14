@@ -121,6 +121,9 @@
   @keyframes bob { 50% { transform: translateY(-10px) rotate(4deg); } }
   .foodby { position: absolute; bottom: 120px; left: 100%; z-index: 1; animation: groundby 5.5s linear infinite; animation-delay: 4.2s; }
   .foodby .sprite { width: 60px; margin: 0; display: block; animation: bob 1.2s ease-in-out infinite; }
+  /* duck viewBox is wider (204 vs 165 units): scale width so it matches the other poses */
+  .stage .sprite.kid-duck { width: 185px; }
+  .preview .stage .sprite.kid-duck { width: 235px; }
   .stage .sprite.kid-face { width: 130px; margin-bottom: 40px; }
   .hud {
     position: absolute; top: 14px; left: 14px; z-index: 3;
@@ -227,6 +230,7 @@
     ride: ['Ride', 'Cruising with both feet on the deck.'],
     push: ['Push', 'Kicking the ground to go faster. Alternates with Ride.'],
     jump: ['Jump', 'Knees tucked, scooter tipped up.'],
+    duck: ['Duck', 'Belly down, bum up, handlebar low. Slides under birds!'],
   };
 
   const grid = document.getElementById('kid-grid');
@@ -252,7 +256,8 @@
       </div>
       <div class="controls">
         <button id="jump-btn">Jump!</button>
-        <span class="hint">or press Space / tap the scene</span>
+        <button id="duck-btn">Duck</button>
+        <span class="hint">Space / tap = jump · hold ↓ or the Duck button = duck</span>
       </div>
     </div>`);
 
@@ -265,17 +270,17 @@
   });
 
   const runner = document.getElementById('runner');
-  let frame = 0, jumping = false;
+  let frame = 0, jumping = false, ducking = false;
   const draw = (pose) => { runner.innerHTML = A.kid(pose); };
   draw('ride');
   setInterval(() => {
-    if (jumping) return;
+    if (jumping || ducking) return;
     frame = (frame + 1) % 4;
     draw(frame === 1 ? 'push' : 'ride'); // push briefly, then glide
   }, 220);
 
   function jump() {
-    if (jumping) return;
+    if (jumping || ducking) return;
     jumping = true;
     draw('jump');
     runner.classList.add('jumping');
@@ -288,8 +293,20 @@
   });
   document.getElementById('jump-btn').addEventListener('click', jump);
   stage.addEventListener('click', jump);
+  function duck(on) {
+    if (jumping || ducking === on) return;
+    ducking = on;
+    draw(on ? 'duck' : 'ride');
+  }
+  const duckBtn = document.getElementById('duck-btn');
+  duckBtn.addEventListener('pointerdown', () => duck(true));
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => duckBtn.addEventListener(ev, () => duck(false)));
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Space') { e.preventDefault(); jump(); }
+    if (e.code === 'ArrowDown') { e.preventDefault(); duck(true); }
+  });
+  document.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowDown') duck(false);
   });
 
   // ---------- Obstacles ----------

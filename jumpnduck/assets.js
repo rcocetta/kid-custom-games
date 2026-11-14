@@ -71,19 +71,26 @@
   }
 
   // ---------- Parts of the kid on the scooter ----------
-  function scooter() {
+  // Stem geometry: upright for riding, tipped forward (low) for ducking.
+  const STEMS = {
+    upright: { top: [151, 118], bar: [[140, 119], [164, 116]], shine: 'M153 130 L156 150' },
+    low: { top: [204, 182], bar: [[198, 180], [220, 178]], shine: 'M174 198 L188 190' },
+  };
+
+  function scooter(stemKind = 'upright') {
+    const st = STEMS[stemKind];
     return (
       // rear fender / brake
       limb([[38, 204], [44, 194], [60, 192]], C.scooter, 6) +
       // stem + joint to deck
-      limb([[160, 214], [151, 118]], C.scooter, 8) +
+      limb([[160, 214], st.top], C.scooter, 8) +
       limb([[138, 200], [154, 190]], C.scooter, 9) +
       // handlebar
-      limb([[140, 119], [164, 116]], C.scooter, 7) +
+      limb(st.bar, C.scooter, 7) +
       // deck
       `<rect x="42" y="194" width="110" height="13" rx="6.5" fill="${C.scooter}" stroke="${O}" stroke-width="${SW}"/>` +
       `<path d="M52 198.5 L140 198.5" stroke="${C.scooterHi}" stroke-width="2.5" stroke-linecap="round"/>` +
-      `<path d="M153 130 L156 150" stroke="${C.scooterHi}" stroke-width="2.5" stroke-linecap="round"/>` +
+      `<path d="${st.shine}" stroke="${C.scooterHi}" stroke-width="2.5" stroke-linecap="round"/>` +
       wheel(52, 214) +
       wheel(160, 214)
     );
@@ -190,8 +197,34 @@
       .join('');
   }
 
-  /** Kid on scooter. pose: 'ride' | 'push' | 'jump'. Returns an SVG string. */
+  // Shoe facing backwards (mirrored), for legs stretched out behind.
+  const shoeBack = (x, y) => `<g transform="translate(${2 * x} 0) scale(-1 1)">${shoe(x, y)}</g>`;
+
+  // Duck pose: lying belly-down on the deck, bum up, stem tipped forward and low.
+  // Same drawing scale as the other poses, just a lower/wider viewBox.
+  function kidDuck() {
+    const body =
+      // back leg (knee on the deck, lower leg lying flat behind)
+      limb([[74, 162], [60, 188], [40, 186]], C.jeansShade, 12) + shoeBack(38, 184) +
+      scooter('low') +
+      // arms reach forward under the head to the handlebar
+      arm([126, 176], [164, 194], [200, 180], true) +
+      arm([130, 182], [170, 198], [210, 178], false) +
+      // front leg
+      limb([[84, 164], [70, 190], [50, 188]], C.jeans, 12) + shoeBack(48, 186) +
+      // lying torso + bum in the air
+      limb([[88, 158], [126, 176]], C.shirt, 30) +
+      `<path d="M96 156 L104 176" stroke="${C.shirtShade}" stroke-width="5" stroke-linecap="round" opacity="0.6"/>` +
+      `<ellipse cx="80" cy="155" rx="18" ry="16" fill="${C.jeans}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<path d="M70 146 Q76 141 84 141" fill="none" stroke="#7FA6E6" stroke-width="3.5" stroke-linecap="round"/>` +
+      // head, chin resting near the front of the deck
+      `<g transform="translate(52 84)">${head()}</g>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 74 204 161" class="sprite kid kid-duck">${body}</svg>`;
+  }
+
+  /** Kid on scooter. pose: 'ride' | 'push' | 'jump' | 'duck'. Returns an SVG string. */
   function kid(pose = 'ride') {
+    if (pose === 'duck') return kidDuck();
     const p = POSES[pose] || POSES.ride;
     const body =
       legs(p.behind, true) +
@@ -644,7 +677,7 @@
   window.GameAssets = {
     palette: C,
     kid,
-    kidPoses: Object.keys(POSES),
+    kidPoses: [...Object.keys(POSES), 'duck'],
     kidFace,
     seagull,
     seagullFrames: Object.keys(WINGS),
