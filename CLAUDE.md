@@ -26,7 +26,14 @@ These apply to **every game** in this repo. Per-game details live in each game's
 
 ## 3. Hosted on GitHub Pages
 
-- Served as static files from the repo; the site root lists the games via a root `index.html`.
+- Games are developed in their own folders. `./build.sh` copies each game's runtime files into
+  `docs/<game>/` and regenerates `docs/index.html` (the list of games). It is a plain copy step
+  (no bundling/compiling).
+- **CI publishes, not people**: `.github/workflows/pages.yml` runs `build.sh` on every PR (build
+  check only) and on every push to `main` builds and deploys `docs/` to GitHub Pages. So only what
+  is merged to `main` goes live — keep unfinished work on branches.
+- `docs/` is generated and git-ignored: never commit it or edit it by hand. Run `./build.sh`
+  locally only to preview the published site.
 - Use **relative paths only** (`assets.js`, `../`), never absolute `/...` — the site lives
   under `/<repo-name>/`.
 - Paths are case-sensitive on Pages: the reference must match the filename exactly.
