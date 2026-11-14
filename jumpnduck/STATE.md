@@ -28,6 +28,7 @@ The kid rides a scooter, jumps over ground obstacles, ducks under flying ones, a
 | Call | Variants | Notes |
 |---|---|---|
 | `kid(pose)` | `kidPoses`: `ride`, `push`, `jump`, `duck`, `gameover` | Kid on scooter, big head, blonde, green eyes, green tee, jeans, white shoes; black scooter, orange wheels. Wheels are `<g class="wheel">` — spin with CSS. Ride/push alternate for the run cycle. `duck` = lying belly-down, bum up, stem tipped forward low; same drawing scale but a lower/wider viewBox (`20 74 204 161` vs `20 -10 165 245`), so size it by viewBox units, not by a fixed pixel width. `gameover` = fell off: sitting on the ground, X eyes, tear, wobbly frown, dizzy stars, scooter tipped over behind (viewBox `-82 10 262 225`). The KO face is `head(true)` inside assets.js. |
+| `kid(pose, { strong: true })` | ride, push, jump, duck | **Power-up** look after eating well (game: ~3 s): big biceps (bulge drawn on the arm; underside when ducking), broad V-shaped shirt, determined eyebrows, yellow sparkles. Same viewBoxes/anchoring as the normal poses. Not for `gameover`. |
 | `kidFace()` | — | Front-facing portrait. Standalone, general-purpose asset (menus, game over, etc.); the score badge (HUD) is just one user of it — keep it independent from the HUD. |
 | `seagull(frame)` | `seagullFrames`: `up`, `down` | Flying obstacle. Alternate frames to flap. |
 | `pigeon(frame)` | `pigeonFrames`: `up`, `down` | Flying obstacle, same wing shapes as seagull. |

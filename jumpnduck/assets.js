@@ -98,7 +98,16 @@
     );
   }
 
-  function torso() {
+  function torso(strong = false) {
+    if (strong) {
+      // broad shoulders tapering to the waist, with a hint of chest muscles
+      return (
+        `<path d="M81 148 L120 148 L120 160 Q120 167 113 167 L88 167 Q81 167 81 160 Z" fill="${C.jeans}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+        `<path d="M72 118 Q72 102 89 102 L113 102 Q131 102 131 118 L121 150 Q120 157 113 157 L89 157 Q82 157 82 150 Z" fill="${C.shirt}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+        `<path d="M88 125 Q95 132 101 125 M104 125 Q111 132 117 125" fill="none" stroke="${C.shirtShade}" stroke-width="3" stroke-linecap="round"/>` +
+        `<path d="M86 136 L85 150" stroke="${C.shirtShade}" stroke-width="5" stroke-linecap="round" opacity="0.6"/>`
+      );
+    }
     return (
       // jeans waist
       `<path d="M81 148 L120 148 L120 160 Q120 167 113 167 L88 167 Q81 167 81 160 Z" fill="${C.jeans}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
@@ -108,7 +117,31 @@
     );
   }
 
-  function arm(shoulder, elbow, hand, back) {
+  // Muscly arm: thicker, a big rounded bicep, sleeve rolled up to show it off.
+  function strongArm(shoulder, elbow, hand, back, bulgeDown = false) {
+    const skin = back ? C.skinShade : C.skin;
+    const shirt = back ? C.shirtShade : C.shirt;
+    const dx = elbow[0] - shoulder[0], dy = elbow[1] - shoulder[1], len = Math.hypot(dx, dy) || 1;
+    let nx = -dy / len, ny = dx / len;
+    if ((ny > 0) !== bulgeDown) { nx = -nx; ny = -ny; } // bulge on the upper side (or underside when lying down)
+    const bx = shoulder[0] + dx * 0.5 + nx * 7, by = shoulder[1] + dy * 0.5 + ny * 7;
+    const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+    const d = `M${shoulder.join(' ')} L${elbow.join(' ')} L${hand.join(' ')}`;
+    const common = 'fill="none" stroke-linecap="round" stroke-linejoin="round"';
+    const bicep = (fill, extra) => `<ellipse cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" rx="13.5" ry="10" transform="rotate(${ang.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)})" fill="${fill}" ${extra}/>`;
+    const capEnd = [shoulder[0] + dx * 0.12, shoulder[1] + dy * 0.12];
+    return (
+      // outlines first, then fills, so arm + bicep read as one shape
+      `<path d="${d}" ${common} stroke="${O}" stroke-width="${12 + SW * 2}"/>` + bicep(O, `stroke="${O}" stroke-width="${SW * 2}"`) +
+      `<path d="${d}" ${common} stroke="${skin}" stroke-width="12"/>` + bicep(skin, '') +
+      `<path d="M${(bx + nx * 4 - dx / len * 5).toFixed(1)} ${(by + ny * 4 - dy / len * 5).toFixed(1)} Q${(bx + nx * 7).toFixed(1)} ${(by + ny * 7).toFixed(1)} ${(bx + nx * 4 + dx / len * 5).toFixed(1)} ${(by + ny * 4 + dy / len * 5).toFixed(1)}" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>` +
+      limb([shoulder, capEnd], shirt, 15) +
+      `<circle cx="${hand[0]}" cy="${hand[1]}" r="7.5" fill="${skin}" stroke="${O}" stroke-width="3.5"/>`
+    );
+  }
+
+  function arm(shoulder, elbow, hand, back, strong = false, bulgeDown = false) {
+    if (strong) return strongArm(shoulder, elbow, hand, back, bulgeDown);
     const skin = back ? C.skinShade : C.skin;
     const shirt = back ? C.shirtShade : C.shirt;
     const sleeveEnd = [
@@ -136,7 +169,7 @@
   }
 
   // ko = game-over face: X eyes, worried brows, wobbly frown, a tear.
-  function head(ko = false) {
+  function head(ko = false, strong = false) {
     return (
       // head
       `<circle cx="98" cy="64" r="44" fill="${C.skin}" stroke="${O}" stroke-width="${SW}"/>` +
@@ -157,8 +190,12 @@
           `<path d="M122 46 Q128 51 134 52" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
           xEye(106, 68) +
           xEye(128, 66)
+        : strong
+        ? `<path d="M98 53 Q105 54 112 57" fill="none" stroke="${C.hairShade}" stroke-width="4.5" stroke-linecap="round"/>` +
+          `<path d="M121 55 Q128 51 135 50" fill="none" stroke="${C.hairShade}" stroke-width="4.5" stroke-linecap="round"/>`
         : `<path d="M99 55 Q105 51 112 54" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
-          `<path d="M122 53 Q128 50 134 53" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>` +
+          `<path d="M122 53 Q128 50 134 53" fill="none" stroke="${C.hairShade}" stroke-width="3.5" stroke-linecap="round"/>`) +
+      (ko ? '' :
           eye(106, 68) +
           eye(128, 66)) +
       // cheeks
@@ -219,24 +256,25 @@
 
   // Duck pose: lying belly-down on the deck, bum up, stem tipped forward and low.
   // Same drawing scale as the other poses, just a lower/wider viewBox.
-  function kidDuck() {
+  function kidDuck(strong = false) {
     const body =
       // back leg (knee on the deck, lower leg lying flat behind)
       limb([[74, 162], [60, 188], [40, 186]], C.jeansShade, 12) + shoeBack(38, 184) +
       scooter('low') +
       // arms reach forward under the head to the handlebar
-      arm([126, 176], [164, 194], [200, 180], true) +
-      arm([130, 182], [170, 198], [210, 178], false) +
+      arm([126, 176], [164, 194], [200, 180], true, strong, true) +
+      arm([130, 182], [170, 198], [210, 178], false, strong, true) +
       // front leg
       limb([[84, 164], [70, 190], [50, 188]], C.jeans, 12) + shoeBack(48, 186) +
       // lying torso + bum in the air
-      limb([[88, 158], [126, 176]], C.shirt, 30) +
+      limb([[88, 158], [126, 176]], C.shirt, strong ? 36 : 30) +
       `<path d="M96 156 L104 176" stroke="${C.shirtShade}" stroke-width="5" stroke-linecap="round" opacity="0.6"/>` +
       `<ellipse cx="80" cy="155" rx="18" ry="16" fill="${C.jeans}" stroke="${O}" stroke-width="${SW}"/>` +
       `<path d="M70 146 Q76 141 84 141" fill="none" stroke="#7FA6E6" stroke-width="3.5" stroke-linecap="round"/>` +
       // head, chin resting near the front of the deck
-      `<g transform="translate(52 84)">${head()}</g>`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 74 204 161" class="sprite kid kid-duck">${body}</svg>`;
+      `<g transform="translate(52 84)">${head(false, strong)}</g>` +
+      (strong ? powerSparkles([[58, 128, 7], [200, 120, 6], [104, 132, 5]]) : '');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 74 204 161" class="sprite kid kid-duck${strong ? ' kid-strong' : ''}">${body}</svg>`;
   }
 
   function star(cx, cy, r) {
@@ -272,21 +310,34 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-82 10 262 225" class="sprite kid kid-gameover">${body}</svg>`;
   }
 
-  /** Kid on scooter. pose: 'ride' | 'push' | 'jump' | 'duck' | 'gameover'. Returns an SVG string. */
-  function kid(pose = 'ride') {
-    if (pose === 'duck') return kidDuck();
+  // Power-up sparkles: little yellow stars + twinkles around the kid
+  function powerSparkles(list) {
+    return list
+      .map(([x, y, r], i) =>
+        i % 2
+          ? `<path d="M${x} ${y - r} L${x + r * 0.3} ${y - r * 0.3} L${x + r} ${y} L${x + r * 0.3} ${y + r * 0.3} L${x} ${y + r} L${x - r * 0.3} ${y + r * 0.3} L${x - r} ${y} L${x - r * 0.3} ${y - r * 0.3} Z" fill="#FFF1B8" stroke="${O}" stroke-width="2" stroke-linejoin="round"/>`
+          : star(x, y, r))
+      .join('');
+  }
+
+  /** Kid on scooter. pose: 'ride' | 'push' | 'jump' | 'duck' | 'gameover'.
+   *  opts.strong = true → muscly power-up version (after eating well); not for 'gameover'. Returns an SVG string. */
+  function kid(pose = 'ride', opts = {}) {
+    const strong = !!opts.strong;
+    if (pose === 'duck') return kidDuck(strong);
     if (pose === 'gameover') return kidGameOver();
     const p = POSES[pose] || POSES.ride;
     const body =
       legs(p.behind, true) +
       scooter() +
       legs(p.onDeck, false) +
-      arm([93, 120], [112, 132], [143, 120], true) +
-      torso() +
-      head() +
-      arm([110, 120], [126, 132], [154, 117], false);
+      (strong ? arm([90, 118], [106, 146], [143, 121], true, true) : arm([93, 120], [112, 132], [143, 120], true)) +
+      torso(strong) +
+      head(false, strong) +
+      (strong ? arm([114, 118], [128, 146], [154, 118], false, true) : arm([110, 120], [126, 132], [154, 117], false)) +
+      (strong ? powerSparkles([[58, 112, 7], [60, 150, 5], [160, 150, 6], [160, 70, 5]]) : '');
     return (
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 -10 165 245" class="sprite kid kid-${pose}">` +
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 -10 165 245" class="sprite kid kid-${pose}${strong ? ' kid-strong' : ''}">` +
       `<g transform="rotate(${p.tilt} 100 170)">${body}</g></svg>`
     );
   }
