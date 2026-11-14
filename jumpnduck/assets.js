@@ -876,6 +876,46 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 4 424 160" class="sprite oldtown">${s}</svg>`;
   }
 
+  /** "Nomade" — the white letter-sculpture on the Antibes bastion: a crouching figure hugging its knees,
+   *  made of steel letters, on a stepped pedestal. Its own sprite (a landmark, not an obstacle).
+   *  viewBox 200 x 230; the pedestal bottom (y = 226) is the ground line. */
+  function nomade() {
+    const body =
+      'M50 198 C20 170 22 122 48 102 C56 96 60 90 60 82 C48 72 48 42 64 28 C80 14 106 16 115 34 ' +
+      'C122 46 118 58 108 62 C102 66 96 72 92 80 C96 90 104 98 112 104 C118 92 138 88 152 98 ' +
+      'C168 110 170 150 162 198 Z';
+    // Steel letters filling the figure (clipped to the body shape)
+    const phrase = 'ANTIBESNOMADEMERSOLEILJOUERRIRESCOOTERAMISPLAGEVAGUEMONTAGNEPORTBATEAU';
+    let letters = '', k = 0;
+    for (let y = 26, row = 0; y < 200; y += 11, row++) {
+      for (let x = 28 + (row % 2) * 5; x < 172; x += 10) {
+        const ch = phrase[k++ % phrase.length];
+        const rot = ((k * 37) % 30) - 15;
+        letters += `<text x="${x}" y="${y}" transform="rotate(${rot} ${x} ${y - 3})">${ch}</text>`;
+      }
+    }
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 6 200 224" class="sprite nomade">` +
+      `<defs><clipPath id="nomade-body"><path d="${body}"/></clipPath></defs>` +
+      // pedestal: two beige steps
+      `<rect x="14" y="204" width="172" height="12" rx="3" fill="#F0DCCB" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<rect x="4" y="214" width="192" height="12" rx="3" fill="#E6CDB8" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      `<path d="M20 208 L180 208" stroke="#FBEFE5" stroke-width="2" stroke-linecap="round"/>` +
+      // shadow of the open mesh on the pedestal
+      `<ellipse cx="100" cy="205" rx="66" ry="4" fill="#9FB0C8" opacity="0.6"/>` +
+      // figure: pale see-through body, white letters, outline
+      `<path d="${body}" fill="#DCE6F4"/>` +
+      `<g clip-path="url(#nomade-body)" font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900" font-size="11" ` +
+      `fill="#FFFFFF" stroke="#A9B8CE" stroke-width="1.6" paint-order="stroke" text-anchor="middle">${letters}</g>` +
+      // the curve where the knees meet the chest, and the arm hugging them
+      `<path d="M112 104 C108 132 112 170 118 198" fill="none" stroke="#8D9DB6" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="${body}" fill="none" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      // a soft shine
+      `<path d="M70 34 Q80 24 94 24" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>` +
+      `</svg>`
+    );
+  }
+
   function toDataUrl(svg) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
@@ -896,7 +936,7 @@
     cactusVariants: Object.keys(CACTI),
     food,
     foodKinds: Object.keys(FOODS),
-    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
+    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, nomade, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
     toDataUrl,
   };
 })();
