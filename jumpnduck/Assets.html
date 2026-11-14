@@ -458,15 +458,19 @@
     const [title, desc] = foodInfo[k] || [k, ''];
     foodGrid.insertAdjacentHTML('beforeend', card(A.food(k), title, desc, `food('${k}')`));
   }
+  foodGrid.insertAdjacentHTML('beforeend', card(A.book(), 'Red book', 'Rarer: every 5th collectible. +200 and LEARN! (no muscles).', 'book()'));
   // A food floats through the preview scene at jump height, a different one each pass.
   const treat = document.createElement('div');
   treat.className = 'foodby';
   stage.appendChild(treat);
   let fi = 0;
   let eaten = false;
+  let treatN = 0, treatIsBook = false;
   const nextFood = () => {
-    treat.innerHTML = A.food(A.foodKinds[fi]);
-    fi = (fi + 1) % A.foodKinds.length;
+    treatN++;
+    treatIsBook = treatN % 5 === 0;           // every 5th collectible is a book
+    treat.innerHTML = treatIsBook ? A.book() : A.food(A.foodKinds[fi]);
+    if (!treatIsBook) fi = (fi + 1) % A.foodKinds.length;
     treat.style.visibility = 'visible';
     eaten = false;
   };
@@ -489,12 +493,12 @@
   }, 100);
 
   // Catching food: if the kid touches the floating food, it disappears, +100 EAT WELL pops up.
-  function showBonus(x, y) {
+  function showBonus(x, y, book) {
     const el = document.createElement('div');
     el.className = 'bonus';
     el.style.left = x + 'px';
     el.style.top = y + 'px';
-    el.innerHTML = A.scorePopup(100, 'EAT WELL!');
+    el.innerHTML = book ? A.scorePopup(200, 'LEARN!', '#E04848') : A.scorePopup(100, 'EAT WELL!');
     stage.appendChild(el);
     el.firstChild.addEventListener('animationend', () => el.remove());
   }
@@ -506,17 +510,21 @@
       if (hit) {
         eaten = true;
         treat.style.visibility = 'hidden';
-        showBonus(f.left + f.width / 2 - s0.left, f.top + f.height / 2 - s0.top);
-        bumpScore(100);
-        strongUntil = performance.now() + 3000;
-        if (jumping) draw('jump');
+        showBonus(f.left + f.width / 2 - s0.left, f.top + f.height / 2 - s0.top, treatIsBook);
+        if (treatIsBook) bumpScore(200);
+        else {
+          bumpScore(100);
+          strongUntil = performance.now() + 3000;
+          if (jumping) draw('jump');
+        }
       }
     }
     requestAnimationFrame(checkCatch);
   })();
 
   document.getElementById('fx-grid').insertAdjacentHTML('beforeend',
-    card(A.scorePopup(100, 'EAT WELL!'), '+100 Eat Well!', 'Pops up when he catches food: 100 bonus points. In the preview above, jump into the floating food to try it!', "scorePopup(100, 'EAT WELL!')"));
+    card(A.scorePopup(100, 'EAT WELL!'), '+100 Eat Well!', 'Pops up when he catches food: 100 bonus points. In the preview above, jump into the floating food to try it!', "scorePopup(100, 'EAT WELL!')") +
+    card(A.scorePopup(200, 'LEARN!', '#E04848'), '+200 Learn!', 'Pops up when he catches a red book: 200 bonus points.', "scorePopup(200, 'LEARN!', '#E04848')"));
 
   // ---------- Background ----------
   const B = A.background;

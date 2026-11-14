@@ -42,7 +42,8 @@ The kid rides a scooter, jumps over ground obstacles, ducks under flying ones, a
 | `background.sun()` | — | Smiling sun with soft radial glow. Game: drifts across the sky behind the clouds (parallax 0.04), long random gaps between passes. |
 | `background.boat()` | — | Small sailboat drifting on the sea. |
 | `background.oldTown()` | — | Antibes old town landmark (ramparts, pastel houses, two towers, rocks, jetty + red lighthouse), cartoon version of the user's reference photo. Not a tile: one sprite drifting at sea speed; its base (y=160 of viewBox `-4 4 424 160`) sits just below the horizon in the sea. |
-| `scorePopup(points, label)` | default `100`, `'EAT WELL!'` | Bonus popup when a food collectible is caught (+100 points). Big gold number + green ribbon + stars. Text uses Fredoka when the page has it (fallback Arial Rounded/Black). Page animates it: burst in, float up, fade. |
+| `scorePopup(points, label, ribbon)` | default `100`, `'EAT WELL!'`, green ribbon | Bonus popup when a food collectible is caught (+100 points). Big gold number + green ribbon + stars. Text uses Fredoka when the page has it (fallback Arial Rounded/Black). Page animates it: burst in, float up, fade. |
+| `book()` | — | Red book collectible with a happy face (food-sized, viewBox `4 0 96 100`). Game: every 5th collectible (`BOOK_EVERY`), +200 (`BOOK_POINTS`) with `scorePopup(200, 'LEARN!', '#E04848')`; no strong power-up. |
 | `toDataUrl(svg)` | — | Turn an SVG string into an image URL for `<canvas>` drawing. |
 
 Ground obstacles: the bottom of each viewBox is the ground line.

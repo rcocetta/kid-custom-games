@@ -1034,7 +1034,7 @@
   // ---------- Effects ----------
   /** "+100 EAT WELL!" bonus popup, shown when a food collectible is caught.
    *  points / label are customisable. viewBox 220 x 130. Uses the page font (Fredoka) when available. */
-  function scorePopup(points = 100, label = 'EAT WELL!') {
+  function scorePopup(points = 100, label = 'EAT WELL!', ribbon = C.shirt) {
     const font = `font-family="Fredoka, 'Arial Rounded MT Bold', 'Arial Black', Arial, sans-serif" font-weight="700" text-anchor="middle"`;
     return (
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 130" class="sprite popup">` +
@@ -1044,8 +1044,8 @@
       `<text x="110" y="70" ${font} font-size="58" fill="${C.star}" stroke="${O}" stroke-width="9" stroke-linejoin="round" paint-order="stroke">+${points}</text>` +
       // green ribbon with the label
       `<g transform="rotate(-4 110 98)">` +
-      `<rect x="44" y="80" width="132" height="34" rx="17" fill="${C.shirt}" stroke="${O}" stroke-width="4"/>` +
-      `<path d="M58 86 L162 86" stroke="#8BE08F" stroke-width="3" stroke-linecap="round"/>` +
+      `<rect x="44" y="80" width="132" height="34" rx="17" fill="${ribbon}" stroke="${O}" stroke-width="4"/>` +
+      `<path d="M58 86 L162 86" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.45"/>` +
       `<text x="110" y="105" ${font} font-size="20" fill="#FFFFFF" stroke="${O}" stroke-width="4" stroke-linejoin="round" paint-order="stroke" letter-spacing="1">${label}</text>` +
       `</g></svg>`
     );
@@ -1075,6 +1075,31 @@
     );
   }
 
+  /** Red book collectible ("LEARN!", worth more than food). Same size/framing as food: viewBox 4 0 96 100. */
+  function book() {
+    const red = '#E04848', spine = '#B0302F', pages = '#FFF4DC', gold = '#FFD34E';
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 0 96 100" class="sprite food book">` +
+      `<g transform="rotate(-8 50 50)">` +
+      // bookmark ribbon peeking out at the top
+      `<path d="M60 18 L60 6 L66 10 L72 6 L72 18" fill="${C.shirt}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>` +
+      // page block (visible on the right) + page lines
+      `<rect x="32" y="16" width="48" height="68" rx="5" fill="${pages}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<path d="M73 26 L79 26 M73 36 L79 36 M73 46 L79 46 M73 56 L79 56 M73 66 L79 66 M73 76 L79 76" stroke="#D9C9A6" stroke-width="2" stroke-linecap="round"/>` +
+      // cover + spine
+      `<rect x="20" y="12" width="52" height="74" rx="7" fill="${red}" stroke="${O}" stroke-width="${SW}"/>` +
+      `<path d="M30 14 L30 84" stroke="${spine}" stroke-width="6"/>` +
+      `<path d="M33 13 L33 85" stroke="${O}" stroke-width="2.5" opacity="0.5"/>` +
+      // gold bands
+      `<rect x="38" y="20" width="28" height="5" rx="2.5" fill="${gold}" stroke="${O}" stroke-width="2"/>` +
+      `<rect x="38" y="73" width="28" height="5" rx="2.5" fill="${gold}" stroke="${O}" stroke-width="2"/>` +
+      // shine
+      `<path d="M40 32 Q44 28 52 28" fill="none" stroke="#FF9A9A" stroke-width="3.5" stroke-linecap="round"/>` +
+      foodFace(52, 48) +
+      `</g></svg>`
+    );
+  }
+
   function toDataUrl(svg) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
@@ -1095,6 +1120,7 @@
     cactusVariants: Object.keys(CACTI),
     food,
     foodKinds: Object.keys(FOODS),
+    book,
     background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, nomade, ferrisWheel, sun, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
     scorePopup,
     toDataUrl,
