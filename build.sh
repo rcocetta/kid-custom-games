@@ -4,6 +4,8 @@
 # A game is a top-level directory (not hidden, not "docs") containing index.html.
 # For each game: docs/<game>/ is replaced by a copy of the game folder, minus *.md
 # files and dotfiles. docs/index.html is regenerated with one card per game.
+# Files in site/ (manifest, service worker, icons; not *.md or *.py) are copied to the
+# root of docs/ so the home page can be installed as an app.
 # Nothing outside docs/ is ever written.
 #
 # Usage: ./build.sh   (works from any directory)
@@ -15,6 +17,7 @@ cd -- "$SCRIPT_DIR"
 DOCS="docs"
 INDEX="$DOCS/index.html"
 DEFAULT_EMOJI="🛴"
+SITE="site"
 
 shopt -s nullglob
 
@@ -79,7 +82,16 @@ for name in ${games[@]+"${games[@]}"}; do
   published+=("$name|$title")
 done
 
-# 3. Regenerate docs/index.html.
+# 3. Copy the home page app files (manifest, service worker, icons) into docs/.
+for f in "$SITE"/*; do
+  [[ -f "$f" ]] || continue
+  case "$f" in
+    *.md|*.py) continue ;;
+  esac
+  cp -- "$f" "$DOCS/"
+done
+
+# 4. Regenerate docs/index.html.
 {
 cat <<'HEAD'
 <!doctype html>
@@ -88,6 +100,11 @@ cat <<'HEAD'
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kid Custom Games</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2DC653">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Kid Games">
 <style>
   :root {
     --bg: #FFF8EC;
@@ -167,15 +184,20 @@ EMPTY
 fi
 cat <<'TAIL'
 </main>
+<script>
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+</script>
 </body>
 </html>
 TAIL
 } > "$INDEX"
 
-# 4. Tell GitHub Pages not to run Jekyll.
+# 5. Tell GitHub Pages not to run Jekyll.
 : > "$DOCS/.nojekyll"
 
-# 5. Summary.
+# 6. Summary.
 if ((${#published[@]})); then
   echo "Published ${#published[@]} game(s) to docs/:"
   for entry in "${published[@]}"; do
