@@ -8,8 +8,8 @@
   @font-face { font-family: 'Fredoka'; src: url('fonts/Fredoka.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
   :root {
     --ink: #2E2A36;
-    --accent: #FF8A1F;
-    --accent-dark: #C9620A;
+    --accent: #2DC653;
+    --accent-dark: #178A3A;
     --sky: #BFE6FF;
     --safe-t: env(safe-area-inset-top, 0px);
     --safe-r: env(safe-area-inset-right, 0px);
@@ -97,6 +97,8 @@
   }
   #playBtn b { font-size: clamp(22px, 8vh, 38px); font-weight: 700; }
   #playBtn small { font-size: clamp(11px, 3vh, 14px); font-weight: 500; opacity: .95; }
+  /* white labels on bright green: a dark-green shadow keeps them readable */
+  #playBtn, #againBtn { text-shadow: 0 2px 0 var(--accent-dark); }
   #playBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-dark); animation: none; }
   #playBtn:disabled { opacity: .7; animation: none; cursor: default; }
   @keyframes wob { 50% { transform: scale(1.05); } }

@@ -93,7 +93,7 @@ cat <<'HEAD'
     --bg: #FFF8EC;
     --card: #FFFFFF;
     --ink: #2E2A36;
-    --accent: #FF8A1F;
+    --accent: #2DC653;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
