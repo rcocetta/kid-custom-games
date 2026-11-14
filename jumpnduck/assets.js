@@ -823,6 +823,59 @@
     );
   }
 
+  /** Antibes old town on the water: ramparts, rocks, pastel houses, two stone towers, jetty + lighthouse.
+   *  A single landmark (not a tile): base sits on the sea surface at y = 160. viewBox 420 x 170. */
+  function oldTown() {
+    const line = '#8A6A4A';
+    const stone = '#E3C99A', stoneShade = '#CDAE7C', tower = '#D9B98A', towerShade = '#BF9E6C';
+    const roof = '#D4693F', win = '#4D5E80', rock = '#B08F6E', rockShade = '#957457';
+    const st = `stroke="${line}" stroke-width="2.5" stroke-linejoin="round"`;
+    let s = '';
+
+    // Towers first (houses overlap their bases)
+    s += `<rect x="62" y="44" width="22" height="80" fill="${tower}" ${st}/>` +
+      `<path d="M60 46 L86 46" stroke="${line}" stroke-width="3" stroke-linecap="round"/>` +
+      `<rect x="68" y="54" width="4" height="8" rx="1.5" fill="${win}"/><rect x="74" y="54" width="4" height="8" rx="1.5" fill="${win}"/>` +
+      `<rect x="78" y="46" width="5" height="78" fill="${towerShade}" opacity="0.5"/>`;
+    // Tall castle tower with battlements + flag
+    s += `<path d="M161 26 L161 8" stroke="${line}" stroke-width="2" stroke-linecap="round"/>` +
+      `<path d="M161 9 L172 12 L161 15 Z" fill="${C.wheel}" ${st}/>` +
+      `<path d="M146 124 L146 22 L150 22 L150 27 L156 27 L156 22 L160 22 L160 27 L166 27 L166 22 L170 22 L170 27 L176 27 L176 22 L180 22 L180 124 Z" fill="${tower}" ${st}/>` +
+      `<rect x="172" y="30" width="7" height="94" fill="${towerShade}" opacity="0.5"/>` +
+      `<rect x="158" y="44" width="6" height="10" rx="3" fill="${win}"/>`;
+
+    // Houses: [x, width, top, colour]; back row then front row
+    const houses = [
+      [8, 30, 78, '#F6DDB0'], [36, 26, 72, '#F2C27B'], [90, 50, 64, '#E9C08A'], [184, 30, 84, '#F2A9A0'], [212, 26, 96, '#F6DDB0'],
+      [0, 26, 96, '#E9967A'], [24, 30, 90, '#F2C27B'], [52, 26, 100, '#F6DDB0'], [76, 34, 92, '#F2A9A0'],
+      [108, 30, 98, '#F2C27B'], [136, 24, 106, '#E9967A'], [178, 32, 102, '#F6DDB0'], [226, 28, 106, '#F2C27B'],
+    ];
+    for (const [x, w, top, col] of houses) {
+      s += `<rect x="${x}" y="${top}" width="${w}" height="${122 - top}" fill="${col}" ${st}/>`;
+      s += `<rect x="${x - 2}" y="${top - 5}" width="${w + 4}" height="7" rx="2.5" fill="${roof}" ${st}/>`;
+      for (let y = top + 8; y < 114; y += 12) {
+        for (let wx = x + 5; wx + 4 < x + w - 2; wx += 10) s += `<rect x="${wx}" y="${y}" width="4" height="6" rx="1" fill="${win}"/>`;
+      }
+    }
+
+    // Ramparts: high wall on the left, lower wall to the right
+    s += `<path d="M-2 118 L152 118 L152 124 L252 124 L252 162 L-2 162 Z" fill="${stone}" ${st}/>` +
+      `<path d="M0 132 L150 132 M0 146 L150 146 M152 138 L250 138 M40 118 L40 132 M96 132 L96 146 M128 118 L128 132 M20 146 L20 160 M190 124 L190 138 M224 138 L224 152" stroke="${stoneShade}" stroke-width="2" stroke-linecap="round"/>` +
+      `<path d="M0 121 L152 121" stroke="#F3DDB4" stroke-width="2"/>`;
+
+    // Rocks at the foot of the walls
+    s += `<path d="M150 162 Q152 144 166 142 Q172 132 186 136 Q196 128 210 136 Q224 132 232 142 Q248 138 256 148 Q272 146 284 162 Z" fill="${rock}" ${st}/>` +
+      `<path d="M170 150 Q180 146 188 150 M214 146 Q222 144 228 150 M248 154 Q256 152 262 156" fill="none" stroke="${rockShade}" stroke-width="2" stroke-linecap="round"/>`;
+
+    // Jetty with a little red lighthouse
+    s += `<rect x="250" y="152" width="166" height="9" rx="3" fill="${stoneShade}" ${st}/>` +
+      `<rect x="296" y="132" width="8" height="21" rx="2" fill="#E04848" ${st}/>` +
+      `<path d="M294 133 L306 133 L300 126 Z" fill="#E04848" ${st}/>` +
+      `<rect x="297" y="140" width="6" height="3" fill="#FFFFFF"/>`;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 4 424 160" class="sprite oldtown">${s}</svg>`;
+  }
+
   function toDataUrl(svg) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
@@ -843,7 +896,7 @@
     cactusVariants: Object.keys(CACTI),
     food,
     foodKinds: Object.keys(FOODS),
-    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
+    background: { mountains: bgMountains, sea: bgSea, ground: bgGround, boat, oldTown, tiles: { mountains: [800, 160], sea: [800, 60], ground: [400, 60] }, groundRideLine: 6 },
     toDataUrl,
   };
 })();

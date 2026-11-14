@@ -91,6 +91,10 @@
   @keyframes panM { to { background-position: -500px 0; } }
   @keyframes panS { to { background-position: -600px 0; } }
   @keyframes panG { to { background-position: -220px 0; } }
+  /* Old town drifts at the sea's speed (20px/s), so it feels part of the far coast */
+  .town { position: absolute; bottom: 46px; left: 100%; animation: sail 70s linear infinite; animation-delay: -52s; }
+  .town .sprite { width: 222px; margin: 0; display: block; }
+  .stage .sprite.oldtown { width: 100%; max-width: 520px; margin-bottom: 14px; }
   .sail { position: absolute; bottom: 52px; left: 100%; animation: sail 45s linear infinite; animation-delay: -20s; }
   .sail .sprite { width: 46px; margin: 0; display: block; }
   @keyframes sail { to { transform: translateX(-130vw); } }
@@ -254,6 +258,7 @@
       <div class="stage" id="preview-stage">
         <div class="layer layer-mountains"></div>
         <div class="layer layer-sea"></div>
+        <div class="town">${A.background.oldTown()}</div>
         <div class="sail">${A.background.boat()}</div>
         <div class="layer layer-ground"></div>
         <div class="hud"><div class="avatar">${A.kidFace()}</div><div class="points" id="points">0</div></div>
@@ -438,6 +443,7 @@
     strip(B.mountains(), 140, 700, 'Snowy mountains', 'The Alps across the bay. Farthest layer, scrolls slowest.', 'background.mountains()') +
     strip(B.sea(), 70, 900, 'The sea', 'The Mediterranean with little waves and sparkles.', 'background.sea()') +
     strip(B.ground(), 60, 400, 'City ground', 'Grey promenade sidewalk (the riding line), curb and road. Scrolls with the obstacles.', 'background.ground()') +
+    `<div class="card wide"><div class="stage">${B.oldTown()}</div><h3>Antibes old town</h3><p>Ramparts, pastel houses with terracotta roofs, the two old towers, rocks and the jetty with its red lighthouse. A single landmark that drifts past on the sea.</p><span class="tag">background.oldTown()</span></div>` +
     card(B.boat(), 'Sailboat', 'Drifts slowly across the sea.', 'background.boat()'));
 
   const names = { skin: 'Skin', hair: 'Blonde hair', eyeGreen: 'Green eyes', shirt: 'T-shirt', jeans: 'Jeans', shoe: 'Shoes', scooter: 'Scooter', wheel: 'Wheels', outline: 'Outline', cheek: 'Cheeks', gullWhite: 'Seagull', gullWing: 'Seagull wings', gullTip: 'Wing tips', gullBeak: 'Beak', pigeon: 'Pigeon', pigeonNeck: 'Pigeon neck', pigeonEye: 'Pigeon eye', cactus: 'Cactus', cactusFlower: 'Cactus flower', poop: 'Poop', rock: 'Rock', sky: 'Sky', mountains: 'Mountains', snow: 'Snow', sea: 'Sea', sidewalk: 'Sidewalk', asphalt: 'Road', chicken: 'Chicken', broccoli: 'Broccoli', carrot: 'Carrot', steak: 'Steak', yolk: 'Egg yolk' };

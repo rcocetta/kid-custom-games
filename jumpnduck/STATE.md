@@ -37,6 +37,7 @@ The kid rides a scooter, jumps over ground obstacles, ducks under flying ones, a
 | `food(kind)` | `foodKinds`: `chicken`, `broccoli`, `carrot`, `steak`, `egg` | Collectibles with happy faces. |
 | `background.mountains()` / `.sea()` / `.ground()` | tiles in `background.tiles` (800×160, 800×60, 400×60) | Antibes seafront parallax layers, each seamlessly tileable horizontally (preserveAspectRatio none). Grey city ground: kid rides on the sidewalk, top ≈ `background.groundRideLine` (6 of 60). Sky = CSS gradient `#BFE6FF → #EAF7FF`; clouds are CSS blobs in Assets.html. |
 | `background.boat()` | — | Small sailboat drifting on the sea. |
+| `background.oldTown()` | — | Antibes old town landmark (ramparts, pastel houses, two towers, rocks, jetty + red lighthouse), cartoon version of the user's reference photo. Not a tile: one sprite drifting at sea speed; its base (y=160 of viewBox `-4 4 424 160`) sits just below the horizon in the sea. |
 | `toDataUrl(svg)` | — | Turn an SVG string into an image URL for `<canvas>` drawing. |
 
 Ground obstacles: the bottom of each viewBox is the ground line.
