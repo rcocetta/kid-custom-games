@@ -85,6 +85,7 @@ Tiles repeat seamlessly: keep an offset per layer, draw `ceil(W / tileW) + 1` co
 
 ## Gameplay
 
+- Obstacle gaps are time-based: 2–4 s apart at the start, shrinking to 0.9–2 s at top speed, plus a 12% chance of a +1.5 s breather; first obstacle after a 900-unit warm-up.
 - Speed (world units/s): start `300`, `+7` per second of play, max `680`.
 - Score: `distance * 0.025` (≈ 7–17 pts/s), shown as an integer. Food `+100`. Milestone event every 500 pts (HUD pop).
 - **Jump**: `v0 = -760`, gravity `2300` → peak ≈ 125 units, airtime ≈ 0.66 s. Jump only when on the ground.

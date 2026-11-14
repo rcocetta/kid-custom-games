@@ -203,7 +203,12 @@
         o.virtX = x;
       }
       obstacles.push(o);
-      const gap = Math.max(MIN_GAP, speed * 0.75 + rand() * speed * 0.9);
+      // Gap measured in seconds of riding: roomy and varied at the start, tighter as speed rises,
+      // plus an occasional longer breather so the rhythm never feels regular.
+      const d = Math.min(1, Math.max(0, (speed - SPEED_START) / (SPEED_MAX - SPEED_START)));
+      let secs = (2.0 - 1.1 * d) + rand() * (2.0 - 0.9 * d);   // start: 2–4 s, top speed: 0.9–2 s
+      if (rand() < 0.12) secs += 1.5;
+      const gap = Math.max(MIN_GAP, speed * secs);
       gapLeft = o.w + gap;
       if (rand() < FOOD_CHANCE) {
         const key = 'food_' + A.foodKinds[Math.floor(rand() * A.foodKinds.length)];
@@ -375,7 +380,7 @@
       state = 'playing'; speed = SPEED_START; distance = 0; bonus = 0; playT = 0;
       kidOff = 0; kidVy = 0; onGround = true; jumpBuf = 0; overT = 0;
       obstacles = []; foods = []; popups = []; lastMilestone = 0;
-      gapLeft = 520;
+      gapLeft = 900;   // first obstacle arrives after a short warm-up
       g.newBest = false;
       moved = true;
     }
