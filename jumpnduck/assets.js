@@ -1,4 +1,10 @@
 /*
+ * ARTWORK: (c) 2026 Riccardo Cocetta. All rights reserved; personal, non-commercial use only.
+ * The drawings in this file are NOT covered by the repository's MIT License (see LICENSE).
+ * "Nomade" (background.nomade) depicts a sculpture by Jaume Plensa; it is shown non-commercially
+ * under French freedom of panorama (CPI art. L122-5 11°). No rights in it are granted.
+ */
+/*
  * Game assets: every sprite is drawn as SVG in code, so the same file feeds
  * both Assets.html (the portfolio) and, later, the game itself.
  *

@@ -1,4 +1,41 @@
-MIT License
+This repository contains code, artwork and third-party fonts, each under different terms.
+
+1. CODE: MIT License (full text below). This covers the source code, such as each game's
+   index.html and game.js, build.sh, and the files in site/ (including the app icons).
+
+2. ARTWORK: All rights reserved, personal non-commercial use only (see "Artwork" below).
+
+3. FONTS: each font keeps its own license, which sits next to it
+   (e.g. jumpnduck/fonts/OFL.txt, SIL Open Font License 1.1).
+
+-------------------------------------------------------------------------------
+Artwork
+-------------------------------------------------------------------------------
+
+Copyright (c) 2026 Riccardo Cocetta. All rights reserved.
+
+"Artwork" means the characters, sprites, backgrounds, landmarks and other visual
+designs of the games, and every image made from them. That includes all the
+drawing data in each game's assets.js, and any image files inside a game folder
+except fonts. The MIT License below does NOT apply to the Artwork.
+
+You may view and play the games, and you may copy or fork this repository to run
+the games for yourself, for personal, non-commercial purposes only. Any other use
+of the Artwork needs prior written permission, including commercial use, selling,
+including it in other products, or redistributing it separately from these games.
+
+Third-party works shown in the Artwork:
+
+- "Nomade" (2007), the sculpture on the Bastion Saint-Jaume in Antibes, is a work
+  by Jaume Plensa. Copyright in the sculpture belongs to its author. The games
+  include a cartoon depiction of it, made by a private individual for
+  non-commercial use under the French freedom-of-panorama exception (Code de la
+  propriété intellectuelle, art. L122-5 11°). No rights in the sculpture are granted
+  by this license, and the depiction must not be used commercially.
+
+-------------------------------------------------------------------------------
+Code: MIT License
+-------------------------------------------------------------------------------
 
 Copyright (c) 2026 Riccardo Cocetta
 
