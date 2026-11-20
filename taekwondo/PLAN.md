@@ -11,11 +11,11 @@ Branch: `taekwondo-master`. Folder: `taekwondo/`. Title: **Taekwondo Master**.
 ## 1. Decisions
 
 ### From the user (2026-11-20)
-- **Dani** = the user's wife (playable character, pink gi). **Oli** = same kid as Oli's Scooter Dash, white gi, blue belt.
+- **Dani**: playable character, pink gi. **Oli**: same character as Oli's Scooter Dash, white gi, blue belt.
 - **Attack height matters** (see Combat rules).
 - **Damage:** low and jumping versions = same as base move. **Spinning kicks = +20 %.**
 - **Block:** holding *back* is enough, **but only at the right height**. Blocked hit = **20 % damage** (was half; changed at Review 3).
-- **Difficulty (Review 3):** "too easy" (Oli lost at Blue on the first go) → CPU made 20 % harder (`HARDER = 1.2` in `cpu.js`).
+- **Difficulty (Review 3):** "too easy" in play-testing → CPU made 20 % harder (`HARDER = 1.2` in `cpu.js`).
 - **Rounds:** KO (energy 0) **or** 120 s timer (more energy left wins the round). Best of 3.
 - **Losing a match:** retry the **same belt**. Progress is saved (localStorage).
 - **Beating the Black belt:** **trophy screen**.
