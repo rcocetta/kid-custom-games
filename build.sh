@@ -3,7 +3,7 @@
 #
 # A game is a top-level directory (not hidden, not "docs") containing index.html.
 # A game can pick its home-page card emoji with <meta name="game-emoji" content="🥋"> (default 🛴).
-# For each game: docs/<game>/ is replaced by a copy of the game folder, minus *.md
+# For each game: docs/<game>/ is replaced by a copy of the game folder, minus *.md, a test/ folder
 # files and dotfiles. docs/index.html is regenerated with one card per game.
 # Files in site/ (manifest, service worker, icons; not *.md or *.py) are copied to the
 # root of docs/ so the home page can be installed as an app.
@@ -83,6 +83,7 @@ for name in ${games[@]+"${games[@]}"}; do
   cp -R -- "$name" "$DOCS/"
   find "$dest" -type f -name '*.md' -delete
   find "$dest" -mindepth 1 -name '.*' -prune -exec rm -rf -- {} +
+  rm -rf -- "$dest/test"
 
   esc_name="$(html_escape "$name")"
   esc_title="$(html_escape "$title")"
