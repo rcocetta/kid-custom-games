@@ -650,7 +650,7 @@
     function cardUpdate() {
       const f = S.fight, T = f.stateT;
       if (f.state === 'intro') {
-        if (T < 1.2) setCard('r' + f.round + f.mode, f.practice ? 'Practice' : 'Round ' + f.round, '');
+        if (T < f.stateDur - 0.7) setCard('r' + f.round + f.mode, f.practice ? 'Practice' : 'Round ' + f.round, '');
         else setCard('fight', 'Fight!', 'fight');
       } else if (f.state === 'fighting') {
         if (T < 0.5 && S.cardKey === 'fight') return;
@@ -714,6 +714,7 @@
       checkOrientation();
     }
 
+    const INTRO_GUARD = 0.3;             // s to go from the end of the bow back to the fighting stance
     function drawFighter(f, look, opp, fight) {
       const end = f.action === 'win' || f.action === 'ko' || f.action === 'defeat';
       let time = S.clock, pose, expr;
@@ -721,6 +722,13 @@
       const bowDur = PO.duration('bow') || 1.2;
       if (fight.state === 'matchOver' && fight.winner === f.index && fight.stateT < bowDur) {
         pose = PO.sample('bow', fight.stateT / bowDur); expr = PO.expression('bow');
+      } else if (fight.state === 'intro' && fight.stateT < bowDur + INTRO_GUARD) {
+        // start of every round: both fighters bow (kyungye), then raise their guard before "Fight!"
+        if (fight.stateT < bowDur) { pose = PO.sample('bow', fight.stateT / bowDur); expr = PO.expression('bow'); }
+        else {
+          const r = PO.forFighter(f, { time: time, threat: 'MID' });
+          pose = A.lerpPose(PO.sample('bow', 1), r.pose, (fight.stateT - bowDur) / INTRO_GUARD); expr = r.expression;
+        }
       } else {
         const r = PO.forFighter(f, { time: (fight.state === 'matchOver' && fight.winner === f.index) ? fight.stateT - bowDur : time, threat: opp.move ? opp.move.level : 'MID' });
         pose = r.pose; expr = r.expression;

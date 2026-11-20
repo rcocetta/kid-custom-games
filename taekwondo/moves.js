@@ -23,7 +23,7 @@
     blockedKnockbackMul: 0.6,
     blockDamageMul: 0.2, // Review 3: a block lets only 20% of the damage through
     spinKickDamageMul: 1.2,
-    introTime: 2.2,         // "Round N" + "Fight!"
+    introTime: 2.6,         // bow (1.6 s) + guard up (0.3 s) during "Round N", then "Fight!" (0.7 s)
     roundOverTime: 2.6,
     startOffset: 150,       // start distance from arena centre
     defaultArena: { floorY: 470, minX: 80, maxX: 1120 },
