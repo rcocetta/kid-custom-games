@@ -1,6 +1,6 @@
 # kid-custom-games
 
-Small browser games made for kids. Your kid is the hero, and the scenery is your town. The kid
+Small browser games made for kids. Your kid is the hero, and the scenery is your town. Your kid
 plays and tests every version, and their feedback shapes what gets fixed. The games are free to
 play, run offline, and collect no data.
 
