@@ -278,7 +278,7 @@
     const $ = function (id) { return document.getElementById(id); };
     const WORLD_W = AR.width || 1200, WORLD_H = AR.height || 520, FLOOR = AR.floorY;
     const INK = '#2E2A36';
-    const KEY = { progress: 'taekwondo:progress', trophies: 'taekwondo:trophies', mute: 'taekwondo:mute' };
+    const KEY = { progress: 'taekwondo:progress', trophies: 'taekwondo:trophies', mute: 'taekwondo:mute', practiceBelt: 'taekwondo:practiceBelt' };
     const ATT = ['backPunch', 'frontPunch', 'backKick', 'frontKick'];
     const CODE_ATT = { KeyA: 'backPunch', KeyS: 'frontPunch', KeyZ: 'backKick', KeyX: 'frontKick' };
     const CODE_DIR = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
@@ -300,10 +300,11 @@
     }
     function saveProgress() { sset(KEY.progress, JSON.stringify({ character: S.character, beltIndex: S.beltIndex })); }
     function loadTrophies() { const n = parseInt(sget(KEY.trophies), 10); return n > 0 ? n : 0; }
+    function loadPracticeBelt() { const n = parseInt(sget(KEY.practiceBelt), 10); return n >= 0 && n < A.belts.length ? n : 0; }
 
     // ---------- state ----------
     const S = {
-      screen: 'title', mode: 'tournament', character: 'oli', beltIndex: 0, trophies: 0, hasProgress: false,
+      screen: 'title', mode: 'tournament', character: 'oli', beltIndex: 0, practiceBelt: 0, trophies: 0, hasProgress: false,
       fight: null, cpu: null, playerLook: null, oppLook: null, paused: false, overlay: null, confirmFrom: null, onYes: null,
       fx: [], shake: 0, clock: 0, overShown: false, champion: false, beatenBelt: '', cardKey: '', avT: [0, 0],
     };
@@ -371,27 +372,40 @@
     }
     function pickCharacter(c) {
       if (c !== S.character) { S.character = c; }
-      if (S.mode === 'practice') { S.beltIndex = 0; S.oppLook = A.randomOpponent('white', Math.random); startFight(); return; }
+      if (S.mode === 'practice') { goLadder(); return; }   // practice: pick the opponent's belt on the ladder screen
       if (!S.hasProgress) S.beltIndex = 0;
       S.hasProgress = true; saveProgress();
       goLadder();
     }
+    // Tournament: shows progress (current belt, done ones ticked). Practice: every belt is a button that picks
+    // the practice opponent's belt (remembered), also with the left/right arrows.
     function goLadder() {
       setScreen('ladder'); showOnly('ladder');
-      const bl = belt();
+      const practice = S.mode === 'practice';
+      const cur = practice ? S.practiceBelt : S.beltIndex;
+      const bl = A.belts[cur];
       S.playerLook = A.looks[S.character];
       S.oppLook = A.randomOpponent(bl.key, Math.random);
       const el = $('belts'); el.innerHTML = '';
+      el.classList.toggle('pickable', practice);
       A.belts.forEach(function (b, i) {
-        const d = document.createElement('div');
-        d.className = 'belt' + (i === S.beltIndex ? ' cur' : '') + (i < S.beltIndex ? ' done' : '');
+        const d = document.createElement(practice ? 'button' : 'div');
+        d.className = 'belt' + (i === cur ? ' cur' : '') + (!practice && i < S.beltIndex ? ' done' : '');
         d.innerHTML = A.beltBadge(b) + '<div>' + b.name + '</div>';
+        if (practice) { d.type = 'button'; d.setAttribute('aria-pressed', i === cur ? 'true' : 'false'); d.onclick = function () { pickPracticeBelt(i); }; }
         el.appendChild(d);
       });
-      $('vsTitle').textContent = 'vs ' + bl.name + ' belt';
+      $('ladHint').hidden = !practice;
+      $('vsTitle').textContent = (practice ? 'Practice vs ' : 'vs ') + bl.name + ' belt';
       $('ladMe').innerHTML = A.portrait(S.playerLook, 'normal'); $('ladMeName').textContent = S.playerLook.name;
       $('ladOpp').innerHTML = A.portrait(S.oppLook, 'fierce'); $('ladOppName').textContent = S.oppLook.name;
       focus('btnFight');
+    }
+
+    function pickPracticeBelt(i) {
+      S.practiceBelt = Math.max(0, Math.min(A.belts.length - 1, i));
+      sset(KEY.practiceBelt, String(S.practiceBelt));
+      goLadder();
     }
 
     // ---------- fight setup ----------
@@ -411,7 +425,7 @@
     function startFight() {
       const practice = S.mode === 'practice';
       S.playerLook = A.looks[S.character];
-      const bi = practice ? 0 : S.beltIndex;
+      const bi = practice ? S.practiceBelt : S.beltIndex;
       S.fight = createFight({ mode: practice ? 'practice' : 'tournament', arena: { floorY: FLOOR, minX: AR.minX, maxX: AR.maxX } });
       S.cpu = (W.TKDCpu && W.TKDCpu.createCpu) ? W.TKDCpu.createCpu(bi, Math.random) : standInCpu();
       if (S.cpu.params && S.cpu.params.speedMul) S.fight.fighters[1].speedMul = S.cpu.params.speedMul;
@@ -449,6 +463,9 @@
       unlockAudio();
       const c = e.code;
       if (c === 'Escape') { e.preventDefault(); if (!e.repeat) onEscape(); return; }
+      if (S.screen === 'ladder' && S.mode === 'practice' && (c === 'ArrowLeft' || c === 'ArrowRight')) {
+        e.preventDefault(); if (!e.repeat) sfx('blip'); pickPracticeBelt(S.practiceBelt + (c === 'ArrowRight' ? 1 : -1)); return;
+      }
       if (S.screen !== 'fight') return;
       if (c === 'KeyP') { e.preventDefault(); if (!e.repeat) togglePause(); return; }
       if (CODE_DIR[c] || CODE_ATT[c] || c === 'Space') {
@@ -633,7 +650,7 @@
     function cardUpdate() {
       const f = S.fight, T = f.stateT;
       if (f.state === 'intro') {
-        if (T < 1.2) setCard('r' + f.round + f.mode, f.practice ? 'Practice' : 'Round ' + f.round, '');
+        if (T < f.stateDur - 0.7) setCard('r' + f.round + f.mode, f.practice ? 'Practice' : 'Round ' + f.round, '');
         else setCard('fight', 'Fight!', 'fight');
       } else if (f.state === 'fighting') {
         if (T < 0.5 && S.cardKey === 'fight') return;
@@ -697,6 +714,7 @@
       checkOrientation();
     }
 
+    const INTRO_GUARD = 0.3;             // s to go from the end of the bow back to the fighting stance
     function drawFighter(f, look, opp, fight) {
       const end = f.action === 'win' || f.action === 'ko' || f.action === 'defeat';
       let time = S.clock, pose, expr;
@@ -704,6 +722,13 @@
       const bowDur = PO.duration('bow') || 1.2;
       if (fight.state === 'matchOver' && fight.winner === f.index && fight.stateT < bowDur) {
         pose = PO.sample('bow', fight.stateT / bowDur); expr = PO.expression('bow');
+      } else if (fight.state === 'intro' && fight.stateT < bowDur + INTRO_GUARD) {
+        // start of every round: both fighters bow (kyungye), then raise their guard before "Fight!"
+        if (fight.stateT < bowDur) { pose = PO.sample('bow', fight.stateT / bowDur); expr = PO.expression('bow'); }
+        else {
+          const r = PO.forFighter(f, { time: time, threat: 'MID' });
+          pose = A.lerpPose(PO.sample('bow', 1), r.pose, (fight.stateT - bowDur) / INTRO_GUARD); expr = r.expression;
+        }
       } else {
         const r = PO.forFighter(f, { time: (fight.state === 'matchOver' && fight.winner === f.index) ? fight.stateT - bowDur : time, threat: opp.move ? opp.move.level : 'MID' });
         pose = r.pose; expr = r.expression;
@@ -818,7 +843,7 @@
     function boot() {
       const p = loadProgress();
       if (p) { S.character = p.character; S.beltIndex = p.beltIndex; S.hasProgress = true; }
-      S.trophies = loadTrophies();
+      S.trophies = loadTrophies(); S.practiceBelt = loadPracticeBelt();
       try { if (W.TKDAudio && sget(KEY.mute) === '1') W.TKDAudio.setMuted(true); } catch (e) { /* ignore */ }
       $('titleOli').innerHTML = A.portrait(A.looks.oli, 'happy');
       $('titleDani').innerHTML = A.portrait(A.looks.dani, 'happy');
@@ -830,7 +855,7 @@
       $('btnMute').onclick = toggleMute;
       $('btnReset').onclick = function () {
         openConfirm('Reset progress?', function () {
-          sdel(KEY.progress); sdel(KEY.trophies); S.hasProgress = false; S.beltIndex = 0; S.trophies = 0; S.character = 'oli'; goTitle();
+          sdel(KEY.progress); sdel(KEY.trophies); sdel(KEY.practiceBelt); S.hasProgress = false; S.beltIndex = 0; S.practiceBelt = 0; S.trophies = 0; S.character = 'oli'; goTitle();
         });
       };
       $('pickOli').onclick = function () { pickCharacter('oli'); };

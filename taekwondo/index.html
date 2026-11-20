@@ -101,6 +101,8 @@
   .belt { width: clamp(38px, 8.6vw, 78px); text-align: center; font-size: clamp(9px, 2.8vh, 13px); font-weight: 600; position: relative; opacity: .75; }
   .belt svg { width: 100%; height: auto; }
   .belt.cur { opacity: 1; transform: scale(1.22); filter: drop-shadow(0 0 6px var(--gold)) drop-shadow(0 0 3px var(--gold)); font-weight: 700; z-index: 1; }
+  #belts.pickable .belt { appearance: none; border: 0; background: none; padding: 0; color: inherit; font-family: inherit; cursor: pointer; }
+  #belts.pickable .belt:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
   .belt.done::after { content: '\2713'; position: absolute; top: -4px; right: 0; color: var(--accent-dark); font-weight: 700; font-size: 1.6em; line-height: 1; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
   .vs { font-size: clamp(22px, 8vh, 40px); font-weight: 700; color: var(--red); -webkit-text-stroke: 2px #fff; paint-order: stroke fill; }
   #ladder .card { display: flex; flex-direction: column; align-items: center; gap: clamp(3px, 1.2vh, 12px); }
@@ -258,6 +260,7 @@
 <section class="screen" id="ladder" hidden>
   <div class="card">
     <div id="belts"></div>
+    <p class="sub" id="ladHint" hidden>Tap a belt to pick your practice opponent</p>
     <h2 id="vsTitle">vs White belt</h2>
     <div class="row">
       <div class="col"><div class="face" id="ladMe"></div><div class="sub" id="ladMeName"></div></div>
