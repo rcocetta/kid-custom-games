@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taekwondo Master — Moves</title>
+<link rel="stylesheet" href="review.css">
+</head>
+<body>
+<main id="main"></main>
+<script src="assets.js"></script>
+<script src="moves.js"></script>
+<script src="poses.js"></script>
+<script src="review.js"></script>
+<script>
+(function () {
+  const R = window.TKDReview, main = R.$('main');
+  R.header('Moves.html', 'Moves', 'Attacks from moves.js, posed by poses.js. Only the active tab and the tiles on screen are animated.');
+  const mv = R.initMoves(), all = mv.M.list;
+  const s = R.el('section', null, null, main); R.el('h2', null, 'Moves', s);
+  R.controls(s, { look: true, mirror: true, slow: true, reroll: true });
+  R.el('h3', null, 'Pair view: does the limb reach the opponent at the right height?', s);
+  mv.pairView(s, all, null);
+  R.el('div', 'muted', 'Dashed lines = HIGH / MID / LOW target heights. Red line = the move\'s reach (distance between the two fighters\' centres). Jumping moves use the engine\'s jump arc.', s);
+  const groups = {
+    Standing: (m) => !m.spin && m.variant === 'stand',
+    Jump: (m) => !m.spin && m.variant === 'jump',
+    Low: (m) => !m.spin && m.variant === 'low',
+    Spinning: (m) => !!m.spin,
+  };
+  const s2 = R.el('section', null, null, main);
+  R.tabs(s2, Object.keys(groups), (name, panel) => {
+    const ms = all.filter(groups[name]);
+    R.el('h3', null, 'Animated (real timings from moves.js)', panel);
+    const t = R.el('div', 'tiles', null, panel);
+    ms.forEach((m) => mv.moveTile(t, m, name));
+    R.el('h3', null, 'Key frames: chamber / extension / retract (drawn once)', panel);
+    const k = R.el('div', null, null, panel);
+    ms.forEach((m) => mv.keyRow(k, m, name));
+  });
+  R.start();
+})();
+</script>
+</body>
+</html>

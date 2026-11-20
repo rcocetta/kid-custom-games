@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taekwondo Master — States</title>
+<link rel="stylesheet" href="review.css">
+</head>
+<body>
+<main id="main"></main>
+<script src="assets.js"></script>
+<script src="moves.js"></script>
+<script src="poses.js"></script>
+<script src="review.js"></script>
+<script>
+(function () {
+  const R = window.TKDReview, main = R.$('main');
+  R.header('States.html', 'States', 'Walk, jump, duck, blocks, hits, bow, win, defeated, KO. Only tiles on screen are animated.');
+  const mv = R.initMoves();
+  const s = R.el('section', null, null, main); R.el('h2', null, 'States', s);
+  R.controls(s, { look: true, mirror: true, slow: true, reroll: true });
+  const t = R.el('div', 'tiles', null, s);
+  mv.TP.stateNames.forEach((st) => mv.stateTile(t, st, null));
+  R.start();
+})();
+</script>
+</body></html>

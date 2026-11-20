@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taekwondo Master — Characters</title>
+<link rel="stylesheet" href="review.css">
+</head>
+<body>
+<main id="main"></main>
+<script src="assets.js"></script>
+<script src="review.js"></script>
+<script>
+(function () {
+  const R = window.TKDReview, A = R.A, main = R.$('main');
+  R.header('Characters.html', 'Characters', 'Oli, Dani, random opponents, portraits and belts.');
+  const sec = (title) => { const s = R.el('section', null, null, main); R.el('h2', null, title, s); return s; };
+  const cell = (html, label, floor) => {
+    const d = R.el('div', 'cell'); d.innerHTML = html + (label ? '<div>' + label + '</div>' : '');
+    if (floor) d.firstChild.classList.add('floor');
+    return d;
+  };
+  const VB = '-190 -345 380 360';
+  const fsvg = (look, pose, opts, w) => A.toSvg(A.drawFighter(look, pose, opts), VB).replace('<svg ', '<svg width="' + w + '" height="' + Math.round(w * 360 / 380) + '" ');
+  const sized = (svg, w) => svg.replace('<svg ', '<svg width="' + w + '" ');
+
+  // heroes: static, drawn once
+  const s1 = sec('Oli & Dani: fighting stance');
+  const heroes = R.el('div', 'row', null, s1);
+  [['oli', 1], ['oli', -1], ['dani', 1], ['dani', -1]].forEach(([k, f]) => heroes.appendChild(cell(fsvg(A.looks[k], A.poses.stance, { facing: f }, 220), A.looks[k].name + (f > 0 ? ' →' : ' ←'), true)));
+  [['oli', 'Oli: back view (spin)'], ['dani', 'Dani: back view']].forEach(([k, l]) => heroes.appendChild(cell(fsvg(A.looks[k], Object.assign({}, A.poses.stance, { back: 1 }), {}, 220), l, true)));
+
+  // animated idle / walk (visible tiles only)
+  const s2 = sec('Idle and walk (animated)');
+  R.controls(s2, { look: true, mirror: true });
+  const tiles = R.el('div', 'tiles', null, s2);
+  const ease = (t) => t * t * (3 - 2 * t);
+  [['Idle bounce', A.poses.idle, 0.24], ['Walk forward', A.poses.walkFwd, 0.14], ['Walk back', A.poses.walkBack, 0.14]].forEach(([name, fr, dur]) => {
+    R.tile(tiles, { name, extra: fr.length + ' frames', len: dur * fr.length, sample: (t) => {
+      const pos = (t / dur) % fr.length, i = Math.floor(pos);
+      return { pose: A.lerpPose(fr[i], fr[(i + 1) % fr.length], ease(pos - i)), expr: 'normal', y: 0 };
+    } });
+  });
+
+  // opponents + portraits
+  const s3 = sec('Opponents (one per belt) ');
+  const rb = R.el('button', null, 'Reroll', s3.firstChild);
+  const opps = R.el('div', 'row', null, s3), oppP = R.el('div', 'row', null, s3); oppP.style.marginTop = '8px';
+  function reroll() {
+    const list = A.belts.map((b) => A.randomOpponent(b.key));
+    R.state.opp = list[3]; R.bump();
+    opps.innerHTML = ''; oppP.innerHTML = '';
+    list.forEach((o) => {
+      opps.appendChild(cell(fsvg(o, A.poses.stance, { facing: -1 }, 170), '<b>' + o.name + '</b> · ' + o.belt + '<br><span class="muted">' + o.skin + ', ' + o.gender + ', ' + o.hairStyle + '</span>', true));
+      oppP.appendChild(cell(sized(A.portrait(o, 'normal'), 92), o.name));
+    });
+  }
+  rb.onclick = reroll; reroll();
+
+  const s4 = sec('Portraits');
+  const pr = R.el('div', 'row', null, s4);
+  ['oli', 'dani'].forEach((k) => ['normal', 'fierce', 'hurt', 'ko', 'happy'].forEach((e) => pr.appendChild(cell(sized(A.portrait(A.looks[k], e), 92), A.looks[k].name + ' · ' + e))));
+
+  const s5 = sec('Belt ladder');
+  const bl = R.el('div', 'row', null, s5);
+  A.belts.forEach((b) => bl.appendChild(cell(sized(A.beltBadge(b.key), 110), b.name)));
+
+  R.start();
+})();
+</script>
+</body>
+</html>

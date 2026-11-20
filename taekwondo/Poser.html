@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taekwondo Master — Poser</title>
+<link rel="stylesheet" href="review.css">
+</head>
+<body>
+<main id="main"></main>
+<script src="assets.js"></script>
+<script src="moves.js"></script>
+<script src="poses.js"></script>
+<script src="review.js"></script>
+<script>
+(function () {
+  const R = window.TKDReview, A = R.A, $ = R.$, main = $('main');
+  R.header('Poser.html', 'Poser', 'Pose lab: author a pose with sliders, copy the JSON into poses.js. Plus the reach pair view.');
+  const mv = R.initMoves(), TP = mv.TP;
+  const s = R.el('section', null, null, main); R.el('h2', null, 'Pose lab', s);
+  const grid = R.el('div', 'poser', null, s);
+  const left = R.el('div', null, null, grid), right = R.el('div', null, null, grid);
+  const ctl = R.el('div', 'controls', 'Start from ', left);
+  const base = R.el('select', null, null, ctl);
+  const look = R.el('select', null, null, ctl);
+  [['oli', 'Oli'], ['dani', 'Dani'], ['opp', 'Opponent']].forEach(([v, t]) => { R.el('option', null, t, look).value = v; });
+  const expr = R.el('select', null, null, ctl);
+  ['normal', 'fierce', 'hurt', 'ko', 'happy'].forEach((e) => R.el('option', null, e, expr));
+  const ml = R.el('label', null, null, ctl); const mirror = R.el('input', null, null, ml); mirror.type = 'checkbox'; ml.append(' left');
+
+  const RANGES = {
+    x: [-150, 150], y: [-250, 50], rot: [-180, 180], torso: [-90, 120], head: [-60, 60],
+    fShoulder: [-120, 200], fElbow: [-20, 160], bShoulder: [-120, 200], bElbow: [-20, 160],
+    fHip: [-90, 170], fKnee: [-10, 160], fAnkle: [-90, 120],
+    bHip: [-90, 170], bKnee: [-10, 160], bAnkle: [-90, 120],
+    fHand: [0, 1], bHand: [0, 1], open: [0, 1], back: [0, 1], armSwap: [0, 1], legSwap: [0, 1],
+  };
+  const keys = Object.keys(RANGES);
+  let pose = Object.assign({}, A.poses.stance);
+  const inputs = {}, sl = R.el('div', 'sliders', null, left);
+  const json = R.el('textarea'), copied = R.el('span', 'muted');
+  let item;
+  keys.forEach((k) => {
+    const [lo, hi] = RANGES[k], step = hi - lo <= 1 ? 0.05 : 1;
+    R.el('label', null, k, sl);
+    const inp = R.el('input', null, null, sl); inp.type = 'range'; inp.min = lo; inp.max = hi; inp.step = step;
+    const out = R.el('output', null, null, sl);
+    inp.oninput = () => { pose[k] = +inp.value; out.value = inp.value; changed(); };
+    inputs[k] = { inp, out };
+  });
+  function sync() { keys.forEach((k) => { const v = pose[k] || 0; inputs[k].inp.value = v; inputs[k].out.value = v; }); }
+  function changed() {
+    const clean = {};
+    keys.forEach((k) => { if (pose[k]) clean[k] = Math.round(pose[k] * 100) / 100; });
+    json.value = JSON.stringify(clean);
+    item.dirty = true;
+  }
+  // base poses: stance, idle/walk frames, every state key pose is reachable via moves' key frames
+  const bases = [['stance', A.poses.stance]];
+  ['idle', 'walkFwd', 'walkBack'].forEach((n) => A.poses[n].forEach((p, i) => bases.push([n + '[' + i + ']', p])));
+  TP.moveIds.forEach((id) => { const kf = TP.keyFrames(id); ['chamber', 'extension', 'retract'].forEach((k) => bases.push([id + ' ' + k, kf[k]])); });
+  bases.forEach(([n]) => R.el('option', null, n, base));
+  base.onchange = () => { pose = Object.assign({}, bases[base.selectedIndex][1]); sync(); changed(); };
+
+  R.el('p', 'muted', 'Pose JSON (copy into poses.js, or paste here and press Load):', left);
+  left.appendChild(json); json.spellcheck = false;
+  const bar = R.el('div', 'controls', null, left); bar.style.marginTop = '6px';
+  const copy = R.el('button', null, 'Copy', bar), load = R.el('button', null, 'Load', bar); bar.appendChild(copied);
+  copy.onclick = () => {
+    json.select();
+    const done = () => { copied.textContent = 'copied'; setTimeout(() => (copied.textContent = ''), 1200); };
+    try { navigator.clipboard.writeText(json.value).then(done, () => { document.execCommand('copy'); done(); }); }
+    catch (e) { try { document.execCommand('copy'); done(); } catch (e2) { /* select is enough */ } }
+  };
+  load.onclick = () => {
+    try { pose = Object.assign({}, JSON.parse(json.value)); sync(); changed(); copied.textContent = ''; }
+    catch (e) { copied.textContent = 'not valid JSON'; }
+  };
+
+  // preview: one canvas, redrawn only when something changes (dirty flag), at most once per frame
+  const cv = R.el('canvas', 'floor', null, right);
+  item = R.item({ canvas: cv, w: 440, h: 440, draw(ctx) {
+    const l = look.value === 'opp' ? R.state.opp : A.looks[look.value];
+    const f = mirror.checked ? -1 : 1;
+    ctx.fillStyle = '#DCE6F5'; ctx.fillRect(0, 400, 440, 40);
+    A.drawToCanvas(ctx, A.drawFighter(l, pose, { facing: f, expression: expr.value, x: 220, y: 400 }));
+  } });
+  [look, expr, mirror].forEach((e) => { e.onchange = () => { item.dirty = true; }; });
+  sync(); changed();
+
+  const s2 = R.el('section', null, null, main); R.el('h2', null, 'Pair view', s2);
+  R.controls(s2, { look: true, mirror: false, reroll: true });
+  mv.pairView(s2, mv.M.list, null);
+  R.start();
+})();
+</script>
+</body></html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taekwondo Master: sound check</title>
+<style>
+  @font-face {
+    font-family: "Fredoka";
+    src: url("fonts/Fredoka.ttf") format("truetype");
+    font-weight: 300 700;
+    font-display: swap;
+  }
+  :root {
+    --bg: #fff6e5;
+    --ink: #2b2140;
+    --card: #ffffff;
+    --accent: #ff7a59;
+    --accent-2: #4fb3bf;
+    --muted: #8a7f99;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1f1a2e;
+      --ink: #f6efff;
+      --card: #2d2643;
+      --accent: #ff9a7d;
+      --accent-2: #7fd6df;
+      --muted: #b3a8c7;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1f1a2e;
+    --ink: #f6efff;
+    --card: #2d2643;
+    --accent: #ff9a7d;
+    --accent-2: #7fd6df;
+    --muted: #b3a8c7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Fredoka", system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  h1 { font-size: 1.8rem; margin: 8px 0 4px; text-align: center; }
+  p.lead { text-align: center; color: var(--muted); margin: 0 0 16px; }
+  .mute-row { display: flex; justify-content: center; margin-bottom: 20px; }
+  .mute {
+    font: inherit;
+    font-size: 1.1rem;
+    padding: 10px 22px;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .mute[aria-pressed="true"] { background: var(--accent-2); color: #1b1b1b; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .sound {
+    font: inherit;
+    font-size: 1.3rem;
+    font-weight: 600;
+    min-height: 96px;
+    padding: 12px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 6px 0 var(--ink);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .sound:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+  .sound:focus-visible { outline: 4px solid var(--accent); outline-offset: 3px; }
+  .sound small { display: block; font-size: 0.85rem; font-weight: 400; color: var(--muted); margin-top: 4px; }
+  .sound.big { background: var(--accent); color: #fff; }
+  .sound.big small { color: #fff; opacity: 0.9; }
+  .note { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 24px; }
+  .pitch-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 0 20px; }
+  .pitch-row label { font-size: 1rem; }
+  .pitch-row input { width: min(60vw, 260px); }
+</style>
+</head>
+<body>
+  <h1>Sound check</h1>
+  <p class="lead">Tap a sound to hear it. Tell me which ones to keep, change or drop.</p>
+
+  <div class="mute-row">
+    <button type="button" class="mute" id="mute" aria-pressed="false">Sound: on</button>
+  </div>
+
+  <div class="pitch-row">
+    <label for="volume">Volume</label>
+    <input type="range" id="volume" min="0" max="1" step="0.05" value="1">
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="note">Each tap also gives a tiny random pitch change on punch, kick, whoosh and block, so repeats do not sound identical.</p>
+
+  <script src="audio.js"></script>
+  <script>
+    (function () {
+      var SOUNDS = [
+        ['whoosh', 'Attack swing'],
+        ['punch', 'Punch'],
+        ['kick', 'Kick'],
+        ['block', 'Block'],
+        ['ko', 'Knock-out'],
+        ['bell', 'Round bell'],
+        ['win', 'Win jingle'],
+        ['lose', 'Lose wah-wah'],
+        ['blip', 'Menu click'],
+        ['trophy', 'Trophy fanfare']
+      ];
+      var A = window.TKDAudio;
+      var grid = document.getElementById('grid');
+      var mute = document.getElementById('mute');
+      var volume = document.getElementById('volume');
+
+      function paintMute() {
+        var on = !A.isMuted();
+        mute.textContent = on ? 'Sound: on' : 'Sound: off';
+        mute.setAttribute('aria-pressed', on ? 'false' : 'true');
+      }
+
+      SOUNDS.forEach(function (s) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'sound' + (s[0] === 'trophy' ? ' big' : '');
+        b.textContent = s[1];
+        var small = document.createElement('small');
+        small.textContent = s[0];
+        b.appendChild(small);
+        b.addEventListener('click', function () {
+          A.unlock();
+          A.play(s[0], { volume: Number(volume.value) });
+        });
+        grid.appendChild(b);
+      });
+
+      mute.addEventListener('click', function () {
+        A.unlock();
+        A.setMuted(!A.isMuted());
+        paintMute();
+      });
+
+      paintMute();
+    })();
+  </script>
+</body>
+</html>
