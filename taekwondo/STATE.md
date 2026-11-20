@@ -16,6 +16,16 @@ Waiting for **Review 1** (characters & arena). Verified headless only (no real b
 | `arena.js`, `Arena.html` | Outdoor Antibes training hall (`window.TKDArena`). | P3 |
 | `game.js`, `moves.js`, `test/` | Fight engine core + tests. | P5 |
 
+## Game shell (P6)
+
+- **Files:** `index.html` (entry, inline CSS, overlays), `game.js` (core `createFight` + browser shell, `window.TKD.shell` test hook). Script order: arena, assets, moves, poses, cpu, audio, game; cpu.js/audio.js are guarded (`window.X &&`), a stand-in CPU is used if cpu.js is missing.
+- **Screens** (DOM overlays, one page): title (Tournament / Practice / sound toggle / Reset progress with confirm / control legend) -> character (Oli, Dani) -> belt ladder (8 badges, current highlighted, opponent portrait, Fight!) -> fight (HUD, "Round N", "Fight!", "KO!"/"Time!" cards, match-over panel: win -> bow + win pose, next belt; lose -> "Try again!" same belt) -> trophy screen after Black (SVG trophy, confetti, trophy count; ladder resets to White). Practice: White belt, no damage/timer, hit counter, legend strip.
+- **Controls:** arrows; `KeyA/S/Z/X` = back punch / front punch / back kick / front kick (AZERTY Q/S/W/X, same keys); `KeyP` pause; `Esc` "Leave the fight?" (also steps back on menus). Attacks are press edges with a 0.12 s buffer. Touch (coarse pointer): joystick bottom-left (dead zone 0.3, 4 dirs + diagonals), 2x2 buttons bottom-right (top: back/front punch, bottom: back/front kick), pause button top-centre.
+- **Pause:** P / button, Esc, tab hidden, portrait ("Turn your phone sideways" overlay).
+- **Storage** (all try/catch): `taekwondo:progress` `{character, beltIndex}`, `taekwondo:trophies`, `taekwondo:mute` (also written by audio.js). Reset progress clears progress + trophies.
+- **Rendering:** arena layers rasterised once into an offscreen canvas per size; fighters = `forFighter` -> `drawFighter` -> `drawToCanvas` at `floorY - f.y`; DPR capped at 2. Pose + primitives cost ~0.45 ms per fighter (node), so about 1 ms/frame for both. Effects: star burst, BLOCK! puff, floating damage numbers, shake on spinning hits / KO.
+- **Verified:** node stub-DOM smoke test (title to trophy, pause/Esc/portrait/hidden, storage throwing, practice, reset); `fight-mock` PNG for layout. **Not verified:** real browser (real canvas, fonts, touch/pointer events, safe-area, audio, rendering speed).
+
 ## Style rules (keep consistent)
 
 - Same as Oli's Scooter Dash: thick `#2E2A36` outline, width 4; limbs = outlined round-capped strokes

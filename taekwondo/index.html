@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Taekwondo Master</title>
+<style>
+  @font-face { font-family: 'Fredoka'; src: url('fonts/Fredoka.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
+  :root {
+    --ink: #2E2A36; --accent: #2DC653; --accent-dark: #178A3A; --sky: #BFE6FF; --red: #E5383B; --gold: #FFD34E;
+    --safe-t: env(safe-area-inset-top, 0px); --safe-r: env(safe-area-inset-right, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px); --safe-l: env(safe-area-inset-left, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: var(--sky);
+    font-family: 'Fredoka', ui-rounded, 'Segoe UI', system-ui, sans-serif; color: var(--ink);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  #game { position: fixed; left: 0; top: 0; display: block; touch-action: none; }
+  [hidden] { display: none !important; }
+  button { font: inherit; color: inherit; touch-action: manipulation; }
+  svg { display: block; }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    font-weight: 700; font-size: clamp(16px, 5.4vh, 26px); color: #fff; background: var(--accent); border: 4px solid var(--ink);
+    border-radius: 999px; padding: clamp(3px, 1vh, 8px) clamp(20px, 4.5vh, 40px); cursor: pointer;
+    box-shadow: 0 5px 0 var(--accent-dark); text-shadow: 0 2px 0 var(--accent-dark);
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--accent-dark); }
+  .btn.alt { background: #fff; color: var(--ink); text-shadow: none; box-shadow: 0 5px 0 rgba(46,42,54,.3); }
+  .btn.alt:active { box-shadow: 0 1px 0 rgba(46,42,54,.3); }
+  .btn.red { background: var(--red); box-shadow: 0 5px 0 #A32628; text-shadow: 0 2px 0 #A32628; }
+  .btn.small { font-size: clamp(11px, 3vh, 14px); padding: 1px 12px; box-shadow: none; border-width: 2px; font-weight: 600; }
+  .btn:focus-visible { outline: 4px solid var(--gold); outline-offset: 2px; }
+  .btn.pulse { animation: wob 1.4s ease-in-out infinite; }
+  @keyframes wob { 50% { transform: scale(1.05); } }
+  .row { display: flex; align-items: center; justify-content: center; gap: clamp(8px, 2vh, 18px); flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1.4vh, 12px); }
+
+  /* ---------- screens ---------- */
+  .screen {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10;
+    padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+    background: rgba(255,255,255,.28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .screen.dim { background: rgba(46,42,54,.45); z-index: 20; }
+  .card {
+    background: rgba(255,255,255,.82); border: 4px solid var(--ink); border-radius: clamp(20px, 6vh, 40px);
+    padding: clamp(8px, 2.6vh, 24px) clamp(14px, 3.5vw, 40px); box-shadow: 0 8px 0 rgba(46,42,54,.22);
+    max-width: 97vw; max-height: 96vh; text-align: center;
+  }
+  h1 {
+    margin: 0; font-size: clamp(28px, 11vh, 62px); line-height: 1; font-weight: 700; color: var(--accent-dark);
+    -webkit-text-stroke: clamp(5px, 1.6vh, 9px) var(--accent); paint-order: stroke fill; text-shadow: 0 5px 0 rgba(46,42,54,.35);
+  }
+  h2 { margin: 0; font-size: clamp(22px, 8vh, 40px); line-height: 1.05; color: var(--accent-dark); }
+  .sub { font-size: clamp(13px, 4vh, 20px); font-weight: 600; color: #5b5566; }
+  .face { width: clamp(60px, 26vh, 150px); height: clamp(60px, 26vh, 150px); flex: none; }
+  .face.big { width: clamp(80px, 34vh, 200px); height: clamp(80px, 34vh, 200px); }
+  .face svg { width: 100%; height: 100%; filter: drop-shadow(0 5px 0 rgba(46,42,54,.25)); }
+  .bob { animation: bob 1.8s ease-in-out infinite; }
+  .bob.d2 { animation-delay: -.9s; }
+  @keyframes bob { 50% { transform: translateY(-6px) rotate(-3deg); } }
+
+  /* legend */
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(2px, .8vh, 6px) clamp(8px, 1.6vw, 16px); font-size: clamp(10px, 3vh, 14px); font-weight: 600; color: var(--ink); }
+  .legend span { white-space: nowrap; }
+  kbd {
+    font: inherit; font-weight: 700; background: #fff; border: 2px solid var(--ink); border-bottom-width: 4px; border-radius: 7px;
+    padding: 0 6px; display: inline-block; min-width: 1.5em; text-align: center;
+  }
+  .touchonly { display: none; }
+  @media (pointer: coarse) { .kbonly { display: none !important; } .touchonly { display: inline !important; } }
+  #legendStrip {
+    position: fixed; left: 0; right: 0; bottom: calc(var(--safe-b) + 4px); z-index: 6; pointer-events: none; display: flex; justify-content: center;
+  }
+  #legendStrip .legend { background: rgba(255,255,255,.8); border: 3px solid var(--ink); border-radius: 18px; padding: 3px 14px; }
+
+  /* title */
+  #title .card { display: flex; align-items: center; gap: clamp(10px, 3vw, 36px); }
+  #title .mid { gap: clamp(4px, 1.3vh, 12px); }
+  .iconbtn { display: inline-flex; align-items: center; gap: 6px; }
+  .iconbtn svg { width: 1.3em; height: 1.3em; }
+  #titleStats { min-height: 1.2em; }
+
+  /* character select */
+  .pick {
+    background: #fff; border: 4px solid var(--ink); border-radius: 28px; padding: clamp(6px, 2vh, 16px) clamp(16px, 4vw, 40px);
+    cursor: pointer; box-shadow: 0 6px 0 rgba(46,42,54,.3); display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-weight: 700; font-size: clamp(20px, 7vh, 34px);
+  }
+  .pick:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(46,42,54,.3); }
+  .pick.sel { background: #E8FFE9; box-shadow: 0 6px 0 var(--accent-dark); }
+  .pick:focus-visible { outline: 4px solid var(--gold); outline-offset: 2px; }
+
+  /* ladder */
+  #belts { display: flex; gap: clamp(2px, 1vw, 10px); justify-content: center; }
+  .belt { width: clamp(38px, 8.6vw, 78px); text-align: center; font-size: clamp(9px, 2.8vh, 13px); font-weight: 600; position: relative; opacity: .75; }
+  .belt svg { width: 100%; height: auto; }
+  .belt.cur { opacity: 1; transform: scale(1.22); filter: drop-shadow(0 0 6px var(--gold)) drop-shadow(0 0 3px var(--gold)); font-weight: 700; z-index: 1; }
+  .belt.done::after { content: '\2713'; position: absolute; top: -4px; right: 0; color: var(--accent-dark); font-weight: 700; font-size: 1.6em; line-height: 1; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+  .vs { font-size: clamp(22px, 8vh, 40px); font-weight: 700; color: var(--red); -webkit-text-stroke: 2px #fff; paint-order: stroke fill; }
+  #ladder .card { display: flex; flex-direction: column; align-items: center; gap: clamp(3px, 1.2vh, 12px); }
+
+  /* match over / pause / confirm */
+  .panel { display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1.4vh, 12px); }
+  #over { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; align-items: flex-start; padding-top: calc(var(--safe-t) + 10vh); z-index: 15; pointer-events: none; }
+  #over .card { pointer-events: auto; background: #fff; animation: drop .35s cubic-bezier(.2, 1.4, .4, 1); }
+  @keyframes drop { from { transform: translateY(-40px) scale(.9); opacity: 0; } }
+
+  /* trophy */
+  #trophy { background: rgba(255,248,214,.85); overflow: hidden; }
+  #trophy .card { position: relative; z-index: 2; display: flex; align-items: center; gap: clamp(8px, 3vw, 32px); }
+  #trophyArt { width: clamp(80px, 48vh, 260px); height: clamp(100px, 58vh, 310px); animation: bob 2s ease-in-out infinite; }
+  #trophyArt svg { width: 100%; height: 100%; filter: drop-shadow(0 6px 0 rgba(46,42,54,.25)); }
+  #confetti { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  #confetti i { position: absolute; top: -20px; width: 10px; height: 16px; border-radius: 3px; border: 2px solid var(--ink); animation: fall linear infinite; }
+  @keyframes fall { to { transform: translateY(115vh) rotate(720deg); } }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    position: fixed; top: calc(var(--safe-t) + 6px); left: calc(var(--safe-l) + 10px); right: calc(var(--safe-r) + 10px); z-index: 5;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; pointer-events: none;
+  }
+  .side { display: flex; align-items: center; gap: 8px; flex: 1 1 0; min-width: 0; }
+  .side.right { flex-direction: row-reverse; }
+  .avatar {
+    position: relative; width: clamp(38px, 13vh, 62px); height: clamp(38px, 13vh, 62px); border-radius: 50%; overflow: hidden; flex: none;
+    background: var(--sky); border: 3px solid var(--ink);
+  }
+  .avatar svg { width: 118%; height: 118%; margin: -9% 0 0 -9%; }
+  .meter { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .side.right .meter { align-items: flex-end; }
+  .nm { font-weight: 700; font-size: clamp(11px, 3.4vh, 16px); text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; display: flex; align-items: center; gap: 6px; }
+  .nm .bdg { width: clamp(26px, 7vh, 40px); }
+  .bar { height: clamp(14px, 4.6vh, 24px); width: 100%; background: rgba(255,255,255,.85); border: 3px solid var(--ink); border-radius: 999px; overflow: hidden; display: flex; justify-content: flex-end; }
+  .side.right .bar { justify-content: flex-start; }
+  .bar i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 999px; transition: width .12s linear, background .2s; }
+  .pips { display: flex; gap: 5px; height: clamp(10px, 3vh, 16px); }
+  .pips b { width: clamp(10px, 3vh, 16px); height: clamp(10px, 3vh, 16px); border-radius: 50%; background: rgba(255,255,255,.8); border: 3px solid var(--ink); }
+  .pips b.on { background: var(--gold); }
+  .mid { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; }
+  #timer, #hits {
+    background: #fff; border: 4px solid var(--ink); border-radius: 16px; padding: 0 14px; font-weight: 700;
+    font-size: clamp(20px, 7vh, 32px); min-width: 3.2ch; text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 4px 0 rgba(46,42,54,.25);
+  }
+  #timer.low { color: var(--red); animation: wob .5s infinite; }
+  #hits { font-size: clamp(16px, 5vh, 24px); }
+  #pauseBtn {
+    pointer-events: auto; width: clamp(30px, 9vh, 42px); height: clamp(30px, 9vh, 42px); border-radius: 50%; padding: 0;
+    background: rgba(255,255,255,.75); border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  #pauseBtn svg { width: 55%; height: 55%; }
+
+  #card {
+    position: fixed; left: 0; right: 0; top: 28%; z-index: 7; text-align: center; pointer-events: none; font-weight: 700;
+    font-size: clamp(40px, 22vh, 120px); line-height: 1; color: #fff; -webkit-text-stroke: clamp(6px, 2vh, 12px) var(--ink); paint-order: stroke fill;
+    text-shadow: 0 8px 0 rgba(46,42,54,.35); opacity: 0;
+  }
+  #card small { display: block; font-size: .3em; margin-top: .15em; -webkit-text-stroke: 5px var(--ink); }
+  #card.show { opacity: 1; animation: cardin .35s cubic-bezier(.2, 1.5, .4, 1); }
+  #card.ko { color: var(--red); } #card.fight { color: var(--gold); }
+  @keyframes cardin { from { transform: scale(.4); opacity: 0; } }
+
+  /* ---------- rotate notice ---------- */
+  #rotate {
+    position: fixed; inset: 0; z-index: 40; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+    background: var(--sky); text-align: center; padding: 24px; font-size: 26px; font-weight: 700;
+  }
+  #rotate.show { display: flex; }
+  .phone { width: 56px; height: 96px; border: 6px solid var(--ink); border-radius: 14px; background: #fff; position: relative; animation: turn 2.4s ease-in-out infinite; }
+  .phone::after { content: ''; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--accent); }
+  @keyframes turn { 0%, 15% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+
+  /* ---------- touch controls ---------- */
+  #touch { display: none; }
+  @media (pointer: coarse) { body[data-screen="fight"] #touch { display: block; } }
+  #joy {
+    position: fixed; left: calc(var(--safe-l) + 18px); bottom: calc(var(--safe-b) + 14px); width: 34vh; height: 34vh; min-width: 110px; min-height: 110px;
+    border-radius: 50%; background: rgba(255,255,255,.35); border: 4px solid rgba(46,42,54,.7); touch-action: none; z-index: 8;
+  }
+  #joy::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background:
+    linear-gradient(var(--ink), var(--ink)) center / 3px 70% no-repeat, linear-gradient(var(--ink), var(--ink)) center / 70% 3px no-repeat; opacity: .25; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 44%; height: 44%; margin: -22% 0 0 -22%; border-radius: 50%; background: rgba(255,255,255,.8); border: 4px solid var(--ink); }
+  #btns {
+    position: fixed; right: calc(var(--safe-r) + 14px); bottom: calc(var(--safe-b) + 14px); z-index: 8;
+    display: grid; grid-template-columns: repeat(2, 17vh); grid-auto-rows: 17vh; gap: 2vh;
+  }
+  .tbtn {
+    width: 100%; height: 100%; border-radius: 50%; padding: 0; background: rgba(255,255,255,.5); border: 4px solid var(--ink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; touch-action: none; font-weight: 700; font-size: clamp(9px, 2.6vh, 12px); line-height: 1;
+  }
+  .tbtn svg { width: 52%; height: 52%; }
+  .tbtn.down { background: rgba(255,255,255,.9); transform: scale(.94); }
+</style>
+</head>
+<body data-screen="title">
+<canvas id="game"></canvas>
+
+<div id="hud" hidden>
+  <div class="side left">
+    <div class="avatar" id="avL"></div>
+    <div class="meter"><div class="nm" id="nameL"></div><div class="bar"><i id="barL"></i></div><div class="pips" id="pipsL"></div></div>
+  </div>
+  <div class="mid">
+    <div id="timer">120</div><div id="hits" hidden>Hits 0</div>
+    <button id="pauseBtn" type="button" aria-label="Pause"><svg viewBox="0 0 20 20"><rect x="3" y="2" width="5" height="16" rx="2" fill="#2E2A36"/><rect x="12" y="2" width="5" height="16" rx="2" fill="#2E2A36"/></svg></button>
+  </div>
+  <div class="side right">
+    <div class="avatar" id="avR"></div>
+    <div class="meter"><div class="nm"><span id="nameR"></span><span class="bdg" id="beltR"></span></div><div class="bar"><i id="barR"></i></div><div class="pips" id="pipsR"></div></div>
+  </div>
+</div>
+<div id="card"></div>
+<div id="legendStrip" hidden></div>
+
+<!-- title -->
+<section class="screen" id="title">
+  <div class="card">
+    <div class="face bob" id="titleOli"></div>
+    <div class="col mid">
+      <h1>Taekwondo Master</h1>
+      <div class="row"><button class="btn pulse" id="btnTournament" type="button">Tournament</button><button class="btn alt" id="btnPractice" type="button">Practice</button></div>
+      <div class="legend" id="titleLegend"></div>
+      <div class="sub" id="titleInfo"></div>
+      <div class="row sub" id="titleStats">
+        <button class="btn alt small iconbtn" id="btnMute" type="button"></button>
+        <button class="btn alt small" id="btnReset" type="button">Reset progress</button>
+      </div>
+    </div>
+    <div class="face bob d2" id="titleDani"></div>
+  </div>
+</section>
+
+<!-- character select -->
+<section class="screen" id="chars" hidden>
+  <div class="card col">
+    <h2>Choose your fighter</h2>
+    <div class="row">
+      <button class="pick" id="pickOli" type="button"><div class="face big" id="faceOli"></div>Oli</button>
+      <button class="pick" id="pickDani" type="button"><div class="face big" id="faceDani"></div>Dani</button>
+    </div>
+    <button class="btn alt small" id="charsBack" type="button">Back</button>
+  </div>
+</section>
+
+<!-- belt ladder -->
+<section class="screen" id="ladder" hidden>
+  <div class="card">
+    <div id="belts"></div>
+    <h2 id="vsTitle">vs White belt</h2>
+    <div class="row">
+      <div class="col"><div class="face" id="ladMe"></div><div class="sub" id="ladMeName"></div></div>
+      <div class="vs">VS</div>
+      <div class="col"><div class="face" id="ladOpp"></div><div class="sub" id="ladOppName"></div></div>
+    </div>
+    <div class="row"><button class="btn pulse" id="btnFight" type="button">Fight!</button><button class="btn alt small" id="ladBack" type="button">Back</button></div>
+  </div>
+</section>
+
+<!-- match over -->
+<section class="screen" id="over" hidden>
+  <div class="card panel">
+    <h2 id="overTitle"></h2>
+    <div class="sub" id="overSub"></div>
+    <div class="row"><button class="btn" id="overMain" type="button"></button><button class="btn alt small" id="overQuit" type="button">Quit</button></div>
+  </div>
+</section>
+
+<!-- trophy -->
+<section class="screen" id="trophy" hidden>
+  <div id="confetti"></div>
+  <div class="card">
+    <div id="trophyArt"></div>
+    <div class="col">
+      <div class="face" id="trophyFace"></div>
+      <h1>Tournament champion!</h1>
+      <div class="sub" id="trophyCount"></div>
+      <button class="btn pulse" id="trophyBtn" type="button">Hooray!</button>
+    </div>
+  </div>
+</section>
+
+<!-- pause / confirm -->
+<section class="screen dim" id="pause" hidden>
+  <div class="card panel"><h2>Paused</h2><div class="row"><button class="btn" id="btnResume" type="button">Resume</button><button class="btn alt" id="btnQuit" type="button">Quit</button></div><div class="legend" id="pauseLegend"></div></div>
+</section>
+<section class="screen dim" id="confirm" hidden>
+  <div class="card panel"><h2 id="confirmTitle">Leave the fight?</h2><div class="row"><button class="btn red" id="confirmYes" type="button">Yes</button><button class="btn" id="confirmNo" type="button">No</button></div></div>
+</section>
+
+<div id="touch">
+  <div id="joy"><div id="knob"></div></div>
+  <div id="btns"></div>
+</div>
+
+<div id="rotate"><div class="phone"></div><div>Turn your phone sideways to play</div></div>
+
+<script src="arena.js"></script>
+<script src="assets.js"></script>
+<script src="moves.js"></script>
+<script src="poses.js"></script>
+<script src="cpu.js"></script>
+<script src="audio.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
