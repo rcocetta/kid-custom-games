@@ -754,7 +754,17 @@
       }
       if (S.screen !== 'fight' || !S.fight) return;
       const f = S.fight, F = f.fighters;
-      ctx.setTransform(k, 0, 0, k, offX + sx, offY + sy);
+      // Zoom out on the fighters (not the arena) when the HUD would cover their heads (short phone screens):
+      // scale about the centre of the floor line so feet stay on the mats and the heads drop below the HUD.
+      let z = 1;
+      const hudEl = document.getElementById('hud');
+      if (hudEl) {
+        const hb = (hudEl.getBoundingClientRect().bottom + Math.max(8, window.innerHeight * 0.04)) * dpr; // HUD bottom + a clear gap, canvas px
+        const head = FLOOR - 320;                                           // top of a standing fighter's head + hair
+        if (offY + head * k < hb) z = Math.max(0.65, (offY + FLOOR * k - hb) / ((FLOOR - head) * k));
+      }
+      const kz = k * z;
+      ctx.setTransform(kz, 0, 0, kz, offX + sx + (1 - z) * (WORLD_W / 2) * k, offY + sy + (1 - z) * FLOOR * k);
       F.forEach(function (fi) { // shadows
         const s = Math.max(0.4, 1 - fi.y / 220);
         ctx.fillStyle = 'rgba(46,42,54,.22)';
