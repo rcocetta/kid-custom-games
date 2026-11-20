@@ -27,24 +27,28 @@
   function lerp(a, b, t) { return a + (b - a) * t; }
   function r3(n) { return Math.round(n * 1000) / 1000; }
 
+  // HARDER: global difficulty knob (Review 3: "too easy, make it 20% harder"). Reactions are HARDER x faster,
+  // skill chances HARDER x higher (capped so the CPU is never perfect). Walk/attack speed is not scaled.
+  const HARDER = 1.2;
+  const up = (v, cap) => r3(Math.min(cap, v * HARDER));
   const belts = NAMES.map(function (name, k) {
     const t = k / 7;
     return {
       name: name,
-      reactionMs: Math.round(lerp(650, 150, t)),
-      blockChance: r3(lerp(0.10, 0.75, t)),
-      blockRightHeight: r3(lerp(0.50, 0.95, t)),
-      accuracy: r3(lerp(0.35, 0.90, t)),
-      aggression: r3(lerp(0.25, 0.70, t)),
-      comboChance: k < 3 ? 0 : r3(0.5 * (k - 2) / 5),
-      spinChance: k < 2 ? 0 : r3(0.3 * (k - 1) / 6),
+      reactionMs: Math.round(lerp(650, 150, t) / HARDER),
+      blockChance: up(lerp(0.10, 0.75, t), 0.9),
+      blockRightHeight: up(lerp(0.50, 0.95, t), 0.97),
+      accuracy: up(lerp(0.35, 0.90, t), 0.97),
+      aggression: up(lerp(0.25, 0.70, t), 0.9),
+      comboChance: k < 3 ? 0 : up(0.5 * (k - 2) / 5, 0.7),
+      spinChance: k < 2 ? 0 : up(0.3 * (k - 1) / 6, 0.4),
       speedMul: r3(lerp(0.85, 1.10, t)),
       preferredDist: Math.round(lerp(260, 205, t)),
-      punishChance: r3(lerp(0, 0.3, t)),
+      punishChance: up(lerp(0, 0.3, t), 0.5),
       jumpChance: k < 2 ? 0 : r3(lerp(0.02, 0.12, t)),
       duckChance: r3(lerp(0.2, 0.6, t)),
       lowDefence: k < 3 ? 0 : 0.3,
-      smartLevel: r3(lerp(0.0, 0.85, t)),
+      smartLevel: up(lerp(0.0, 0.85, t), 0.95),
     };
   });
 

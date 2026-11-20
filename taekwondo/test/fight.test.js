@@ -81,17 +81,17 @@ test('left/right are converted using facing (CPU faces left: right = back)', () 
   assert.strictEqual(f.fighters[1].moveId, 'backKick_spin_stand');
 });
 
-test('standing block halves MID and HIGH, not LOW', () => {
+test('standing block reduces to 20%: MID and HIGH, not LOW', () => {
   const block = { right: true }; // CPU faces left, so right = back
-  let f = mk(); press(f, 0, 'backKick', null, 0); run(f, 0.9, null, block); near(energyLost(f), 5);
-  f = mk(); press(f, 0, 'backKick', { up: true }, 0); run(f, 0.9, null, block); near(energyLost(f), 5);
+  let f = mk(); press(f, 0, 'backKick', null, 0); run(f, 0.9, null, block); near(energyLost(f), 2);
+  f = mk(); press(f, 0, 'backKick', { up: true }, 0); run(f, 0.9, null, block); near(energyLost(f), 2);
   f = mk(); press(f, 0, 'backKick', { down: true }, 0); run(f, 0.9, null, block); near(energyLost(f), 10);
 });
 
-test('duck block halves LOW and MID, but HIGH is dodged', () => {
+test('duck block reduce to 20%: LOW and MID, but HIGH is dodged', () => {
   const duckBlock = { right: true, down: true };
-  let f = mk(); press(f, 0, 'backKick', { down: true }, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 5);
-  f = mk(); press(f, 0, 'backKick', null, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 5);
+  let f = mk(); press(f, 0, 'backKick', { down: true }, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 2);
+  f = mk(); press(f, 0, 'backKick', null, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 2);
   f = mk(); press(f, 0, 'backKick', { up: true }, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 0);
 });
 
@@ -101,7 +101,7 @@ test('block emits a block event and blockstun', () => {
   let ev = [];
   for (let i = 0; i < 40; i++) { f.update(0.016, null, { right: true }); ev = ev.concat(f.drainEvents()); }
   const b = ev.find(e => e.type === 'block');
-  assert.ok(b); assert.strictEqual(b.level, 'MID'); assert.strictEqual(b.attacker, 0); near(b.damage, 4);
+  assert.ok(b); assert.strictEqual(b.level, 'MID'); assert.strictEqual(b.attacker, 0); near(b.damage, 1.6);
 });
 
 test('ducking dodges HIGH attacks', () => {

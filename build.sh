@@ -2,6 +2,7 @@
 # Publish every game in this repo into docs/ for GitHub Pages (run by CI: .github/workflows/pages.yml).
 #
 # A game is a top-level directory (not hidden, not "docs") containing index.html.
+# A game can pick its home-page card emoji with <meta name="game-emoji" content="🥋"> (default 🛴).
 # For each game: docs/<game>/ is replaced by a copy of the game folder, minus *.md
 # files and dotfiles. docs/index.html is regenerated with one card per game.
 # Files in site/ (manifest, service worker, icons; not *.md or *.py) are copied to the
@@ -26,6 +27,13 @@ html_escape() {
   printf '%s' "$1" \
     | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' \
           -e 's/"/\&quot;/g' -e "s/'/\&#39;/g"
+}
+
+# Print the content of <meta name="game-emoji" content="..."> in an HTML file (empty if none).
+get_emoji() {
+  tr -d '\r' < "$1" | tr '\n' ' ' \
+    | { grep -o '<meta[^>]*name="game-emoji"[^>]*>' || true; } | head -n 1 \
+    | sed -e 's/.*content="\([^"]*\)".*/\1/'
 }
 
 # Print the text of the first <title> in an HTML file, whitespace-trimmed.
@@ -68,6 +76,8 @@ for name in ${games[@]+"${games[@]}"}; do
   dest="$DOCS/$name"
   title="$(get_title "$name/index.html")"
   [[ -n "$title" ]] || title="$name"
+  emoji="$(get_emoji "$name/index.html")"
+  [[ -n "$emoji" ]] || emoji="$DEFAULT_EMOJI"
 
   rm -rf -- "$dest"
   cp -R -- "$name" "$DOCS/"
@@ -77,7 +87,7 @@ for name in ${games[@]+"${games[@]}"}; do
   esc_name="$(html_escape "$name")"
   esc_title="$(html_escape "$title")"
   printf -v card '<a class="card" href="%s/index.html">\n  <span class="emoji" aria-hidden="true">%s</span>\n  <span class="title">%s</span>\n  <span class="play">Play</span>\n</a>\n' \
-    "$esc_name" "$DEFAULT_EMOJI" "$esc_title"
+    "$esc_name" "$(html_escape "$emoji")" "$esc_title"
   cards+="$card"
   published+=("$name|$title")
 done

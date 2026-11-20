@@ -21,7 +21,7 @@
     lowDodgeHeight: 25,     // above this LOW attacks miss
     knockbackTime: 0.12,    // s over which knockback distance is covered
     blockedKnockbackMul: 0.6,
-    blockDamageMul: 0.5,
+    blockDamageMul: 0.2, // Review 3: a block lets only 20% of the damage through
     spinKickDamageMul: 1.2,
     introTime: 2.2,         // "Round N" + "Fight!"
     roundOverTime: 2.6,

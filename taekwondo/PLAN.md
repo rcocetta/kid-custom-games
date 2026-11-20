@@ -14,7 +14,8 @@ Branch: `taekwondo-master`. Folder: `taekwondo/`. Title: **Taekwondo Master**.
 - **Dani** = the user's wife (playable character, pink gi). **Oli** = same kid as Oli's Scooter Dash, white gi, blue belt.
 - **Attack height matters** (see Combat rules).
 - **Damage:** low and jumping versions = same as base move. **Spinning kicks = +20 %.**
-- **Block:** holding *back* is enough, **but only at the right height**. Blocked hit = half damage.
+- **Block:** holding *back* is enough, **but only at the right height**. Blocked hit = **20 % damage** (was half; changed at Review 3).
+- **Difficulty (Review 3):** "too easy" (Oli lost at Blue on the first go) → CPU made 20 % harder (`HARDER = 1.2` in `cpu.js`).
 - **Rounds:** KO (energy 0) **or** 120 s timer (more energy left wins the round). Best of 3.
 - **Losing a match:** retry the **same belt**. Progress is saved (localStorage).
 - **Beating the Black belt:** **trophy screen**.
@@ -60,7 +61,7 @@ and bans head punches / low strikes in WT sparring: in this game they're deliber
 - **Dodges:** a ducking fighter is not hit by HIGH attacks; a jumping fighter is not hit by LOW attacks.
 - Holding back while *pressing* an attack makes it spin (it doesn't block during the attack).
 - Each attack has **startup → active → recovery** times (spinning = slower startup and longer recovery: risky).
-- **Hit:** short hit-stun (~0.25 s) + small knockback. **Blocked:** half damage, shorter block-stun, pushback.
+- **Hit:** short hit-stun (~0.25 s) + small knockback. **Blocked:** 20 % damage, shorter block-stun, pushback.
   Fighters can't overlap or leave the arena.
 - Hit detection uses **reach + level** per move (attacker within the move's reach during active frames,
   level vs defender state), not pixel hitboxes. Simple and predictable.
@@ -149,7 +150,7 @@ Renders/scratch files go in the session scratchpad, not the repo.
 | P7 | **CPU** | general-purpose · **sonnet** | P5 | `cpu.js` + belt table; headless win-rate simulation per belt. |
 | P8 | **Sound** | general-purpose · **haiku** | P6 | `audio.js`: whoosh, punch thump, kick thwack, block clack, KO, round bell, win jingle, menu blip; mute button. |
 | ⏸ | **REVIEW 3 — play it** | the user | P6–P8 | Play on desktop and phone (`python3 -m http.server` on the LAN for the phone). Tune difficulty, speed, controls. |
-| P9 | **Checks & ship** | general-purpose · **haiku** (+ code-reviewer · **sonnet**) | Review 3 | Ground-rules audit (no network calls, relative paths, exact filename case, storage try/catch, works from `file://`), `./build.sh` runs, `build.sh` must not publish `test/` folders, card emoji for the home page (`build.sh` currently uses 🛴 for every game → add a per-game emoji, e.g. 🥋), final `STATE.md`, PR. |
+| P9 | **Checks & ship** | general-purpose · **haiku** (+ code-reviewer · **sonnet**) | Review 3 | Ground-rules audit (no network calls, relative paths, exact filename case, storage try/catch, works from `file://`), `./build.sh` runs, `build.sh` must not publish `test/` folders, card emoji for the home page (done: `<meta name="game-emoji">`, 🥋), final `STATE.md`, PR. |
 
 Parallelism: P2 ∥ P3 ∥ P5 after P1; P7 ∥ P6 after P5.
 
