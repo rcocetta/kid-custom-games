@@ -23,7 +23,23 @@ const bots = {
       return i;
     };
   },
-  turtle() { return () => { const i = NEUTRAL(); i.left = true; return i; }; },
+  kid(rand) {            // young kid: wanders, swings now and then, ~400 ms late sometimes blocks
+    let cd = 0.5, mode = 1, modeT = 0, guard = 0; const seen = [];
+    return (dt, f) => {
+      const i = NEUTRAL(); cd -= dt; modeT -= dt; guard -= dt;
+      const me = f.fighters[0], o = f.fighters[1], d = o.x - me.x;
+      seen.push({ t: (seen.length ? seen[seen.length - 1].t : 0) + dt, a: !!o.move && o.phase !== 'recovery' });
+      while (seen.length > 40) seen.shift();
+      const late = seen.length >= 25 && seen[seen.length - 25].a;
+      if (late && guard <= 0 && rand() < 0.25) guard = 0.45;
+      if (modeT <= 0) { modeT = 0.3 + rand() * 0.6; mode = rand() < 0.6 ? 1 : (rand() < 0.5 ? 0 : -1); }
+      if (guard > 0) i.left = true;
+      else if (mode > 0 && d > 150) i.right = true;
+      else if (mode < 0) i.left = true;
+      if (guard <= 0 && cd <= 0 && d < 230) { cd = 0.25 + rand() * 0.4; i[AKEYS[Math.floor(rand() * 4)]] = true; }
+      return i;
+    };
+  },
   walker(rand) {
     let cd = 0;
     return (dt, f) => {
@@ -85,7 +101,7 @@ test('deterministic with a seeded rand', () => {
 
 test('attack keys are single-frame edges', () => {
   const fight = createFight({ skipIntro: true });
-  const cpu = createCpu(7, seeded(1)); const bot = bots.turtle();
+  const cpu = createCpu(7, seeded(1)); const bot = bots.kid(seeded(4));
   let prev = false, attacks = 0;
   for (let i = 0; i < 3000; i++) {
     const in1 = cpu.update(1 / 60, fight, 1);
@@ -93,23 +109,22 @@ test('attack keys are single-frame edges', () => {
     if (a) attacks++;
     assert.ok(!(a && prev), 'attack key held two frames in a row');
     prev = a;
-    fight.update(1 / 60, bot(), in1);
+    fight.update(1 / 60, bot(1 / 60, fight), in1);
   }
   assert.ok(attacks > 3);
 });
 
 test('win rate rises with belt', { timeout: 600000 }, () => {
-  const N = 40;
+  const N = 100;
   const names = Object.keys(bots);
   const rates = belts.map((b, k) => names.map(n => winRate(k, n, N)));
   const avg = rates.map(r => r.reduce((a, b) => a + b, 0) / r.length);
   const pct = x => String(Math.round(x * 100)).padStart(4) + '%';
   console.log('\nCPU win rate (' + N + ' matches each)\nbelt     ' + names.map(n => n.padStart(6)).join('') + '   avg');
   belts.forEach((b, k) => console.log(b.name.padEnd(8) + ' ' + rates[k].map(pct).join('  ') + '  ' + pct(avg[k])));
-  const masher = rates.map(r => r[0]);
-  assert.ok(masher[0] < 0.5, 'White should lose most matches to the masher');
-  assert.ok(avg[7] > avg[3] + 0.2, 'Black clearly beats Green');
-  assert.ok(avg[3] >= avg[0] && avg[5] > avg[0] + 0.15, 'Green >= White, Blue clearly above White');
-  assert.ok(masher[7] > masher[5] && masher[5] > masher[0], 'masher win rate rises');
-  for (let k = 1; k < 8; k++) assert.ok(avg[k] >= avg[k - 1] - 0.12, 'roughly monotonic at ' + belts[k].name);
+  assert.ok(avg[0] < 0.2, 'White stays easy');
+  assert.ok(avg[7] > 0.7 && avg[7] < 0.97, 'Black is hard but not perfect');
+  assert.ok(avg[7] > avg[3] + 0.3 && avg[3] >= avg[0], 'Black >> Green >= White');
+  for (let k = 1; k < 8; k++) assert.ok(avg[k] >= avg[k - 1] - 0.03, 'average rises at ' + belts[k].name);
+  names.forEach((n, j) => { for (let k = 1; k < 8; k++) assert.ok(rates[k][j] >= rates[k - 1][j] - 0.15, n + ' bot: no big drop at ' + belts[k].name); });
 });

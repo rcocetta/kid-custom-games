@@ -39,8 +39,8 @@
       comboChance: k < 3 ? 0 : r3(0.5 * (k - 2) / 5),
       spinChance: k < 2 ? 0 : r3(0.3 * (k - 1) / 6),
       speedMul: r3(lerp(0.85, 1.10, t)),
-      preferredDist: Math.round(lerp(300, 200, t)),
-      punishChance: r3(lerp(0, 0.9, t)),
+      preferredDist: Math.round(lerp(260, 205, t)),
+      punishChance: r3(lerp(0, 0.3, t)),
       jumpChance: k < 2 ? 0 : r3(lerp(0.02, 0.12, t)),
       duckChance: r3(lerp(0.2, 0.6, t)),
       lowDefence: k < 3 ? 0 : 0.3,
@@ -83,7 +83,7 @@
       else if (smart && o.blocking && rand() < 0.7) variant = 'low';        // standing block: go low
       else if (rand() < 0.12) variant = 'low';
       if (forced && forced.variant) variant = forced.variant;
-      const spin = !forced && rand() < p.spinChance;
+      const spin = !forced && dist > 170 && rand() < p.spinChance;
       const fit = limbs.filter(function (l) { return M.moves[M.moveId(l, variant, spin)].reach >= dist - 20; });
       const pool = fit.length ? fit : limbs;
       return { limb: pool[Math.floor(rand() * pool.length)], variant: variant, spin: spin };
@@ -95,7 +95,7 @@
       if (jump) { spec.variant = 'stand'; spec.spin = false; }
       const reach = specMove(spec).reach;
       const careful = rand() < p.accuracy;
-      const trigger = careful ? reach - 20 : reach + 50 + rand() * 110;
+      const trigger = careful ? reach - 20 : reach + 5 + rand() * 40;
       return { spec: spec, trigger: trigger, expire: now + 2.2, jump: jump, jumpStarted: false };
     }
 
@@ -128,7 +128,7 @@
       const stunned = s.action === 'hit' || s.action === 'blockstun' || s.action === 'ko' || s.action === 'win' || s.action === 'defeat';
       if (s.action === 'hit') { intent = null; queue = []; def = null; }
       if (stunned) { wasBlockstun = s.action === 'blockstun'; wasHit = s.action === 'hit'; return out; }
-      if (wasHit) { wasHit = false; if (rand() < p.blockChance + 0.15) guardUntil = now + 0.5 + 0.3 * rand(); }
+      if (wasHit) { wasHit = false; if (rand() < p.blockChance * 0.35) guardUntil = now + 0.5 + 0.3 * rand(); }
       if (wasBlockstun) {                       // just came out of a blocked hit: counter at once
         wasBlockstun = false;
         const c = Math.abs(opp.x - s.x);
@@ -142,7 +142,7 @@
       const o = perceive();
       const dir = (opp.x - s.x) >= 0 ? 1 : -1;
       const fwdKey = dir > 0 ? 'right' : 'left', backKey = dir > 0 ? 'left' : 'right';
-      const dist = Math.abs(o.x - s.x);
+      const dist = Math.abs(opp.x - s.x);   // footing is read live; only attacks are perceived late
       const airborne = s.y > 0;
 
       // new opponent attack seen (late)?
@@ -210,10 +210,10 @@
       // --- offence ---
       cd -= dt;
       if (!intent && cd <= 0) {
-        cd = (1.1 - p.aggression) * (0.7 + 0.6 * rand()) / p.speedMul;
-        const close = dist < 230 ? 1.5 : 1;     // more eager when the opponent is already in range
+        cd = (1.2 - p.aggression) * (0.7 + 0.6 * rand()) / p.speedMul;
+        const close = dist < 230 ? 1 + 0.9 * (1 - beltIndex / 7) : 1;     // more eager when the opponent is already in range
         if (rand() < Math.min(0.95, p.aggression * close)) intent = newIntent(o, dist);
-        else if (dist < 200 && rand() < p.blockChance) guardUntil = now + 0.4 + 0.4 * rand();   // pre-emptive guard
+        else if (dist < 200 && rand() < p.blockChance * 0.35) guardUntil = now + 0.4 + 0.4 * rand();   // pre-emptive guard
       }
       if (!intent && now < guardUntil) { out[backKey] = true; return out; }
       if (intent) {
