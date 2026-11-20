@@ -1,7 +1,8 @@
 # kid-custom-games
 
-Small browser games made for one kid. The kid is the hero, the scenery is our town, and the
-rules change whenever the kid asks. The games are free to play, run offline, and collect no data.
+Small browser games made for one kid. The kid is the hero and the scenery is our town. The kid
+plays and tests every version, and their feedback shapes what gets fixed. The games are free to
+play, run offline, and collect no data.
 
 This repo is meant to be **forked**. Swap in your own kid, characters and places, and you get a
 private games site on GitHub Pages that your kid can install on a phone or tablet like an app.
@@ -101,8 +102,8 @@ Rules that keep it working on GitHub Pages:
 
 These games were built together with an AI coding assistant ([Claude Code](https://claude.com/claude-code)).
 [CLAUDE.md](CLAUDE.md) holds the project rules and each game's `STATE.md` holds its details, so an
-assistant picks up the context on its own. Ask for things the way your kid would ("make the
-seagulls slower", "give me a purple belt", "add a level on the moon"), then play-test together.
+assistant picks up the context on its own. Describe changes in plain words ("make the
+seagulls slower", "add a purple belt"), then hand the game to your kid to test.
 
 ## Repo layout
 
