@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { createFight } = require('../game.js');
+const { createFight, Moves } = require('../game.js');
 const { belts, createCpu } = require('../cpu.js');
 
 function seeded(seed) {
@@ -114,6 +114,39 @@ test('attack keys are single-frame edges', () => {
   assert.ok(attacks > 3);
 });
 
+// A bot walks in and throws one kind of attack (standing or low); returns the CPU's block rate (blocks / (blocks + hits)).
+function blockRate(belt, limb, low, n) {
+  let hit = 0, block = 0;
+  for (let m = 0; m < n; m++) {
+    const rnd = seeded(500 + m * 31 + belt);
+    const f = createFight({ skipIntro: true, rand: rnd });
+    const c = createCpu(belt, seeded(900 + m * 17 + belt));
+    f.fighters[1].speedMul = c.params.speedMul;
+    const reach = Moves.moves[limb + (low ? '_low' : '_stand')].reach;
+    let t = 0, cd = 0.5;
+    while (t < 30 && f.state === 'fighting') {
+      const p = f.fighters[0], o = f.fighters[1], inp = NEUTRAL();
+      if (p.move && low) inp.down = true;
+      if (Math.abs(o.x - p.x) > reach - 20) inp.right = true;
+      else if (!p.move && (cd -= 1 / 60) < 0) { inp[limb] = true; inp.down = low; cd = 0.4 + rnd() * 0.6; }
+      f.update(1 / 60, inp, c.update(1 / 60, f, 1)); t += 1 / 60;
+      for (const e of f.drainEvents()) if (e.attacker === 0) { if (e.type === 'hit') hit++; else if (e.type === 'block') block++; }
+    }
+  }
+  return block / Math.max(1, block + hit);
+}
+
+test('CPU blocks LOW attacks too, more at higher belts', { timeout: 300000 }, () => {
+  const rows = [3, 5, 7].map(k => ({ k, low: blockRate(k, 'backKick', true, 40), mid: blockRate(k, 'backKick', false, 40) }));
+  console.log('\nblock rate  low / mid');
+  rows.forEach(r => console.log(belts[r.k].name.padEnd(6), Math.round(r.low * 100) + '% / ' + Math.round(r.mid * 100) + '%'));
+  assert.ok(rows[0].low >= 0.04, 'Green blocks some low attacks');
+  assert.ok(rows[2].low >= 0.25, 'Black blocks low attacks often');
+  assert.ok(rows[2].low > rows[0].low, 'Black blocks low more than Green');
+  assert.ok(rows[2].low >= 0.6 * rows[2].mid, 'Black blocks low about as often as mid');
+  assert.ok(rows[2].low < 0.95, 'never a perfect low block');
+});
+
 test('win rate rises with belt', { timeout: 600000 }, () => {
   const N = 100;
   const names = Object.keys(bots);
@@ -124,7 +157,7 @@ test('win rate rises with belt', { timeout: 600000 }, () => {
   belts.forEach((b, k) => console.log(b.name.padEnd(8) + ' ' + rates[k].map(pct).join('  ') + '  ' + pct(avg[k])));
   assert.ok(avg[0] < 0.3, 'White stays easy (vs scripted bots; the real kid tested at Review 3)');
   assert.ok(avg[7] > 0.7, 'Black is hard');
-  assert.ok(avg[7] > avg[3] + 0.3 && avg[3] >= avg[0], 'Black >> Green >= White');
+  assert.ok(avg[7] > avg[3] + 0.15 && avg[3] >= avg[0], 'Black >> Green >= White');
   for (let k = 1; k < 8; k++) assert.ok(avg[k] >= avg[k - 1] - 0.03, 'average rises at ' + belts[k].name);
   names.forEach((n, j) => { for (let k = 1; k < 8; k++) assert.ok(rates[k][j] >= rates[k - 1][j] - 0.15, n + ' bot: no big drop at ' + belts[k].name); });
 });

@@ -47,7 +47,7 @@
       punishChance: up(lerp(0, 0.3, t), 0.5),
       jumpChance: k < 2 ? 0 : r3(lerp(0.02, 0.12, t)),
       duckChance: r3(lerp(0.2, 0.6, t)),
-      lowDefence: k < 3 ? 0 : 0.3,
+      lowDefence: k < 3 ? 0 : 0.12,
       smartLevel: up(lerp(0.0, 0.85, t), 0.95),
     };
   });
@@ -61,10 +61,10 @@
     let cd = 0.6 + rand();                 // time until next decision
     let intent = null;                     // { spec, trigger, expire, jump, jumpStarted }
     let queue = [];                        // combo follow-ups (specs)
-    let guardUntil = 0, wasBlockstun = false, wasHit = false;
+    let guardUntil = 0, guardLow = false, lowShare = 0.3, wasBlockstun = false, wasHit = false;
     let gap = 0;                           // short pause between combo moves
     let def = null;                        // { until, keys }
-    let seenId = 0, lastMoveP = 1, lastMoveId = null, handled = 0, punishRolled = 0, airId = 0, wasAir = false;
+    let lastHitLevel = null, prevDuck = false, lowSeen = 0, seenId = 0, lastMoveP = 1, lastMoveId = null, handled = 0, punishRolled = 0, airId = 0, wasAir = false;
 
     function snapOf(f) {
       return { t: now, x: f.x, y: f.y, action: f.action, move: f.move, moveId: f.moveId, phase: f.phase,
@@ -110,6 +110,14 @@
       if (spec.spin) out[dirKey === 'right' ? 'left' : 'right'] = true; // back = away from the opponent
     }
 
+    // Guard height guess for a pre-emptive guard: skilled belts follow what the opponent tends to do
+    // (lowShare = recent share of LOW attacks, and the level of the attack that just landed / was blocked);
+    // low belts mostly guess standing. A duck-guard covers LOW + MID, a standing guard HIGH + MID.
+    function pickGuardLow() {
+      if (rand() >= p.blockRightHeight) return rand() < 0.15;
+      return rand() < Math.max(lowShare, lastHitLevel === 'LOW' ? 0.8 : 0);
+    }
+
     function pickDefence(m) {
       const right = rand() < p.blockRightHeight;
       if (m.level === 'HIGH') {
@@ -131,8 +139,10 @@
       if (fight.state !== 'fighting') { intent = null; queue = []; def = null; return out; }
       const stunned = s.action === 'hit' || s.action === 'blockstun' || s.action === 'ko' || s.action === 'win' || s.action === 'defeat';
       if (s.action === 'hit') { intent = null; queue = []; def = null; }
-      if (stunned) { wasBlockstun = s.action === 'blockstun'; wasHit = s.action === 'hit'; return out; }
-      if (wasHit) { wasHit = false; if (rand() < p.blockChance * 0.35) guardUntil = now + 0.5 + 0.3 * rand(); }
+      if (stunned) {
+        if ((s.action === 'hit' || s.action === 'blockstun') && opp.move) lastHitLevel = opp.move.level;
+        wasBlockstun = s.action === 'blockstun'; wasHit = s.action === 'hit'; return out; }
+      if (wasHit) { wasHit = false; if (rand() < p.blockChance) { guardUntil = now + 0.5 + 0.3 * rand(); guardLow = pickGuardLow(); } }
       if (wasBlockstun) {                       // just came out of a blocked hit: counter at once
         wasBlockstun = false;
         const c = Math.abs(opp.x - s.x);
@@ -141,6 +151,7 @@
           fire(out, { limb: 'frontPunch', variant: 'stand', spin: false }, opp.x >= s.x ? 'right' : 'left');
           return out;
         }
+        if (rand() < Math.min(0.95, p.blockChance + 0.2)) { guardUntil = now + 0.45; guardLow = pickGuardLow(); }  // keep guarding, same height
       }
 
       const o = perceive();
@@ -159,11 +170,16 @@
       if (oppAir && !wasAir) airId++;
       wasAir = oppAir;
 
+      // remember how often the opponent attacks LOW (decides the guard height)
+      if (o.ducking && !prevDuck && rand() < p.blockRightHeight) guardLow = true;   // crouching: low attack likely
+      prevDuck = !!o.ducking;
+      if (om && seenId !== lowSeen) { lowSeen = seenId; lowShare = lowShare * 0.6 + (om.level === 'LOW' ? 0.4 : 0); }
+
       // --- defence ---
       if (om && seenId !== handled && o.phase !== 'recovery') {
         handled = seenId;
         const remaining = om.startup + om.active - o.moveP * om.total - reactionS;
-        if (!s.move && remaining > -0.02 && dist <= om.reach + 30 && rand() < p.blockChance) {
+        if (!s.move && remaining > -0.02 && dist <= om.reach + 30 && rand() < (now < guardUntil ? 0.5 + 0.5 * p.blockRightHeight : p.blockChance)) {
           def = { until: now + Math.max(remaining, 0) + 0.1, keys: pickDefence(om) };
           intent = null; queue = [];
         }
@@ -217,9 +233,13 @@
         cd = (1.2 - p.aggression) * (0.7 + 0.6 * rand()) / p.speedMul;
         const close = dist < 230 ? 1 + 0.9 * (1 - beltIndex / 7) : 1;     // more eager when the opponent is already in range
         if (rand() < Math.min(0.95, p.aggression * close)) intent = newIntent(o, dist);
-        else if (dist < 200 && rand() < p.blockChance * 0.35) guardUntil = now + 0.4 + 0.4 * rand();   // pre-emptive guard
+        else if (dist < 230 && rand() < p.blockChance * 1.5) { guardUntil = now + 0.6 + 0.5 * rand(); guardLow = pickGuardLow(); }   // pre-emptive guard
       }
-      if (!intent && now < guardUntil) { out[backKey] = true; return out; }
+      if (!intent && now < guardUntil) {
+        // most attacks are faster than the CPU's reactions, so the guard height matters: duck-guard (covers LOW + MID)
+        // when the opponent is crouching (low attacks coming) or has been attacking low a lot; skilled belts re-read it live.
+        out[backKey] = true; if (guardLow) out.down = true; return out;
+      }
       if (intent) {
         if (now > intent.expire) intent = null;
         else if (intent.jump && !intent.jumpStarted) {
