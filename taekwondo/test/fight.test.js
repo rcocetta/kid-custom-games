@@ -30,7 +30,9 @@ const energyLost = f => 100 - f.fighters[1].energy;
 test('move table covers 24 moves with PLAN levels', () => {
   assert.strictEqual(Moves.list.length, 24);
   const lv = id => Moves.moves[id].level;
-  assert.strictEqual(lv('frontPunch_stand'), 'MID');
+  assert.strictEqual(lv('frontPunch_stand'), 'HIGH');
+  assert.strictEqual(lv('backPunch_stand'), 'HIGH');
+  assert.strictEqual(lv('frontKick_stand'), 'MID');
   assert.strictEqual(lv('backKick_jump'), 'HIGH');
   assert.strictEqual(lv('backKick_low'), 'LOW');
   assert.strictEqual(lv('frontKick_spin_stand'), 'HIGH');

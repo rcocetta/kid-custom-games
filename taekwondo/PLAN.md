@@ -23,6 +23,8 @@ Branch: `taekwondo-master`. Folder: `taekwondo/`. Title: **Taekwondo Master**.
 - **Landscape only** (portrait → "turn your phone" screen and pause).
 - Agreed: physical-key controls, posable rig, CPU difficulty per belt, model split, review pauses.
 
+- **Standing punches go for the face** (HIGH, Review 2) — so ducking dodges them. The duck must be deep and obvious.
+
 ### Design defaults (change at a review if wanted)
 - **Spinning punches** keep base damage (the user only said spinning *kicks* get +20 %). Confirm at Review 1.
 - **Round draw** (equal energy at time-up): replay the round.
@@ -39,8 +41,8 @@ Three attack levels: **HIGH** (head), **MID** (body), **LOW** (legs).
 
 | Input | Move | Level | Damage |
 |---|---|---|---|
-| A/Q | back-hand punch (straight) | MID | 6 |
-| S | front-hand punch (jab) | MID | 4 |
+| A/Q | back-hand punch (straight, to the face) | HIGH | 6 |
+| S | front-hand punch (jab, to the face) | HIGH | 4 |
 | Z/W | back-leg kick (roundhouse, *dollyo chagi*) | MID | 10 |
 | X | front-leg kick (front-leg / cut kick) | MID | 8 |
 | Up + attack | jumping version | HIGH | same |
