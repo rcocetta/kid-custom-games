@@ -10,8 +10,9 @@ Waiting for **Review 1** (characters & arena). Verified headless only (no real b
 | File | What it is | Phase |
 |---|---|---|
 | `assets.js` | Palette, **fighter rig**, looks, portraits, belt badges. `window.TKDAssets`. Plain `<script src>`, works from `file://`. | P2 |
-| `Assets.html` | Review page: Oli + Dani (both facings, back view), 8 random opponents + Reroll, portraits (5 expressions), belt ladder, idle/walk animated on canvas, **pose lab** (one slider per pose key, live preview, copy/load pose JSON). | P2 |
+| `Assets.html` | Review page: Oli + Dani (both facings, back view), 8 random opponents + Reroll, portraits (5 expressions), belt ladder, idle/walk animated on canvas, **pose lab** (one slider per pose key, live preview, copy/load pose JSON), and (P4) a **Moves** section: pair view (reach + target height), animated tile per move/state with real timings, slow-motion, character/facing switch, static chamber/extension/retract rows. | P2/P4 |
 | `fonts/Fredoka.ttf` | Copied from `jumpnduck/`, loaded with `@font-face`. | P2 |
+| `poses.js` | All move + state animations on the rig (`window.TKDPoses`), loaded after assets.js/moves.js. | P4 |
 | `arena.js`, `Arena.html` | Outdoor Antibes training hall (`window.TKDArena`). | P3 |
 | `game.js`, `moves.js`, `test/` | Fight engine core + tests. | P5 |
 
@@ -72,6 +73,22 @@ jacket + belt, near arm, head. The **stance** (Review 1: side-on, weight centred
 front arm 86/58, back arm 30/74, front leg 29/23/6 (flat), back leg −10/26/−24 (heel slightly up). `idle` and walk frames are built as offsets from the stance (`D({...})` in assets.js),
 so retuning the stance moves them too. Use the **pose lab** in `Assets.html` to author poses and copy the JSON.
 
+## Poses API (P4, `window.TKDPoses`, `poses.js`)
+
+Full docs in the header of `poses.js`. Short version:
+
+| Call | Notes |
+|---|---|
+| `sample(name, t)` | Pose for a move id (all 24 from moves.js, t = moveP 0..1 using moves.js timings) or a state name (t over one cycle/run). |
+| `sampleMove(id, phase, phaseT)` | Same, driven by the engine's phase fields. |
+| `forFighter(f, {time, threat})` | Engine fighter -> `{pose, expression, name}`. Walking uses `f.x*f.facing` for the stride (feet planted); jump pose from `f.vy`; optional `f.hitLevel` picks hit/hitBody/hitLow; `time` = seconds in state for idle/win/defeat/ko; `threat` picks olgul vs momtong block. |
+| `expression(name)`, `duration(name)`, `keyFrames(id)`, `jumpY(sec)`, `info` (English/Korean names), `moveIds`, `stateNames` | |
+
+- States: idle, walkFwd, walkBack, jump, duck, blockHigh/Mid/Low, hit, hitBody, hitLow, hitAir, blockstun, blockstunLow, bow, win, defeated, ko.
+- Poses never contain jump height: the shell draws at `floor - f.y`. `pose.x` is a visual forward lunge (kicks 30-55, spins up to 56) that flips with `facing`.
+- Moves: keyframes on phase axis 0..3 (startup/active/recovery); jump moves recover into the air tuck, low moves into the duck, spins go stance -> wind-up -> `back:1` -> extension (`open:1`).
+- Heights checked headless against LEVEL_Y (HIGH 250 / MID 170 / LOW 60); spins and some kicks fall 20-40 units short of full `reach` (a slide-forward would look silly).
+
 ## Dev notes
 
 - Visual checks: render to PNG with `@resvg/resvg-js` in the session scratch dir (`global.window = {}`, `require('./assets.js')`,
@@ -81,4 +98,4 @@ so retuning the stance moves them too. Use the **pose lab** in `Assets.html` to 
 ## Next
 
 - **Review 1** (user): faces, proportions, limb length, gi, belts, random opponents, Dani's belt colour.
-- P4: `poses.js` with all moves using this rig (rear kicks probably want `legSwap: 1`; spins use `back`).
+- P6: browser shell calls `TKDPoses.forFighter`. Not verified in a real browser yet (Moves section of Assets.html only syntax-checked + node smoke test).

@@ -29,6 +29,15 @@
   .sliders input[type=range] { width: 100%; }
   .sliders output { text-align: right; font-variant-numeric: tabular-nums; }
   textarea { width: 100%; height: 120px; font-size: 12px; font-family: ui-monospace, monospace; border: 2px solid var(--line); border-radius: 8px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .tile { border: 2px solid var(--line); border-radius: 12px; padding: 4px; text-align: center; font-size: 13px; }
+  .tile canvas { width: 100%; height: auto; }
+  .tile .nm { font-weight: 600; }
+  .tile .ko { opacity: .7; }
+  .krow { display: flex; align-items: flex-end; gap: 4px; border-top: 1px solid var(--line); }
+  .krow .lab { width: 170px; font-size: 13px; flex: none; padding-bottom: 6px; }
+  .krow svg { width: 100%; height: auto; }
+  h3 { margin: 12px 0 6px; font-size: 16px; }
   .muted { opacity: .7; font-size: 13px; }
   .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; font-size: 14px; }
 </style>
@@ -70,6 +79,26 @@
     <div class="row" id="belts"></div>
   </section>
 
+  <section id="movesSec">
+    <h2>Moves (poses.js)</h2>
+    <div class="controls">
+      Fighter <select id="mvLook"><option value="oli">Oli</option><option value="dani">Dani</option><option value="opp">Random opponent</option></select>
+      <label><input type="checkbox" id="mvMirror"> facing left</label>
+      <label><input type="checkbox" id="mvSlow"> slow motion (x0.25)</label>
+      <button id="mvReroll">New opponent</button>
+    </div>
+    <h3>Pair view: does the limb reach the opponent at the right height?</h3>
+    <div class="controls">Move <select id="pairMove"></select> <span class="muted" id="pairInfo"></span></div>
+    <canvas id="pair" width="620" height="450"></canvas>
+    <div class="muted">Dashed lines = HIGH / MID / LOW target heights. Red line = the move's reach (distance between the two fighters' centres). Jumping moves use the engine's jump arc.</div>
+    <h3>Every move, animated (real timings from moves.js)</h3>
+    <div class="tiles" id="moveTiles"></div>
+    <h3>States</h3>
+    <div class="tiles" id="stateTiles"></div>
+    <h3>Key frames: chamber / extension / retract</h3>
+    <div id="keyRows"></div>
+  </section>
+
   <section>
     <h2>Pose lab</h2>
     <div class="poser">
@@ -91,6 +120,8 @@
 </main>
 
 <script src="assets.js"></script>
+<script src="moves.js"></script>
+<script src="poses.js"></script>
 <script>
 (function () {
   const A = window.TKDAssets;
@@ -230,6 +261,128 @@
     catch (e) { $('copied').textContent = 'not valid JSON'; }
   };
   sync(); render();
+})();
+</script>
+<script>
+(function () {
+  const A = window.TKDAssets, M = window.TKDMoves, TP = window.TKDPoses;
+  const $ = (id) => document.getElementById(id);
+  let opp = A.randomOpponent('green');
+  const lookOf = () => { const v = $('mvLook').value; return v === 'opp' ? opp : A.looks[v]; };
+  const facing = () => ($('mvMirror').checked ? -1 : 1);
+  const slow = () => ($('mvSlow').checked ? 0.25 : 1);
+  const T = M.tuning, JV = 4 * T.jumpHeight / T.jumpDuration, G = 8 * T.jumpHeight / (T.jumpDuration * T.jumpDuration);
+  const PAUSE = 0.35;
+  const lbl = (m) => {
+    const b = TP.info.moves[m.spin ? m.limb + '_spin' : m.limb];
+    const v = TP.info.variants[m.variant];
+    const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+    return { en: v ? cap(v) + ' ' + b.en.toLowerCase() : b.en, ko: (m.variant === 'jump' ? 'Ttwieo ' : '') + b.ko };
+  };
+  const moves = M.list;
+
+  // simulated engine fighter for a move at time t (s)
+  function fighterAt(m, t) {
+    const air = m.variant === 'jump';
+    const y = air ? Math.max(0, JV * t - 0.5 * G * t * t) : 0;
+    if (t < m.total) {
+      const phase = t < m.startup ? 'startup' : t < m.startup + m.active ? 'active' : 'recovery';
+      const pt = phase === 'startup' ? t / m.startup : phase === 'active' ? (t - m.startup) / m.active : (t - m.startup - m.active) / m.recovery;
+      return { action: 'attack', moveId: m.id, phase, phaseT: pt, y, vy: JV - G * t, x: 0, facing: 1 };
+    }
+    if (y > 0) return { action: 'jump', y, vy: JV - G * t, x: 0, facing: 1 };
+    return { action: 'idle', y: 0, vy: 0, x: 0, facing: 1 };
+  }
+  const loopLen = (m) => Math.max(m.total, m.variant === 'jump' ? T.jumpDuration : 0) + PAUSE;
+
+  const tiles = [];
+  function mkTile(parent, name, ko, extra) {
+    const d = document.createElement('div'); d.className = 'tile';
+    const cv = document.createElement('canvas'); cv.width = 220; cv.height = 330;
+    d.appendChild(cv);
+    const n = document.createElement('div'); n.className = 'nm'; n.textContent = name; d.appendChild(n);
+    if (ko) { const k = document.createElement('div'); k.className = 'ko'; k.textContent = ko; d.appendChild(k); }
+    const e = document.createElement('div'); e.className = 'muted'; e.textContent = extra; d.appendChild(e);
+    parent.appendChild(d);
+    return cv.getContext('2d');
+  }
+  moves.forEach((m) => {
+    const l = lbl(m);
+    const ctx = mkTile($('moveTiles'), l.en, l.ko, `${m.level} - dmg ${m.damage} - ${m.startup}/${m.active}/${m.recovery}s`);
+    tiles.push({ ctx, at: (t) => { const f = fighterAt(m, t); const r = TP.forFighter(f, { time: t }); return { pose: r.pose, expr: r.expression, y: f.y }; }, len: loopLen(m), id: m.id });
+  });
+  const stateLen = (st) => TP.states[st].loop ? Math.max(TP.duration(st) * (st === 'idle' ? 1 : 2), 0.7) : TP.duration(st) + PAUSE + 0.2;
+  TP.stateNames.forEach((st) => {
+    const i = TP.info.states[st];
+    const ctx = mkTile($('stateTiles'), i.en, i.ko, st);
+    tiles.push({ ctx, at: (t) => {
+      const d = TP.duration(st), loop = TP.states[st].loop;
+      const u = loop ? t / d : Math.min(t / d, 1);
+      return { pose: TP.sample(st, u), expr: TP.expression(st), y: st === 'jump' ? Math.max(0, JV * t - 0.5 * G * t * t) : st === 'hitAir' ? 70 : 0 };
+    }, len: stateLen(st) });
+  });
+  function draw(ctx, look, pose, expr, y, sc) {
+    const f = facing();
+    ctx.clearRect(0, 0, 220, 330);
+    ctx.fillStyle = '#DCE6F5'; ctx.fillRect(0, 300, 220, 30);
+    A.drawToCanvas(ctx, A.drawFighter(look, pose, { facing: f, expression: expr, x: f > 0 ? 70 : 150, y: 300 - y * sc, scale: sc }));
+  }
+
+  // pair view
+  const pm = $('pairMove');
+  moves.forEach((m) => { const o = document.createElement('option'); o.value = m.id; const l = lbl(m); o.textContent = l.en + ' [' + m.id + ']'; pm.appendChild(o); });
+  pm.value = 'backKick_stand';
+  const pc = $('pair').getContext('2d');
+  const LV = { HIGH: 250, MID: 170, LOW: 60 };
+  function drawPair(t) {
+    const m = M.moves[pm.value], FY = 410, X0 = 120;
+    $('pairInfo').textContent = `${m.level}, reach ${m.reach}`;
+    pc.clearRect(0, 0, 620, 450);
+    pc.fillStyle = '#DCE6F5'; pc.fillRect(0, FY, 620, 40);
+    pc.font = '12px sans-serif';
+    Object.keys(LV).forEach((k) => {
+      pc.strokeStyle = k === m.level ? '#E5383B' : '#B9C4D8'; pc.setLineDash([6, 6]);
+      pc.beginPath(); pc.moveTo(0, FY - LV[k]); pc.lineTo(620, FY - LV[k]); pc.stroke();
+      pc.fillStyle = '#7a8599'; pc.fillText(k, 4, FY - LV[k] - 3);
+    });
+    pc.strokeStyle = '#E5383B'; pc.beginPath(); pc.moveTo(X0 + m.reach, FY - 310); pc.lineTo(X0 + m.reach, FY); pc.stroke(); pc.setLineDash([]);
+    const f = fighterAt(m, t % loopLen(m));
+    const r = TP.forFighter(f, { time: t });
+    const oppPose = TP.sample('idle', t / 0.72);
+    A.drawToCanvas(pc, A.drawFighter(opp, oppPose, { facing: -1, x: X0 + m.reach, y: FY }));
+    A.drawToCanvas(pc, A.drawFighter(A.looks.oli, r.pose, { facing: 1, expression: r.expression, x: X0, y: FY - f.y }));
+    const sk = A.skeleton(A.looks.oli, r.pose, { x: X0, y: FY - f.y });
+    const tip = m.limb.indexOf('Kick') > 0 ? sk[(m.limb === 'frontKick' && !m.spin ? 'f' : 'b') + 'Toe'] : sk[(m.limb === 'frontPunch' ? 'f' : 'b') + 'Fist'];
+    pc.strokeStyle = '#E5383B'; pc.lineWidth = 3; pc.beginPath(); pc.arc(tip[0], tip[1], 7, 0, 7); pc.stroke(); pc.lineWidth = 1;
+  }
+
+  let clock = 0, last = null;
+  function frame(ts) {
+    if (last != null) clock += Math.min(0.1, (ts - last) / 1000) * slow();
+    last = ts;
+    const look = lookOf();
+    tiles.forEach((tl) => { const r = tl.at(clock % tl.len); draw(tl.ctx, look, r.pose, r.expr, r.y, 0.72); });
+    drawPair(clock);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  $('mvReroll').onclick = () => { opp = A.randomOpponent('green'); };
+
+  // key frames rows
+  const rows = $('keyRows');
+  moves.forEach((m) => {
+    const l = lbl(m), kf = TP.keyFrames(m.id);
+    const row = document.createElement('div'); row.className = 'krow';
+    row.innerHTML = `<div class="lab"><b>${l.en}</b><br>${l.ko}<br>${m.level} - dmg ${m.damage}</div>`;
+    const air = m.variant === 'jump' ? 90 : 0;
+    ['chamber', 'extension', 'retract'].forEach((k) => {
+      const prims = A.drawFighter(A.looks.oli, kf[k], { expression: 'fierce', y: -air });
+      const holder = document.createElement('div'); holder.style.width = '30%'; holder.style.maxWidth = '230px';
+      holder.innerHTML = A.toSvg(prims, '-120 -420 400 440') + `<div class="muted" style="text-align:center">${k}</div>`;
+      row.appendChild(holder);
+    });
+    rows.appendChild(row);
+  });
 })();
 </script>
 </body>
