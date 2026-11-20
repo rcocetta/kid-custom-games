@@ -147,6 +147,6 @@ Renders/scratch files go in the session scratchpad, not the repo.
 | P7 | **CPU** | general-purpose · **sonnet** | P5 | `cpu.js` + belt table; headless win-rate simulation per belt. |
 | P8 | **Sound** | general-purpose · **haiku** | P6 | `audio.js`: whoosh, punch thump, kick thwack, block clack, KO, round bell, win jingle, menu blip; mute button. |
 | ⏸ | **REVIEW 3 — play it** | the user | P6–P8 | Play on desktop and phone (`python3 -m http.server` on the LAN for the phone). Tune difficulty, speed, controls. |
-| P9 | **Checks & ship** | general-purpose · **haiku** (+ code-reviewer · **sonnet**) | Review 3 | Ground-rules audit (no network calls, relative paths, exact filename case, storage try/catch, works from `file://`), `./build.sh` runs, card emoji for the home page (`build.sh` currently uses 🛴 for every game → add a per-game emoji, e.g. 🥋), final `STATE.md`, PR. |
+| P9 | **Checks & ship** | general-purpose · **haiku** (+ code-reviewer · **sonnet**) | Review 3 | Ground-rules audit (no network calls, relative paths, exact filename case, storage try/catch, works from `file://`), `./build.sh` runs, `build.sh` must not publish `test/` folders, card emoji for the home page (`build.sh` currently uses 🛴 for every game → add a per-game emoji, e.g. 🥋), final `STATE.md`, PR. |
 
 Parallelism: P2 ∥ P3 ∥ P5 after P1; P7 ∥ P6 after P5.
