@@ -2,7 +2,7 @@
 
 1-player vs CPU side-view taekwondo fighting game. Spec: `SPEC.md`; plan and phases: `PLAN.md`; move notes: `research.md`.
 
-**Status (2026-11-20):** P2 done (fighter rig, looks, stance/idle/walk, portraits, belt badges, review page).
+**Status (2026-11-20):** Review 1 feedback applied (side-on balanced stance, `open` chest-turn key, boys short hair). P2 done (fighter rig, looks, stance/idle/walk, portraits, belt badges, review page).
 Waiting for **Review 1** (characters & arena). Verified headless only (no real browser in this env).
 
 ## Files
@@ -38,7 +38,7 @@ Waiting for **Review 1** (characters & arena). Verified headless only (no real b
 | `skeleton(look, pose, opts)` | World positions of joints: `hip, neck, head, headR, f/bShoulder, Elbow, Wrist, Fist, Hip, Knee, Ankle, Toe` (for hit sparks). |
 | `rigInfo` | Segment lengths per build, key list, conventions (same as below). |
 | `looks.oli`, `looks.dani` | Look objects. |
-| `randomOpponent(belt, rand)` | Random look: skin {light, dark, eastAsian (almond eyes, black/dark hair)}, gender (female = eyelashes, earrings, softer mouth), hair {short, long, ponytail}, plausible hair/eye colour, green gi, the given belt, a first name. `rand` defaults to `Math.random`. |
+| `randomOpponent(belt, rand)` | Random look: skin {light, dark, eastAsian (almond eyes, black/dark hair)}, gender (female = eyelashes, earrings, softer mouth), hair: boys short only, girls {short, long, ponytail}, plausible hair/eye colour, green gi, the given belt, a first name. `rand` defaults to `Math.random`. |
 | `portrait(look, expression)` | Front-facing face + gi shoulders, SVG string, viewBox `0 -10 120 134`. Oli = jumpnduck `kidFace`. |
 | `beltBadge(belt)` | Tied belt icon, SVG string, viewBox `0 0 120 80`. |
 | `belts`, `belt[key]`, `palette`, `builds` | Data. |
@@ -62,13 +62,14 @@ Fighter space is SVG units, y down; after grounding the lowest body point is on 
 | `fKnee`, `bKnee` | 0 = straight, + = shin folds back. |
 | `fAnkle`, `bAnkle` | 0 = foot at 90° to the shin; + = toes pointed (instep kick), − = toes up. Flat on the floor when `ankle = hip − knee − rot`. |
 | `fHand`, `bHand` | 0 fist, 1 open hand (bow, knife-hand blocks). |
+| `open` | Chest turn 0..1 (linear). 0 (default) = side-on profile: front shoulder leads, V-neck edge-on, knot at the front edge, slightly narrower jacket. 1 = chest opened to the viewer (3/4: full V, knot centred), e.g. rear punch, bow, win pose. |
 | `back` | 1 = back turned to the viewer (spin): back limbs drawn near, back of head/hair, jacket back. Lerps; ≥ 0.5 = back view. |
 | `armSwap`, `legSwap` | 1 = draw the back arm / leg near (hips or shoulders turned, e.g. rear roundhouse `legSwap: 1`, rear straight punch `armSwap: 1`). XOR with `back`. |
 | `ground` | 0 = no auto-grounding (hip placed at `x, y`). |
 
 `f` = front/lead limb (toward the opponent), `b` = back/rear. Draw order (back = 0): far arm, far leg, neck, near leg,
-jacket + belt, near arm, head. The **stance**: torso 8, head −6, front arm 93/55, back arm 38/70, front leg 30/34/−4,
-back leg −30/20/−26 (heel slightly up). `idle` and walk frames are built as offsets from the stance (`D({...})` in assets.js),
+jacket + belt, near arm, head. The **stance** (Review 1: side-on, weight centred, hips between the feet): torso 1, head −2, open 0,
+front arm 86/58, back arm 30/74, front leg 29/23/6 (flat), back leg −10/26/−24 (heel slightly up). `idle` and walk frames are built as offsets from the stance (`D({...})` in assets.js),
 so retuning the stance moves them too. Use the **pose lab** in `Assets.html` to author poses and copy the JSON.
 
 ## Dev notes

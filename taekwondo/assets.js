@@ -41,6 +41,9 @@
  *             Angles keep their meaning (forward is still toward the facing direction).  lerpPose blends it
  *             as a number; >= 0.5 draws the back view, so an interpolated spin swaps sides at the midpoint.
  *             A full spin = stance -> back:1 keyframe(s) -> stance, with `rot`/limbs doing the rest.
+ *   open      0..1 chest turn.  0 (default) = side-on profile: front shoulder leads, V-neck seen edge-on, belt knot at
+ *             the front edge.  1 = chest opened toward the viewer (3/4 view: full V, knot in the middle) - e.g. for a
+ *             rear straight punch or the bow/win pose.  Blends linearly.
  *   armSwap, legSwap  0 or 1 (>= 0.5 = on).  Swap which arm / leg is drawn near, WITHOUT the back view: e.g. a rear-leg
  *             roundhouse turns the hips so the kicking (back) leg crosses in front -> legSwap: 1; a rear straight
  *             punch -> armSwap: 1.  Combined with `back` by XOR.
@@ -131,8 +134,8 @@
   const ANKLE_H = 10; // ankle above the sole
 
   const POSE_KEYS = ['x', 'y', 'rot', 'torso', 'head', 'fShoulder', 'fElbow', 'bShoulder', 'bElbow',
-    'fHip', 'fKnee', 'fAnkle', 'bHip', 'bKnee', 'bAnkle', 'fHand', 'bHand', 'back', 'armSwap', 'legSwap', 'ground'];
-  const LINEAR_KEYS = { x: 1, y: 1, back: 1, fHand: 1, bHand: 1, ground: 1, armSwap: 1, legSwap: 1 };
+    'fHip', 'fKnee', 'fAnkle', 'bHip', 'bKnee', 'bAnkle', 'fHand', 'bHand', 'open', 'back', 'armSwap', 'legSwap', 'ground'];
+  const LINEAR_KEYS = { x: 1, y: 1, back: 1, fHand: 1, bHand: 1, ground: 1, armSwap: 1, legSwap: 1, open: 1 };
 
   // ---------- Math / matrices ----------
   // Matrix [a, b, c, d, e, f]: (x, y) -> (a x + c y + e, b x + d y + f)
@@ -439,9 +442,10 @@
     const g = (k) => (pose && typeof pose[k] === 'number' ? pose[k] : 0);
     const rot = g('rot');
     const T = rot + g('torso');
-    const tM = mul(mul(translate(0, 0), rotM(T)), scaleM(B.torsoW, B.torsoH / 80));
+    const open = Math.max(0, Math.min(1, g('open')));
+    const tM = mul(rotM(T), scaleM(B.torsoW * (0.93 + 0.07 * open), B.torsoH / 80));
     const pelvis = rotM(rot);
-    const J = { T, rot, tM };
+    const J = { T, rot, tM, open };
 
     // legs
     ['f', 'b'].forEach((side) => {
@@ -458,7 +462,7 @@
 
     // arms
     ['f', 'b'].forEach((side) => {
-      const sh = apply(tM, side === 'f' ? [5, -68] : [-5, -70]);
+      const sh = apply(tM, side === 'f' ? [5 + 5 * (1 - open), -68] : [-5 - 3 * (1 - open), -70]); // side-on: front shoulder leads
       const upA = g(side + 'Shoulder') - T;
       const elbow = add(sh, dir(upA), B.upper);
       const foreA = upA + g(side + 'Elbow');
@@ -562,8 +566,15 @@
     P.line('M-3 -8 Q3 -3 -2 4', L.gi.fold, 2.6, 0.9);
   }
 
+  // Blend two paths with the same commands (number by number).
+  function mix(a, b, t) {
+    if (t <= 0) return a;
+    if (t >= 1) return b;
+    const ta = parse(a), tb = parse(b);
+    return ta.map((v, i) => (typeof v === 'string' ? v : f1(v + (tb[i] - v) * t))).join(' ');
+  }
   function drawTorso(P, L, J, G, back) {
-    const gi = L.gi, belt = L.belt;
+    const gi = L.gi, belt = L.belt, o = J.open; // o: 0 = side-on profile, 1 = chest opened to the viewer
     P.m = mul(G, J.tM);
     P.shape(JACKET, gi.main, SW);
     // soft fold shading (keeps the white gi readable on a light background)
@@ -571,11 +582,12 @@
     P.line('M-22 14 Q-6 18 10 14', gi.fold, 2.5, 0.7);
     if (!back) {
       // V-neck: skin, then the crossed lapels, then the wrap line down to the belt
-      P.shape('M3 -81 L22 -80 L25 -46 Z', L.skin.skin, 0);
-      P.limb('M-12 -81 Q10 -76 25 -44', gi.lapel, 7);
-      P.limb('M20 -81 Q25 -64 25 -44', gi.lapel, 6);
-      P.line('M26 -40 Q26 -22 22 -4', O, 3);
-      P.line('M14 -40 Q10 -20 12 -6', gi.fold, 2.5, 0.8);
+      // (profile: the V is seen edge-on, along the front edge of the jacket)
+      P.shape(mix('M20 -81 L28 -78 L31 -56 Z', 'M3 -81 L22 -80 L25 -46 Z', o), L.skin.skin, 0);
+      P.limb(mix('M-6 -81 Q16 -77 31 -52', 'M-12 -81 Q10 -76 25 -44', o), gi.lapel, 7);
+      P.limb(mix('M25 -80 Q31 -68 31 -52', 'M20 -81 Q25 -64 25 -44', o), gi.lapel, 6);
+      P.line(mix('M32 -48 Q33 -24 31 -4', 'M26 -40 Q26 -22 22 -4', o), O, 3);
+      P.line(mix('M18 -40 Q15 -20 17 -6', 'M14 -40 Q10 -20 12 -6', o), gi.fold, 2.5, 0.8);
     } else {
       P.limb('M-16 -79 Q0 -84 16 -79', gi.lapel, 7);
       P.line('M0 -72 L0 -8', gi.fold, 2.5, 0.7);
@@ -586,11 +598,14 @@
     if (belt.stripe) P.line('M-18 -2 L-4 -2', belt.stripe, 2.5);
     if (!back) {
       // two tails + knot
+      const km = P.m;
+      P.m = mul(km, translate(12 * (1 - o), 0)); // knot slides to the front edge when side-on
       P.limb('M12 1 Q9 15 6 30', belt.color, 8);
       P.limb('M19 1 Q22 14 27 27', belt.color, 8);
       if (belt.stripe) P.line('M8 20 L6.5 27', belt.stripe, 2.5);
       P.shape('M9 -11 L23 -11 Q26 -11 26 -8 L26 4 Q26 7 23 7 L9 7 Q6 7 6 4 L6 -8 Q6 -11 9 -11 Z', belt.color, SW);
       P.line('M10 -2 L22 -2', belt.shade, 2, 0.6);
+      P.m = km;
     }
   }
 
@@ -680,10 +695,10 @@
   }
 
   const STANCE = {
-    x: 0, y: 0, rot: 0, torso: 8, head: -6,
-    fShoulder: 93, fElbow: 55, bShoulder: 38, bElbow: 70,
-    fHip: 30, fKnee: 34, fAnkle: -4,
-    bHip: -30, bKnee: 20, bAnkle: -26,
+    x: 0, y: 0, rot: 0, torso: 1, head: -2, open: 0,
+    fShoulder: 86, fElbow: 58, bShoulder: 30, bElbow: 74,
+    fHip: 29, fKnee: 23, fAnkle: 6,
+    bHip: -10, bKnee: 26, bAnkle: -24,
     fHand: 0, bHand: 0, back: 0,
   };
   // D(delta): stance + the given offsets (keeps the frames in sync if the stance is retuned)
@@ -725,6 +740,7 @@
       torso: '+ = lean forward; head + = nod forward',
       back: '0 = normal side view (front limbs near); 1 = back to the viewer (back limbs near, back of head)',
       hands: 'fHand/bHand: 0 fist, 1 open hand',
+      open: 'open 0 = side-on profile (default), 1 = chest turned toward the viewer',
       swap: 'armSwap/legSwap: 1 = draw the back arm/leg near (hip/shoulder turned), XOR with back',
     },
   };
@@ -746,7 +762,7 @@
     const pick = (a) => a[Math.floor(rand() * a.length) % a.length];
     const skin = pick(['light', 'dark', 'eastAsian']);
     const gender = pick(['male', 'female']);
-    const hairStyle = pick(['short', 'long', 'ponytail']);
+    const hairStyle = gender === 'male' ? 'short' : pick(['short', 'long', 'ponytail']); // boys: short hair only
     const hairColor = skin === 'light' ? pick(['blonde', 'lightBrown', 'brown', 'darkBrown', 'red', 'black'])
       : skin === 'dark' ? pick(['black', 'black', 'darkBrown']) : pick(['black', 'black', 'darkBrown']);
     const eyeColor = skin === 'light' ? pick(['blue', 'green', 'brown', 'hazel']) : pick(['darkBrown', 'brown']);
