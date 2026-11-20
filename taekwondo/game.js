@@ -462,9 +462,9 @@
 
     function onEscape() {
       if (S.overlay === 'confirm') { confirmNo(); return; }
-      if (S.screen === 'fight') { openConfirm('Leave the fight?', leaveFight, S.overlay === 'pause' ? 'pause' : 'play'); return; }
+      if (S.screen === 'fight') { openConfirm(leaveText(), leaveFight, S.overlay === 'pause' ? 'pause' : 'play'); return; }
       if (S.screen === 'chars') goTitle();
-      else if (S.screen === 'ladder') goChars(S.mode);
+      else if (S.screen === 'ladder') { abandonTournament(); goChars(S.mode); }
       else if (S.screen === 'trophy') trophyDone();
     }
 
@@ -497,7 +497,13 @@
       const f = S.onYes; hide('confirm'); S.overlay = null; S.onYes = null;
       if (f) f();
     }
-    function leaveFight() { S.paused = false; S.overlay = null; hide('pause'); hide('confirm'); goTitle(); }
+    // Leaving a tournament (Esc / pause Quit / match-over Quit / back from the ladder) starts it again from White.
+    function abandonTournament() {
+      if (S.mode !== 'tournament') return;
+      S.beltIndex = 0; S.hasProgress = false; sdel(KEY.progress);
+    }
+    function leaveText() { return S.mode === 'tournament' ? 'Leave the tournament? You will start again from White belt.' : 'Leave the fight?'; }
+    function leaveFight() { S.paused = false; S.overlay = null; hide('pause'); hide('confirm'); abandonTournament(); goTitle(); }
 
     function checkOrientation() {
       const portrait = window.innerHeight > window.innerWidth;
@@ -820,13 +826,13 @@
       $('pickOli').onclick = function () { pickCharacter('oli'); };
       $('pickDani').onclick = function () { pickCharacter('dani'); };
       $('charsBack').onclick = goTitle;
-      $('ladBack').onclick = function () { goChars(S.mode); };
+      $('ladBack').onclick = function () { abandonTournament(); goChars(S.mode); };
       $('btnFight').onclick = startFight;
-      $('overQuit').onclick = function () { hide('over'); goTitle(); };
+      $('overQuit').onclick = function () { hide('over'); abandonTournament(); goTitle(); };
       $('trophyBtn').onclick = trophyDone;
       $('pauseBtn').onclick = function () { blurActive(); togglePause(); };
       $('btnResume').onclick = resumeGame;
-      $('btnQuit').onclick = function () { openConfirm('Leave the fight?', leaveFight, 'pause'); };
+      $('btnQuit').onclick = function () { openConfirm(leaveText(), leaveFight, 'pause'); };
       $('confirmYes').onclick = confirmYes; $('confirmNo').onclick = confirmNo;
       document.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'BUTTON') sfx('blip'); });
       document.addEventListener('pointerdown', unlockAudio);
