@@ -49,7 +49,9 @@ Three attack levels: **HIGH** (head), **MID** (body), **LOW** (legs).
 | Back + back limb | spinning, body height (spinning back kick *dwit chagi* / spinning back punch) | MID | kick ×1.2 |
 | Back + Up/Down + attack | jumping spinning (HIGH) / low spinning sweep (LOW) | | kick ×1.2 |
 
-(Back is relative to facing. The research phase may swap in better-matching real move names.)
+(Back is relative to facing. See `research.md`. The **button** picks the target height; the **animation** uses the real technique:
+both spinning kicks are really kicked with the rear leg (spin hook kick → head, spinning back kick → body). Taekwondo has no spinning punches
+and bans head punches / low strikes in WT sparring: in this game they're deliberate game-only moves (spinning backfist → head, spinning back punch → body).)
 
 - **Block** = holding back when the hit lands. **Standing** block covers HIGH + MID; **ducking** block covers LOW + MID.
   So jump attacks must be blocked standing, low attacks must be blocked ducking.
@@ -88,7 +90,8 @@ Files (all plain `<script src>`, works from `file://`):
 | File | Role |
 |---|---|
 | `index.html` | Canvas + DOM overlays (title, mode, character select, belt ladder, HUD, pause, Esc confirm, round/match cards, trophy, rotate notice, touch controls). Inline CSS. |
-| `assets.js` | Drawing: palette, **fighter rig**, looks, portraits, belts, arena/background, UI art (trophy, belt badges). `window.TKDAssets`. |
+| `assets.js` | Drawing: palette, **fighter rig**, looks, portraits, belts, UI art (trophy, belt badges). `window.TKDAssets`. |
+| `arena.js` | Outdoor Antibes training hall, as layers (sky / far / hall / floor) + `floorY`, `minX/maxX`. `window.TKDArena`. Review page `Arena.html`. |
 | `poses.js` | Pose data (joint angles) + move definitions (keyframes, timings, reach, level, damage). `window.TKDPoses`. |
 | `game.js` | DOM-free core `createFight()` (sim, rounds, match) + browser shell (input, loop, screens, storage). `window.TKD`. |
 | `cpu.js` | `createCpu(beltParams, rand)` → returns an input object each frame from the game state. Headless-testable. |
