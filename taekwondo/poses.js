@@ -242,8 +242,8 @@
   // ---- spins ----
   // The body really turns: `turn` (assets.js rig) goes 0 -> -90 (back to the viewer) -> -180 (back to the
   // opponent, seen from the other side) -> -270 (chest to the viewer) -> -360 = stance again.  The head turns WITH
-  // the body (`headTurn` = a small lead, 0..-45): it faces where the chest is going and comes round to the
-  // opponent at the end.  Limb angles are in the body's own plane: at turn -180 "backward" points at the
+  // the body, a quarter turn AHEAD of it (`headTurn` lead -90, user request): it anticipates the spin, then
+  // eases back in line (-70, -40, 0) as the body comes round to the opponent at the end.  Limb angles are in the body's own plane: at turn -180 "backward" points at the
   // opponent (dwit chagi, backfist).  Keys: base -> wind-up -> 90 -> 145 -> extension (~185) -> hold / sweep ->
   // 245 -> 305 -> stance; the turning segments are linear ('lin') so the spin has a steady speed.
   const GUARD_TUCK = { fShoulder: 72, fElbow: 118, bShoulder: 40, bElbow: 116 };
@@ -321,17 +321,17 @@
     const part = (k) => sp[k] || st[k] || {};
     const sweep = isKick && v === 'low';
     const K = (turn, headTurn, o, b) => P(Object.assign({}, o, { turn, headTurn }), b || base);
-    const wind = K(-25, 0, { torso: (base.torso || 0) + 6, x: -4 });
+    const wind = K(-25, -45, { torso: (base.torso || 0) + 6, x: -4 });
     // crouched / tucked bodies splay the knees outward, so the squat still reads when seen from the front or back
     const S1 = v === 'stand' ? {} : { fHipOut: 35, bHipOut: 35 };
     const S2 = v === 'stand' ? {} : { fHipOut: 35, bHipOut: isKick ? 0 : 35 };
-    const t1 = K(-90, -10, Object.assign({}, S1, part('t1')));
-    const chamber = K(-145, -20, Object.assign({}, S1, part('t1'), part('t2')));
-    const ext = K(-185, -30, Object.assign({}, part('t1'), part('t2'), S2, part('ext'), { x: 30 }));
+    const t1 = K(-90, -90, Object.assign({}, S1, part('t1')));
+    const chamber = K(-145, -90, Object.assign({}, S1, part('t1'), part('t2')));
+    const ext = K(-185, -90, Object.assign({}, part('t1'), part('t2'), S2, part('ext'), { x: 30 }));
     // sweep: keeps circling with the leg out; others: a short hold, slightly further round
-    const hold = sweep ? K(-235, -35, Object.assign({}, ext, { turn: -235 })) : K(-200, -35, Object.assign({}, ext, part('hold'), { turn: -200, headTurn: -35 }), base);
-    const r1 = sweep ? K(-290, -45, Object.assign({}, ext, { turn: -290, headTurn: -45 }), base)
-      : K(-250, -45, Object.assign({}, ext, part('hold'), part('r1'), { x: 20 }));
+    const hold = sweep ? K(-235, -90, Object.assign({}, ext, { turn: -235, headTurn: -90 })) : K(-200, -90, Object.assign({}, ext, part('hold'), { turn: -200, headTurn: -90 }), base);
+    const r1 = sweep ? K(-290, -70, Object.assign({}, ext, { turn: -290, headTurn: -70 }), base)
+      : K(-250, -70, Object.assign({}, ext, part('hold'), part('r1'), { x: 20 }));
     const r2 = K(-310, -40, Object.assign({}, sweep ? mix(ext, base, 0.5) : mix(r1, base, 0.5), part('r2'), { turn: -310, headTurn: -40, x: 8 }), base);
     const keys = [[0, base], [0.22, wind], [0.5, t1, 'lin'], [0.78, chamber, 'lin'], [1, ext, 'lin'],
       [2, hold, sweep ? 'lin' : undefined], [2.3, r1, 'lin'], [2.65, r2, 'lin'], [3, base]];
