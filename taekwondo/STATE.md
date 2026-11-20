@@ -2,7 +2,7 @@
 
 1-player vs CPU side-view taekwondo fighting game. Spec: `SPEC.md`; plan and phases: `PLAN.md`; move notes: `research.md`.
 
-**Status (2026-11-20):** Review 1 feedback applied (side-on balanced stance, `open` chest-turn key, boys short hair). P2 done (fighter rig, looks, stance/idle/walk, portraits, belt badges, review page).
+**Status (2026-11-20):** Review 2: rig has a continuous body `turn`; the 12 spinning moves in `poses.js` re-authored as real 360 spins (head spots first, dwit chagi thrust, hook sweep, backfist whip, low = floor sweep). Review 1 feedback applied (side-on balanced stance, `open` chest-turn key, boys short hair). P2 done (fighter rig, looks, stance/idle/walk, portraits, belt badges, review page).
 Waiting for **Review 1** (characters & arena). Verified headless only (no real browser in this env).
 
 ## Files
@@ -65,6 +65,9 @@ Fighter space is SVG units, y down; after grounding the lowest body point is on 
 | `fHand`, `bHand` | 0 fist, 1 open hand (bow, knife-hand blocks). |
 | `open` | Chest turn 0..1 (linear). 0 (default) = side-on profile: front shoulder leads, V-neck edge-on, knot at the front edge, slightly narrower jacket. 1 = chest opened to the viewer (3/4: full V, knot centred), e.g. rear punch, bow, win pose. |
 | `back` | 1 = back turned to the viewer (spin): back limbs drawn near, back of head/hair, jacket back. Lerps; ≥ 0.5 = back view. |
+| `turn` | Body yaw, degrees (shortest-way lerp: keyframes < 180 apart). 0 side-on, 90 chest to viewer, 180 back to the opponent (other side, facing away), −90/270 back to viewer, 360 side-on. Projects the limbs (foreshortening), picks near/far limbs by depth, blends the jacket profile → front/back, slides the knot. Spins go 0 → −90 → −180 (extension) → −270 → −360. |
+| `headTurn` | Head yaw added to `turn` (spotting). The head view (profile R, front face, profile L, back of head) follows the quadrant of `turn + headTurn`. |
+| `fHipOut`, `bHipOut`, `fArmOut`, `bArmOut` | Swing that limb's plane sideways (deg): 90 = the limb's forward angles now point out to the side (hook-kick sweep, splayed squat knees). |
 | `armSwap`, `legSwap` | 1 = draw the back arm / leg near (hips or shoulders turned, e.g. rear roundhouse `legSwap: 1`, rear straight punch `armSwap: 1`). XOR with `back`. |
 | `ground` | 0 = no auto-grounding (hip placed at `x, y`). |
 

@@ -44,6 +44,16 @@
  *   open      0..1 chest turn.  0 (default) = side-on profile: front shoulder leads, V-neck seen edge-on, belt knot at
  *             the front edge.  1 = chest opened toward the viewer (3/4 view: full V, knot in the middle) - e.g. for a
  *             rear straight punch or the bow/win pose.  Blends linearly.
+ *   turn      body yaw in degrees (lerps the shortest way, so keep keyframes < 180 apart).  0 = side-on facing the
+ *             opponent, 90 = chest to the viewer, 180 = back to the opponent (the other side, seen facing away),
+ *             270 / -90 = back to the viewer, 360 = side-on again.  Limbs are projected (foreshortened), near/far
+ *             limbs swap by depth, the jacket blends profile -> front / back view, the knot slides round.
+ *             Real spinning kicks turn the back first: 0 -> -90 -> -180 (extension) -> -270 -> -360.
+ *   headTurn  extra head yaw on top of turn (spotting: the head leads).  The head shows profile right / front face /
+ *             profile left / back of the head by quadrant of turn + headTurn.
+ *   fHipOut, bHipOut, fArmOut, bArmOut   swing that limb's plane outward around the vertical axis (degrees):
+ *             0 = the limb moves in the forward/back plane, 90 = the same angles now point out to the side
+ *             (hook kick sweeping across, knees splayed in a squat seen from the front).
  *   armSwap, legSwap  0 or 1 (>= 0.5 = on).  Swap which arm / leg is drawn near, WITHOUT the back view: e.g. a rear-leg
  *             roundhouse turns the hips so the kicking (back) leg crosses in front -> legSwap: 1; a rear straight
  *             punch -> armSwap: 1.  Combined with `back` by XOR.
@@ -134,7 +144,8 @@
   const ANKLE_H = 10; // ankle above the sole
 
   const POSE_KEYS = ['x', 'y', 'rot', 'torso', 'head', 'fShoulder', 'fElbow', 'bShoulder', 'bElbow',
-    'fHip', 'fKnee', 'fAnkle', 'bHip', 'bKnee', 'bAnkle', 'fHand', 'bHand', 'open', 'back', 'armSwap', 'legSwap', 'ground'];
+    'fHip', 'fKnee', 'fAnkle', 'bHip', 'bKnee', 'bAnkle', 'fHand', 'bHand', 'open', 'back', 'armSwap', 'legSwap', 'ground',
+    'turn', 'headTurn', 'fHipOut', 'bHipOut', 'fArmOut', 'bArmOut'];
   const LINEAR_KEYS = { x: 1, y: 1, back: 1, fHand: 1, bHand: 1, ground: 1, armSwap: 1, legSwap: 1, open: 1 };
 
   // ---------- Math / matrices ----------
@@ -437,6 +448,17 @@
   const JACKET = 'M-31 25 L35 25 C38 4 37 -32 32 -58 C28 -74 16 -82 1 -82 C-14 -82 -26 -75 -30 -61 C-35 -38 -35 0 -31 25 Z';
 
   // ---------- Forward kinematics ----------
+  // Shape scale along a limb: like the true foreshortening k, but never thinner than 0.45 so feet/fists stay readable.
+  const shapeK = (k) => (k < 0 ? -1 : 1) * Math.max(Math.abs(k), 0.45);
+  // Frame for a shape drawn along a limb whose screen x is foreshortened by k (k = 1: plain frame()).
+  const kFrame = (o, u, k) => { const e = shapeK(k); return [u[0] * e, u[1], -u[1] * e, u[0], o[0], o[1]]; };
+  const addK = (p, v, len, k) => [p[0] + v[0] * len * k, p[1] + v[1] * len];
+  const lerpM = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+
+  // Forward kinematics.  Limbs are solved in the body's forward/back plane, then the body TURN (yaw around the
+  // vertical axis) projects them onto the screen: screen x = x cos(turn) - z sin(turn), where z is the sideways
+  // offset (front limbs z > 0 = toward the viewer at turn 0).  A limb's own plane can also swing outward
+  // (`*HipOut`, `*ArmOut`), so its forward reach maps to screen x by k = cos(out) cos(turn) - side sin(out) sin(turn).
   function solve(L, pose) {
     const B = L.build;
     const g = (k) => (pose && typeof pose[k] === 'number' ? pose[k] : 0);
@@ -445,46 +467,73 @@
     const open = Math.max(0, Math.min(1, g('open')));
     const tM = mul(rotM(T), scaleM(B.torsoW * (0.93 + 0.07 * open), B.torsoH / 80));
     const pelvis = rotM(rot);
-    const J = { T, rot, tM, open };
+    const turn = g('turn');
+    let c = Math.cos(turn * RAD), s = Math.sin(turn * RAD);
+    if (Math.abs(s) < 1e-9) { s = 0; c = c > 0 ? 1 : -1; }
+    if (Math.abs(c) < 1e-9) c = 0;
+    const turned = !(c === 1 && s === 0);
+    const proj = (p, z) => (turned ? [p[0] * c - z * s, p[1]] : p);
+    const J = { T, rot, tM, open, c, s, turned };
 
     // legs
     ['f', 'b'].forEach((side) => {
-      const hip = apply(pelvis, side === 'f' ? [5, 0] : [-5, 0]);
+      const sg = side === 'f' ? 1 : -1;
+      const out = g(side + 'HipOut') * RAD;
+      const k = Math.cos(out) * c - sg * Math.sin(out) * s;
+      const hipS = apply(pelvis, side === 'f' ? [5, 0] : [-5, 0]);
+      const hip = proj(hipS, sg * 11);
       const thighA = g(side + 'Hip') - rot;
-      const knee = add(hip, dir(thighA), B.thigh);
+      const knee = addK(hip, dir(thighA), B.thigh, k);
       const shinA = thighA - g(side + 'Knee');
-      const ankle = add(knee, dir(shinA), B.shin);
+      const ankle = addK(knee, dir(shinA), B.shin, k);
       const footA = shinA + 90 - g(side + 'Ankle');
-      const fu = dir(footA);
-      const footM = frame(ankle, fu);
-      J[side + 'Leg'] = { hip, knee, ankle, thighA, shinA, footA, footM, toe: apply(footM, [34, 4]) };
+      const footM = kFrame(ankle, dir(footA), k);
+      const tipX = (ankle[0] - hip[0]) / (Math.abs(k) > 1e-6 ? k : 1); // forward reach in the limb plane
+      const depth = sg * 11 * c + hipS[0] * s + 0.5 * tipX * (Math.cos(out) * s + sg * Math.sin(out) * c);
+      J[side + 'Leg'] = { hip, knee, ankle, thighA, shinA, footA, footM, k, depth, toe: apply(footM, [34, 4]) };
     });
 
     // arms
     ['f', 'b'].forEach((side) => {
-      const sh = apply(tM, side === 'f' ? [5 + 5 * (1 - open), -68] : [-5 - 3 * (1 - open), -70]); // side-on: front shoulder leads
+      const sg = side === 'f' ? 1 : -1;
+      const out = g(side + 'ArmOut') * RAD;
+      const k = Math.cos(out) * c - sg * Math.sin(out) * s;
+      const shS = apply(tM, side === 'f' ? [5 + 5 * (1 - open), -68] : [-5 - 3 * (1 - open), -70]); // side-on: front shoulder leads
+      const sh = proj(shS, sg * 23);
       const upA = g(side + 'Shoulder') - T;
-      const elbow = add(sh, dir(upA), B.upper);
+      const elbow = addK(sh, dir(upA), B.upper, k);
       const foreA = upA + g(side + 'Elbow');
-      const wrist = add(elbow, dir(foreA), B.fore);
-      const handM = frame(wrist, dir(foreA));
+      const wrist = addK(elbow, dir(foreA), B.fore, k);
+      const handM = kFrame(wrist, dir(foreA), k);
+      const tipX = (wrist[0] - sh[0]) / (Math.abs(k) > 1e-6 ? k : 1);
+      const depth = sg * 23 * c + shS[0] * s + 0.5 * tipX * (Math.cos(out) * s + sg * Math.sin(out) * c);
       J[side + 'Arm'] = {
-        shoulder: sh, elbow, wrist, upA, foreA, handM,
+        shoulder: sh, elbow, wrist, upA, foreA, handM, k, depth,
         fist: apply(handM, [9, 0]), open: g(side + 'Hand') >= 0.5,
       };
     });
 
     // neck + head
-    const neckBase = apply(tM, [1, -79]);
+    const neckS = apply(tM, [1, -79]);
     const H = T + g('head');
     const hs = B.headScale;
     const up = [Math.sin(H * RAD), -Math.cos(H * RAD)];
-    const headC = add(neckBase, up, B.neck + 34 * hs);
+    const headS = add(neckS, up, B.neck + 34 * hs);
+    const neckBase = proj(neckS, 0), headC = proj(headS, 0);
     J.neckBase = neckBase;
     J.headC = headC;
-    J.headM = mul(mul(translate(headC[0], headC[1]), rotM(H)), scaleM(hs));
     J.headR = 44 * hs;
     J.back = g('back') >= 0.5;
+    // which way the head is seen: profile right / front face / profile left (mirrored) / back of the head
+    const phi = (turn + g('headTurn')) * RAD, ch = Math.cos(phi), sh = Math.sin(phi);
+    J.headView = J.back ? 'back' : Math.abs(ch) >= Math.abs(sh) - 1e-9 ? (ch >= 0 ? 'right' : 'left') : sh > 0 ? 'front' : 'back';
+    const Hs = turned || g('headTurn') ? Math.atan2(Math.sin(H * RAD) * ch, Math.cos(H * RAD)) / RAD : H;
+    J.headM = mul(mul(mul(translate(headC[0], headC[1]), rotM(Hs)), scaleM(hs)), J.headView === 'left' ? scaleM(-1, 1) : I);
+    // torso as drawn: lean foreshortened by the turn
+    J.tMd = turned
+      ? mul(rotM(Math.atan2(Math.sin(T * RAD) * c, Math.cos(T * RAD)) / RAD), scaleM(B.torsoW * (0.93 + 0.07 * open), B.torsoH / 80))
+      : tM;
+    J.backView = J.back || s < 0; // jacket: back details (s < 0 = back toward the viewer)
     return J;
   }
 
@@ -518,24 +567,25 @@
     const gi = far ? L.gi.far : L.gi.main;
     const skin = far ? L.skin.shade : L.skin.skin;
     const B = L.build;
-    const sd = dir(leg.shinA);
-    const hem = add(leg.ankle, sd, -9);
-    const hemM = mul(G, frame(hem, sd));
+    const sd = dir(leg.shinA), k = leg.k;
+    const sdk = [sd[0] * k, sd[1]];
+    const hem = add(leg.ankle, sdk, -9);
+    const hemM = mul(G, kFrame(hem, sd, k));
     const footM = mul(G, leg.footM);
     P.m = G;
     P.group([
       { d: poly([hem, leg.ankle]), stroke: skin, w: 13 },
       { d: FOOT, fill: skin, m: footM },
-      { d: poly([leg.hip, leg.knee, add(hem, sd, -9)]), stroke: gi, w: B.trouser },
+      { d: poly([leg.hip, leg.knee, add(hem, sdk, -9)]), stroke: gi, w: B.trouser },
       { d: 'M-8 -16 L3 -18.5 Q7 -18.5 7 -14 L7 14 Q7 18.5 3 18.5 L-8 16 Z', fill: gi, m: hemM },
     ]);
     // toes + knee crease
     P.m = footM;
     P.line('M26 -2.5 Q30 1 28 5.5', L.skin.shade, 2.5);
     P.line('M19 -4 Q22 0 20 4', L.skin.shade, 2.2, 0.8);
-    P.m = mul(G, frame(leg.knee, dir(leg.shinA)));
+    P.m = mul(G, kFrame(leg.knee, sd, k));
     P.line('M-6 -6 Q2 -1 -4 6', L.gi.fold, 3, 0.9);
-    P.m = mul(G, frame(add(leg.knee, sd, B.shin * 0.45), sd));
+    P.m = mul(G, kFrame(add(leg.knee, sdk, B.shin * 0.45), sd, k));
     P.line('M-4 -9 Q0 -4 -3 2', L.gi.fold, 2.5, 0.7);
   }
 
@@ -543,15 +593,16 @@
     const gi = far ? L.gi.far : L.gi.main;
     const skin = far ? L.skin.shade : L.skin.skin;
     const B = L.build;
-    const fd = dir(arm.foreA);
-    const cuff = add(arm.elbow, fd, B.fore * 0.7);
-    const cuffM = mul(G, frame(cuff, fd));
+    const fd = dir(arm.foreA), k = arm.k;
+    const fdk = [fd[0] * k, fd[1]];
+    const cuff = add(arm.elbow, fdk, B.fore * 0.7);
+    const cuffM = mul(G, kFrame(cuff, fd, k));
     const handM = mul(G, arm.handM);
     P.m = G;
     P.group([
       { d: poly([cuff, arm.wrist]), stroke: skin, w: 12 },
       { d: arm.open ? HAND : FIST, fill: skin, m: handM },
-      { d: poly([arm.shoulder, arm.elbow, add(cuff, fd, -7)]), stroke: gi, w: B.sleeve },
+      { d: poly([arm.shoulder, arm.elbow, add(cuff, fdk, -7)]), stroke: gi, w: B.sleeve },
       { d: 'M-7 -14 L3 -15.5 Q6 -15.5 6 -12 L6 12 Q6 15.5 3 15.5 L-7 14 Z', fill: gi, m: cuffM },
     ]);
     // fist details: knuckle crease + thumb
@@ -562,7 +613,7 @@
       P.line('M2 -6 Q8 -8 12 -4', L.skin.shade, 2.3, 0.9);
     }
     // elbow crease
-    P.m = mul(G, frame(arm.elbow, fd));
+    P.m = mul(G, kFrame(arm.elbow, fd, k));
     P.line('M-3 -8 Q3 -3 -2 4', L.gi.fold, 2.6, 0.9);
   }
 
@@ -573,33 +624,42 @@
     const ta = parse(a), tb = parse(b);
     return ta.map((v, i) => (typeof v === 'string' ? v : f1(v + (tb[i] - v) * t))).join(' ');
   }
+  // Front-view versions of the jacket shapes (same commands as the profile ones, so they can be blended).
+  const JACKET_F = 'M-34 25 L34 25 C37 4 36 -32 33 -58 C29 -74 16 -82 0 -82 C-16 -82 -29 -74 -33 -58 C-36 -32 -37 4 -34 25 Z';
+  const BELT_P = 'M-34 -9 L37 -9 Q39 -9 39 -6 L39 2 Q39 5 36 5 L-34 5 Q-37 5 -37 2 L-37 -6 Q-37 -9 -34 -9 Z';
+  const BELT_F = 'M-35 -9 L35 -9 Q38 -9 38 -6 L38 2 Q38 5 35 5 L-35 5 Q-38 5 -38 2 L-38 -6 Q-38 -9 -35 -9 Z';
+
   function drawTorso(P, L, J, G, back) {
     const gi = L.gi, belt = L.belt, o = J.open; // o: 0 = side-on profile, 1 = chest opened to the viewer
-    P.m = mul(G, J.tM);
-    P.shape(JACKET, gi.main, SW);
+    // With a body turn: profile shapes (mirrored when facing away, cos < 0) blend into the front/back view by |sin|.
+    const w = J.turned ? Math.abs(J.s) : 0, sg = J.c >= 0 ? 1 : -1;
+    const side = (pd, fd) => (J.turned ? mix(tx(pd, scaleM(sg, 1)), fd, w) : pd);
+    P.m = mul(G, J.tMd);
+    P.shape(side(JACKET, JACKET_F), gi.main, SW);
     // soft fold shading (keeps the white gi readable on a light background)
-    P.line(back ? 'M-14 -64 Q-17 -30 -13 10' : 'M-18 -62 Q-22 -30 -18 8', gi.shade, 7, 0.9);
-    P.line('M-22 14 Q-6 18 10 14', gi.fold, 2.5, 0.7);
+    P.line(back ? side('M-14 -64 Q-17 -30 -13 10', 'M-20 -62 Q-24 -30 -20 10') : side('M-18 -62 Q-22 -30 -18 8', 'M-24 -60 Q-27 -30 -24 8'), gi.shade, 7, 0.9);
+    P.line(side('M-22 14 Q-6 18 10 14', 'M-16 14 Q0 18 16 14'), gi.fold, 2.5, 0.7);
     if (!back) {
       // V-neck: skin, then the crossed lapels, then the wrap line down to the belt
       // (profile: the V is seen edge-on, along the front edge of the jacket)
-      P.shape(mix('M20 -81 L28 -78 L31 -56 Z', 'M3 -81 L22 -80 L25 -46 Z', o), L.skin.skin, 0);
-      P.limb(mix('M-6 -81 Q16 -77 31 -52', 'M-12 -81 Q10 -76 25 -44', o), gi.lapel, 7);
-      P.limb(mix('M25 -80 Q31 -68 31 -52', 'M20 -81 Q25 -64 25 -44', o), gi.lapel, 6);
-      P.line(mix('M32 -48 Q33 -24 31 -4', 'M26 -40 Q26 -22 22 -4', o), O, 3);
-      P.line(mix('M18 -40 Q15 -20 17 -6', 'M14 -40 Q10 -20 12 -6', o), gi.fold, 2.5, 0.8);
+      P.shape(side(mix('M20 -81 L28 -78 L31 -56 Z', 'M3 -81 L22 -80 L25 -46 Z', o), 'M-10 -81 L10 -81 L0 -50 Z'), L.skin.skin, 0);
+      P.limb(side(mix('M-6 -81 Q16 -77 31 -52', 'M-12 -81 Q10 -76 25 -44', o), 'M-17 -81 Q-8 -66 4 -46'), gi.lapel, 7);
+      P.limb(side(mix('M25 -80 Q31 -68 31 -52', 'M20 -81 Q25 -64 25 -44', o), 'M16 -81 Q8 -66 -4 -46'), gi.lapel, 6);
+      P.line(side(mix('M32 -48 Q33 -24 31 -4', 'M26 -40 Q26 -22 22 -4', o), 'M4 -42 Q5 -22 3 -4'), O, 3);
+      P.line(side(mix('M18 -40 Q15 -20 17 -6', 'M14 -40 Q10 -20 12 -6', o), 'M-14 -40 Q-17 -20 -15 -6'), gi.fold, 2.5, 0.8);
     } else {
-      P.limb('M-16 -79 Q0 -84 16 -79', gi.lapel, 7);
-      P.line('M0 -72 L0 -8', gi.fold, 2.5, 0.7);
+      P.limb(side('M-16 -79 Q0 -84 16 -79', 'M-16 -79 Q0 -84 16 -79'), gi.lapel, 7);
+      P.line(side('M0 -72 L0 -8', 'M0 -72 L0 -8'), gi.fold, 2.5, 0.7);
     }
     // belt band
-    P.shape('M-34 -9 L37 -9 Q39 -9 39 -6 L39 2 Q39 5 36 5 L-34 5 Q-37 5 -37 2 L-37 -6 Q-37 -9 -34 -9 Z', belt.color, SW);
-    P.line('M-32 -2 L35 -2', belt.shade, 2, 0.6);
-    if (belt.stripe) P.line('M-18 -2 L-4 -2', belt.stripe, 2.5);
+    P.shape(side(BELT_P, BELT_F), belt.color, SW);
+    P.line(side('M-32 -2 L35 -2', 'M-34 -2 L34 -2'), belt.shade, 2, 0.6);
+    if (belt.stripe) P.line(side('M-18 -2 L-4 -2', 'M-26 -2 L-12 -2'), belt.stripe, 2.5);
     if (!back) {
-      // two tails + knot
+      // two tails + knot: slides to the front edge when side-on, to the middle in the front view
       const km = P.m;
-      P.m = mul(km, translate(12 * (1 - o), 0)); // knot slides to the front edge when side-on
+      const kx = J.turned ? (sg * (16 + 12 * (1 - o))) * (1 - w) - 16 : 12 * (1 - o); // knot centre slides, never squashed
+      P.m = mul(km, translate(kx, 0));
       P.limb('M12 1 Q9 15 6 30', belt.color, 8);
       P.limb('M19 1 Q22 14 27 27', belt.color, 8);
       if (belt.stripe) P.line('M8 20 L6.5 27', belt.stripe, 2.5);
@@ -618,7 +678,9 @@
     const P = Painter();
     const back = J.back;
     const g = (k) => (pose && typeof pose[k] === 'number' ? pose[k] : 0);
-    const armB = back !== g('armSwap') >= 0.5, legB = back !== g('legSwap') >= 0.5;
+    // near/far from the depth of each limb (front limbs near at turn 0), then the back / swap overrides (XOR)
+    const armB = (J.bArm.depth > J.fArm.depth) !== (back !== g('armSwap') >= 0.5);
+    const legB = (J.bLeg.depth > J.fLeg.depth) !== (back !== g('legSwap') >= 0.5);
     const nearArm = armB ? J.bArm : J.fArm, farArm = armB ? J.fArm : J.bArm;
     const nearLeg = legB ? J.bLeg : J.fLeg, farLeg = legB ? J.fLeg : J.bLeg;
     const expr = opts.expression || 'normal';
@@ -629,10 +691,12 @@
     P.m = G;
     P.limb(poly([J.neckBase, J.headC]), L.skin.shade, 18);
     drawLeg(P, L, nearLeg, false, G);
-    drawTorso(P, L, J, G, back);
+    drawTorso(P, L, J, G, J.backView);
     drawArm(P, L, nearArm, false, G);
     P.m = mul(G, J.headM);
-    if (back) drawHeadBack(P, L); else drawHeadProfile(P, L, expr);
+    if (J.headView === 'back') drawHeadBack(P, L);
+    else if (J.headView === 'front') { P.m = mul(P.m, mul(scaleM(44 / 40), translate(-60, -56))); drawFrontHead(P, L, expr, true); }
+    else drawHeadProfile(P, L, expr);
     return P.out;
   }
 
@@ -741,6 +805,7 @@
       back: '0 = normal side view (front limbs near); 1 = back to the viewer (back limbs near, back of head)',
       hands: 'fHand/bHand: 0 fist, 1 open hand',
       open: 'open 0 = side-on profile (default), 1 = chest turned toward the viewer',
+      turn: 'turn deg: 0 side-on, 90 chest to viewer, 180 back to opponent, 270 back to viewer; headTurn adds head yaw; *HipOut/*ArmOut swing a limb plane sideways',
       swap: 'armSwap/legSwap: 1 = draw the back arm/leg near (hip/shoulder turned), XOR with back',
     },
   };
@@ -797,22 +862,11 @@
     },
   };
 
-  /** portrait(look, expression) -> front-facing SVG string (viewBox 0 -10 120 134). */
-  function portrait(look, expression) {
-    const L = resolveLook(look);
-    const expr = expression || 'normal';
-    const P = Painter();
-    const s = L.skin, hc = L.hair, gi = L.gi;
+  // Front-facing head in portrait coordinates (centre 60,56, radius 40).  behind = also draw the hair behind the head.
+  function drawFrontHead(P, L, expr, behind) {
+    const s = L.skin, hc = L.hair;
     const h = FRONT_HAIR[L.style] || FRONT_HAIR.short;
-    if (h.behind) P.shape(h.behind, hc.c, SW);
-    if (h.tie) P.shape(ell(h.tie[0], h.tie[1], 6, 8, 30), L.female ? '#FF5C8A' : '#4A7BD0', 3);
-    // shoulders in the dobok, V-neck
-    P.shape('M14 124 Q16 99 42 93 L78 93 Q104 99 106 124 Z', gi.main, SW);
-    P.shape('M50 92 L70 92 L60 112 Z', s.skin, 0);
-    P.shape('M51 86 L69 86 L69 96 Q60 104 51 96 Z', s.shade, 3);
-    P.limb('M44 93 L61 118', gi.lapel, 7);
-    P.limb('M76 93 L59 116', gi.lapel, 7);
-    P.line('M30 108 Q34 116 32 124 M90 108 Q86 116 88 124', gi.fold, 3, 0.8);
+    if (behind) frontHairBehind(P, L);
     // ears + head
     P.shape(circ(21, 62, 9), s.skin, SW);
     P.shape(circ(99, 62, 9), s.skin, SW);
@@ -866,6 +920,28 @@
       P.shape(L.female ? 'M48 78 Q60 93 72 78 Q60 83 48 78 Z' : 'M46 77 Q60 96 74 77 Q60 83 46 77 Z', C.mouth, 3);
       P.fill(ell(60, L.female ? 85 : 86, 5, 2.4), C.tongue);
     }
+  }
+  function frontHairBehind(P, L) {
+    const h = FRONT_HAIR[L.style] || FRONT_HAIR.short;
+    if (h.behind) P.shape(h.behind, L.hair.c, SW);
+    if (h.tie) P.shape(ell(h.tie[0], h.tie[1], 6, 8, 30), L.female ? '#FF5C8A' : '#4A7BD0', 3);
+  }
+
+  /** portrait(look, expression) -> front-facing SVG string (viewBox 0 -10 120 134). */
+  function portrait(look, expression) {
+    const L = resolveLook(look);
+    const expr = expression || 'normal';
+    const P = Painter();
+    const s = L.skin, gi = L.gi;
+    frontHairBehind(P, L);
+    // shoulders in the dobok, V-neck
+    P.shape('M14 124 Q16 99 42 93 L78 93 Q104 99 106 124 Z', gi.main, SW);
+    P.shape('M50 92 L70 92 L60 112 Z', s.skin, 0);
+    P.shape('M51 86 L69 86 L69 96 Q60 104 51 96 Z', s.shade, 3);
+    P.limb('M44 93 L61 118', gi.lapel, 7);
+    P.limb('M76 93 L59 116', gi.lapel, 7);
+    P.line('M30 108 Q34 116 32 124 M90 108 Q86 116 88 124', gi.fold, 3, 0.8);
+    drawFrontHead(P, L, expr, false);
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -10 120 134">${primsToSvgBody(P.out)}</svg>`;
   }
 

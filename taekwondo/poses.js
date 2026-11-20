@@ -34,8 +34,9 @@
  * HOW A MOVE IS BUILT: keyframes on a phase axis 0..3 (0 = start, 1 = end of startup = first active frame,
  * 2 = end of active, 3 = end of recovery).  Startup: base -> chamber -> extension (the snap is in the last part),
  * active: hold the extension, recovery: retract through the chamber back to the base (stance; the duck for low
- * moves; the air tuck for jumping moves).  Spins: base -> wind-up -> back turned to the viewer (back: 1) ->
- * extension facing the opponent -> recovery with a settling crouch.
+ * moves; the air tuck for jumping moves).  Spins: the rig's `turn` key rotates the body a full -360 through
+ * wind-up -> back to the viewer -> back to the opponent (extension) -> chest to the viewer -> stance, with the head
+ * leading (`headTurn`); low spinning kicks are a floor sweep.  See the spins section.
  */
 (function () {
   'use strict';
@@ -169,7 +170,8 @@
     for (let i = 1; i < keys.length; i++) {
       if (c <= keys[i][0]) {
         const a = keys[i - 1], b = keys[i];
-        return mix(a[1], b[1], ease((c - a[0]) / (b[0] - a[0])));
+        const u = (c - a[0]) / (b[0] - a[0]);
+        return mix(a[1], b[1], b[2] === 'lin' ? u : ease(u)); // 'lin' = constant speed (spins)
       }
     }
     return keys[keys.length - 1][1];
@@ -238,44 +240,103 @@
   };
 
   // ---- spins ----
-  const spinWind = (v) => P({ back: 0, open: 0, torso: 10, head: 14, x: -4,
-    fShoulder: 60, fElbow: 90, bShoulder: 30, bElbow: 80 }, BODY[v]);
-  const spinTurned = (v, o) => P(Object.assign({ back: 1, torso: 14, head: 10, x: 0 }, o || {}), BODY[v]);
-
-  const SPIN_EXT = {
-    // spinning backfist: front arm whips round at head height
-    frontPunch: {
-      stand: P({ x: 40, open: 1, torso: 4, head: -6, fShoulder: 118, fElbow: 6, bShoulder: 50, bElbow: 110,
-        fHip: 40, fKnee: 38, fAnkle: flat(), bHip: -22, bKnee: 14, bAnkle: flat(20) }),
-      low: P({ x: 30, open: 1, torso: 30, head: -8, fShoulder: 72, fElbow: 8, bShoulder: 50, bElbow: 110 }, DUCK),
-      jump: P({ x: 24, open: 1, torso: 6, head: -6, fShoulder: 100, fElbow: 6, bShoulder: 50, bElbow: 110 }, AIR),
-    },
-    // spinning back punch: rear arm at body height
-    backPunch: {
-      stand: P({ x: 40, open: 1, armSwap: 1, torso: 14, head: -6, bShoulder: 92, bElbow: 0, fShoulder: 60, fElbow: 124,
-        fHip: 40, fKnee: 40, fAnkle: flat(), bHip: -22, bKnee: 14, bAnkle: flat(20) }),
-      low: P({ x: 30, open: 1, armSwap: 1, torso: 30, head: -8, bShoulder: 72, bElbow: 0, fShoulder: 60, fElbow: 124 }, DUCK),
-      jump: P({ x: 24, open: 1, armSwap: 1, torso: 12, head: -6, bShoulder: 88, bElbow: 0, fShoulder: 60, fElbow: 124 }, AIR),
-    },
-    // spin hook kick: rear leg whips round to the head
+  // The body really turns: `turn` (assets.js rig) goes 0 -> -90 (back to the viewer) -> -180 (back to the
+  // opponent, seen from the other side) -> -270 (chest to the viewer) -> -360 = stance again.  The head leads
+  // (`headTurn`): it whips round first to spot the target, so it shows the face (looking over the shoulder)
+  // while the back is turned.  Limb angles are in the body's own plane: at turn -180 "backward" points at the
+  // opponent (dwit chagi, backfist).  Keys: base -> wind-up -> 90 -> 145 -> extension (~185) -> hold / sweep ->
+  // 245 -> 305 -> stance; the turning segments are linear ('lin') so the spin has a steady speed.
+  const GUARD_TUCK = { fShoulder: 72, fElbow: 118, bShoulder: 40, bElbow: 116 };
+  const SUPPORT = { fHip: 16, fKnee: 28, fAnkle: flat() };
+  const SPIN = {
+    // spin hook kick: rear leg swings up behind, heel sweeps across at head height, then hooks
     frontKick: {
-      stand: P({ x: 52, legSwap: 1, open: 1, rot: -22, torso: -8, head: 0, bHip: 124, bKnee: 22, bAnkle: 60, fHip: 8, fKnee: 26, fAnkle: flat(),
-        fShoulder: 96, fElbow: 84, bShoulder: 30, bElbow: 40 }),
-      low: P({ x: 44, legSwap: 1, open: 1, rot: -4, torso: -6, bHip: 74, bKnee: 4, bAnkle: 60, fHip: 40, fKnee: 112, fAnkle: flat(),
-        fShoulder: 96, fElbow: 84, bShoulder: 30, bElbow: 40 }, DUCK),
-      jump: P({ x: 36, legSwap: 1, open: 1, rot: -14, torso: -8, bHip: 86, bKnee: 12, bAnkle: 60, fHip: 30, fKnee: 98, fAnkle: 40,
-        fShoulder: 96, fElbow: 84, bShoulder: 30, bElbow: 40 }, AIR),
+      stand: {
+        t1: { bHip: 20, bKnee: 40, rot: 4 }, t2: { bHip: -40, bKnee: 30, rot: 14, torso: 6 },
+        ext: Object.assign({ rot: 30, torso: 0, bHip: -104, bKnee: 10, bAnkle: 24 }, SUPPORT, GUARD_TUCK),
+        hold: { bHipOut: 45, bKnee: 55, rot: 26 },
+        r1: { bHip: -40, bKnee: 70, bHipOut: 20, rot: 10 }, r2: { bHip: 0, bKnee: 30, rot: 0 },
+      },
+      jump: {
+        t1: { bHip: 0, bKnee: 70 }, t2: { bHip: -40, bKnee: 40, rot: 12 },
+        ext: Object.assign({ rot: 26, torso: 0, bHip: -98, bKnee: 10, bAnkle: 24 }, GUARD_TUCK),
+        hold: { bHipOut: 45, bKnee: 55, rot: 22 },
+        r1: { bHip: -20, bKnee: 90, bHipOut: 20, rot: 8 }, r2: { rot: 0 },
+      },
     },
-    // spinning back kick (dwit chagi): rear leg thrust straight out at the belly, body leaning away
+    // spinning back kick (dwit chagi): knee tucked to the chest, then a straight heel thrust with the back to the opponent
     backKick: {
-      stand: P({ x: 56, legSwap: 1, open: 1, rot: -30, torso: -10, head: 8, bHip: 84, bKnee: 4, bAnkle: 76, fHip: 4, fKnee: 24, fAnkle: flat(),
-        fShoulder: 80, fElbow: 70, bShoulder: 20, bElbow: 40 }),
-      low: P({ x: 50, legSwap: 1, open: 1, rot: -16, torso: -4, head: 6, bHip: 78, bKnee: 4, bAnkle: 70, fHip: 40, fKnee: 112, fAnkle: flat(),
-        fShoulder: 80, fElbow: 70, bShoulder: 20, bElbow: 40 }, DUCK),
-      jump: P({ x: 40, legSwap: 1, open: 1, rot: -26, torso: -10, head: 6, bHip: 80, bKnee: 4, bAnkle: 76, fHip: 30, fKnee: 98, fAnkle: 40,
-        fShoulder: 80, fElbow: 70, bShoulder: 20, bElbow: 40 }, AIR),
+      stand: {
+        t1: { bHip: 40, bKnee: 90, bAnkle: 30, torso: 6 }, t2: { bHip: 72, bKnee: 135, bAnkle: 20, torso: 14 },
+        ext: Object.assign({ rot: 18, torso: 14, bHip: -72, bKnee: 0, bAnkle: -12 }, SUPPORT, GUARD_TUCK),
+        hold: { rot: 20 },
+        r1: { bHip: 50, bKnee: 120, rot: 6, torso: 8 }, r2: { bHip: 0, bKnee: 40, rot: 0 },
+      },
+      jump: {
+        t1: { bHip: 60, bKnee: 120 }, t2: { bHip: 80, bKnee: 140, torso: 12 },
+        ext: Object.assign({ rot: 16, torso: 12, bHip: -70, bKnee: 0, bAnkle: -12 }, GUARD_TUCK),
+        hold: { rot: 18 },
+        r1: { bHip: 50, bKnee: 120, rot: 4 }, r2: { rot: 0 },
+      },
+    },
+    // spinning backfist: the front arm folds across the chest, then whips out behind at head height
+    frontPunch: {
+      stand: {
+        t1: { fShoulder: 70, fElbow: 140, torso: 4 }, t2: { fShoulder: 40, fElbow: 150, bShoulder: 50, bElbow: 120 },
+        ext: { torso: -12, fShoulder: -112, fElbow: 10, bShoulder: 60, bElbow: 120, armSwap: 1 }, // armSwap: the whipping arm crosses in front
+        hold: { fShoulder: -106, fElbow: 26 },
+        r1: { fShoulder: -20, fElbow: 100 }, r2: { fShoulder: 60, fElbow: 80, armSwap: 0 },
+      },
+      low: { ext: { torso: 10, fShoulder: -70, fElbow: 6, bShoulder: 60, bElbow: 120, armSwap: 1 }, hold: { fShoulder: -64, fElbow: 24 } },
+      jump: { ext: { torso: -10, fShoulder: -110, fElbow: 10, bShoulder: 60, bElbow: 120, armSwap: 1 }, hold: { fShoulder: -104, fElbow: 26 } },
+    },
+    // spinning back punch: the rear arm drives straight out behind at body height
+    backPunch: {
+      stand: {
+        t1: { bShoulder: 60, bElbow: 140, torso: 4 }, t2: { bShoulder: 30, bElbow: 150, fShoulder: 60, fElbow: 110 },
+        ext: { torso: -10, bShoulder: -90, bElbow: 4, fShoulder: 70, fElbow: 120 },
+        hold: { bShoulder: -82, bElbow: 16 },
+        r1: { bShoulder: -10, bElbow: 100 }, r2: { bShoulder: 40, bElbow: 80 },
+      },
+      low: { ext: { torso: 10, bShoulder: -56, bElbow: 4, fShoulder: 70, fElbow: 120 }, hold: { bShoulder: -50, bElbow: 16 } },
+      jump: { ext: { torso: -4, bShoulder: -86, bElbow: 4, fShoulder: 70, fElbow: 120 }, hold: { bShoulder: -82, bElbow: 16 } },
     },
   };
+  // Low spinning kicks = floor sweep: deep squat on the front leg, hands on the floor, rear leg straight along
+  // the floor, circling a full turn (it points at the opponent at -180 and keeps sweeping round).
+  const SWEEP = {
+    t1: { torso: 30, rot: 10, bHip: 0, bKnee: 60, fShoulder: 40, fElbow: 30 },
+    t2: { torso: 40, rot: 18, fHip: 96, fKnee: 140, fAnkle: flat(), bHip: -40, bKnee: 30, fShoulder: 14, fElbow: 4, bShoulder: 6, bElbow: 4, fHand: 1, bHand: 1 },
+    ext: { torso: 40, rot: 22, fHip: 100, fKnee: 146, fAnkle: flat(), bHip: -66, bKnee: 0, bAnkle: 10,
+      fShoulder: 12, fElbow: 2, bShoulder: 4, bElbow: 2, fHand: 1, bHand: 1 },
+  };
+  SPIN.frontKick.low = { t1: SWEEP.t1, t2: SWEEP.t2, ext: SWEEP.ext, hold: {}, r1: {}, r2: { bHip: -30, bKnee: 40 } };
+  SPIN.backKick.low = { t1: SWEEP.t1, t2: SWEEP.t2, ext: Object.assign({}, SWEEP.ext, { bHip: -70 }), hold: {}, r1: {}, r2: { bHip: -30, bKnee: 40 } };
+
+  function spinMove(limb, v) {
+    const base = BODY[v];
+    const isKick = limb.indexOf('Kick') > 0;
+    const sp = SPIN[limb][v] || {};
+    const st = SPIN[limb].stand;
+    const part = (k) => sp[k] || st[k] || {};
+    const sweep = isKick && v === 'low';
+    const K = (turn, headTurn, o, b) => P(Object.assign({}, o, { turn, headTurn }), b || base);
+    const wind = K(-25, 22, { torso: (base.torso || 0) + 6, x: -4 });
+    // crouched / tucked bodies splay the knees outward, so the squat still reads when seen from the front or back
+    const S1 = v === 'stand' ? {} : { fHipOut: 35, bHipOut: 35 };
+    const S2 = v === 'stand' ? {} : { fHipOut: 35, bHipOut: isKick ? 0 : 35 };
+    const t1 = K(-90, -150, Object.assign({}, S1, part('t1')));
+    const chamber = K(-145, -130, Object.assign({}, S1, part('t1'), part('t2')));
+    const ext = K(-185, -95, Object.assign({}, part('t1'), part('t2'), S2, part('ext'), { x: 30 }));
+    // sweep: keeps circling with the leg out; others: a short hold, slightly further round
+    const hold = sweep ? K(-235, -60, Object.assign({}, ext, { turn: -235 })) : K(-200, -90, Object.assign({}, ext, part('hold'), { turn: -200, headTurn: -90 }), base);
+    const r1 = sweep ? K(-290, -30, Object.assign({}, ext, { turn: -290, headTurn: -30 }), base)
+      : K(-250, -60, Object.assign({}, ext, part('hold'), part('r1'), { x: 20 }));
+    const r2 = K(-310, -15, Object.assign({}, sweep ? mix(ext, base, 0.5) : mix(r1, base, 0.5), part('r2'), { turn: -310, headTurn: -15, x: 8 }), base);
+    const keys = [[0, base], [0.22, wind], [0.5, t1, 'lin'], [0.78, chamber, 'lin'], [1, ext, 'lin'],
+      [2, hold, sweep ? 'lin' : undefined], [2.3, r1, 'lin'], [2.65, r2, 'lin'], [3, base]];
+    return { keys, chamber, extension: ext, retract: r1 };
+  }
 
   const LIMBS = ['frontPunch', 'backPunch', 'frontKick', 'backKick'];
   const VARIANTS = ['stand', 'low', 'jump'];
@@ -292,15 +353,7 @@
       const follow = mix(ext, chamber, 0.06);
       keys = [[0, base], [0.55, chamber], [1, ext], [2, follow], [2.35, retract], [3, base]];
     } else {
-      ext = SPIN_EXT[limb][v];
-      const wind = spinWind(v);
-      const turned = spinTurned(v, isKick ? { bHip: 50, bKnee: 90, bAnkle: 40 } : { fShoulder: -20, fElbow: 60 });
-      const turned2 = spinTurned(v, isKick ? { bHip: 70, bKnee: 60, bAnkle: 40, torso: 8 } : { bShoulder: -10, fShoulder: -30, fElbow: 30 });
-      chamber = turned2;
-      const settle = mix(ext, base, 0.45);
-      retract = settle;
-      keys = [[0, base], [0.3, wind], [0.55, turned], [0.85, turned2], [1, ext], [2, ext],
-        [2.3, mix(ext, turned2, 0.35)], [2.55, settle], [3, base]];
+      return spinMove(limb, v);
     }
     return { keys, chamber, extension: ext, retract };
   }
