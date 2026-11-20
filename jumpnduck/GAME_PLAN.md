@@ -154,9 +154,8 @@ Main loop: `requestAnimationFrame`, `dt = min(0.05, (now - last)/1000)`.
 
 ## Verification (headless, no browser available in this environment)
 
-Use `@napi-rs/canvas` (already installed in the scratch dir
-`/tmp/claude-1000/-home-riccardo-projects-kid-custom-games/08d2a6a0-bf85-4812-b518-d452b79da3a9/scratchpad/r`,
-`require` it from there; keep test scripts in that scratch dir, **not in the repo**):
+Use `@napi-rs/canvas` (install it in a scratch dir outside the repo and `require` it from there;
+keep test scripts in that scratch dir, **not in the repo**):
 - `global.window = {}`; load `assets.js` and `game.js` (they must not touch `document` at load).
 - Load images with `@napi-rs/canvas`'s `loadImage(GameAssets.toDataUrl(svg))` (it rasterizes SVG) into the same `{img, vb}` shape.
 - Simulate: start, run `update(1/60, input)` with scripted jumps/ducks; render frames to PNG at 1280×720 and 844×390 (phone landscape):
