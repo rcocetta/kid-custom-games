@@ -152,3 +152,10 @@ Renders/scratch files go in the session scratchpad, not the repo.
 | P9 | **Checks & ship** | general-purpose · **haiku** (+ code-reviewer · **sonnet**) | Review 3 | Ground-rules audit (no network calls, relative paths, exact filename case, storage try/catch, works from `file://`), `./build.sh` runs, `build.sh` must not publish `test/` folders, card emoji for the home page (`build.sh` currently uses 🛴 for every game → add a per-game emoji, e.g. 🥋), final `STATE.md`, PR. |
 
 Parallelism: P2 ∥ P3 ∥ P5 after P1; P7 ∥ P6 after P5.
+
+---
+
+## 5. Refinement backlog (come back after Review 3)
+- Spinning moves: still not fully natural (head now leads the body by a quarter turn; try a third, timing of the spot). Spinning punches read weaker than the kicks.
+- Deep duck looks a bit hunched/kneeling; maybe a more upright squat.
+- Reach: spinning and rear kicks are drawn 20–40 units short of their gameplay `reach`.
