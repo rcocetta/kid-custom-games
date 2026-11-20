@@ -320,7 +320,7 @@
     const st = SPIN[limb].stand;
     const part = (k) => sp[k] || st[k] || {};
     const sweep = isKick && v === 'low';
-    const K = (turn, headTurn, o, b) => P(Object.assign({}, o, { turn, headTurn }), b || base);
+    const K = (turn, headTurn, o, b) => P(Object.assign({}, o, { turn, headTurn, noFrontFace: 1 }), b || base);
     const wind = K(-25, -45, { torso: (base.torso || 0) + 6, x: -4 });
     // crouched / tucked bodies splay the knees outward, so the squat still reads when seen from the front or back
     const S1 = v === 'stand' ? {} : { fHipOut: 35, bHipOut: 35 };

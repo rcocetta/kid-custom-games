@@ -145,7 +145,7 @@
 
   const POSE_KEYS = ['x', 'y', 'rot', 'torso', 'head', 'fShoulder', 'fElbow', 'bShoulder', 'bElbow',
     'fHip', 'fKnee', 'fAnkle', 'bHip', 'bKnee', 'bAnkle', 'fHand', 'bHand', 'open', 'back', 'armSwap', 'legSwap', 'ground',
-    'turn', 'headTurn', 'fHipOut', 'bHipOut', 'fArmOut', 'bArmOut'];
+    'turn', 'headTurn', 'noFrontFace', 'fHipOut', 'bHipOut', 'fArmOut', 'bArmOut'];
   const LINEAR_KEYS = { x: 1, y: 1, back: 1, fHand: 1, bHand: 1, ground: 1, armSwap: 1, legSwap: 1, open: 1 };
 
   // ---------- Math / matrices ----------
@@ -525,8 +525,12 @@
     J.headR = 44 * hs;
     J.back = g('back') >= 0.5;
     // which way the head is seen: profile right / front face / profile left (mirrored) / back of the head
-    const phi = (turn + g('headTurn')) * RAD, ch = Math.cos(phi), sh = Math.sin(phi);
+    const phi = (turn + g('headTurn')) * RAD, sh = Math.sin(phi);
+    let ch = Math.cos(phi);
     J.headView = J.back ? 'back' : Math.abs(ch) >= Math.abs(sh) - 1e-9 ? (ch >= 0 ? 'right' : 'left') : sh > 0 ? 'front' : 'back';
+    // noFrontFace (spins): the frontal sector shows the profile toward the opponent instead of the camera-facing face
+    const noFront = J.headView === 'front' && g('noFrontFace') >= 0.5;
+    if (noFront) { J.headView = 'right'; ch = 1; }
     const Hs = turned || g('headTurn') ? Math.atan2(Math.sin(H * RAD) * ch, Math.cos(H * RAD)) / RAD : H;
     J.headM = mul(mul(mul(translate(headC[0], headC[1]), rotM(Hs)), scaleM(hs)), J.headView === 'left' ? scaleM(-1, 1) : I);
     // torso as drawn: lean foreshortened by the turn

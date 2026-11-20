@@ -67,6 +67,7 @@ Fighter space is SVG units, y down; after grounding the lowest body point is on 
 | `back` | 1 = back turned to the viewer (spin): back limbs drawn near, back of head/hair, jacket back. Lerps; ≥ 0.5 = back view. |
 | `turn` | Body yaw, degrees (shortest-way lerp: keyframes < 180 apart). 0 side-on, 90 chest to viewer, 180 back to the opponent (other side, facing away), −90/270 back to viewer, 360 side-on. Projects the limbs (foreshortening), picks near/far limbs by depth, blends the jacket profile → front/back, slides the knot. Spins go 0 → −90 → −180 (extension) → −270 → −360. |
 | `headTurn` | Head yaw added to `turn` (spotting). The head view (profile R, front face, profile L, back of head) follows the quadrant of `turn + headTurn`. |
+| `noFrontFace` | 1 = never show the camera-facing face: the frontal sector of the head yaw shows the profile toward the opponent instead (set on every spin keyframe). |
 | `fHipOut`, `bHipOut`, `fArmOut`, `bArmOut` | Swing that limb's plane sideways (deg): 90 = the limb's forward angles now point out to the side (hook-kick sweep, splayed squat knees). |
 | `armSwap`, `legSwap` | 1 = draw the back arm / leg near (hips or shoulders turned, e.g. rear roundhouse `legSwap: 1`, rear straight punch `armSwap: 1`). XOR with `back`. |
 | `ground` | 0 = no auto-grounding (hip placed at `x, y`). |
