@@ -62,9 +62,9 @@
 
   // ---------- movement / state poses ----------
   const DUCK = P({
-    torso: 26, head: -14,
+    torso: 46, head: -32,  // deep crouch: head ~100 units lower than standing, well under a standing HIGH punch
     fShoulder: 78, fElbow: 62, bShoulder: 36, bElbow: 80,
-    fHip: 68, fKnee: 112, fAnkle: flat(), bHip: 22, bKnee: 96, bAnkle: flat(16),
+    fHip: 106, fKnee: 156, fAnkle: flat(), bHip: 64, bKnee: 156, bAnkle: flat(20),
   });
   const CROUCH = P({ // landing absorb
     torso: 14, head: -8,
@@ -89,14 +89,14 @@
 
   const BLOCK_HIGH = P({ // olgul makki: forearm above the forehead, other fist at the hip
     torso: -3, head: -3,
-    fShoulder: 112, fElbow: 98, fHand: 0, bShoulder: -8, bElbow: 92,
+    fShoulder: 92, fElbow: 66, fHand: 0, bShoulder: -8, bElbow: 92,
   });
   const BLOCK_MID = P({ // momtong makki: forearm up in front of the chest
     torso: -2,
-    fShoulder: 52, fElbow: 128, bShoulder: -8, bElbow: 92,
+    fShoulder: 78, fElbow: 96, bShoulder: -8, bElbow: 92,
   });
   const BLOCK_LOW = P({ // arae makki (from the duck): forearm sweeps down over the front knee
-    fShoulder: 40, fElbow: 12, bShoulder: -8, bElbow: 92,
+    fShoulder: 62, fElbow: 12, bShoulder: -8, bElbow: 92,
   }, DUCK);
   const BRACE = P({ // blocked hit: both forearms in front, leaning away
     torso: -8, head: 0, x: -6,
@@ -104,8 +104,8 @@
     fHip: 26, fKnee: 34, fAnkle: flat(), bHip: -16, bKnee: 34, bAnkle: flat(10),
   });
   const BRACE_LOW = P({
-    torso: 14, head: -12, x: -6,
-    fShoulder: 62, fElbow: 20, bShoulder: 70, bElbow: 110,
+    torso: 38, head: -26, x: -6,
+    fShoulder: 74, fElbow: 20, bShoulder: 70, bElbow: 110,
   }, DUCK);
 
   const HIT_HEAD = P({ // head snaps back, staggers
@@ -119,9 +119,9 @@
     fHip: 34, fKnee: 40, fAnkle: flat(), bHip: -8, bKnee: 34, bAnkle: flat(),
   });
   const HIT_LOW = P({ // legs get knocked, knees buckle
-    x: -10, torso: 20, head: 6,
+    x: -10, torso: 34, head: 2,
     fShoulder: 40, fElbow: 40, bShoulder: 20, bElbow: 60,
-    fHip: 52, fKnee: 80, fAnkle: flat(), bHip: 6, bKnee: 70, bAnkle: flat(20),
+    fHip: 92, fKnee: 140, fAnkle: flat(), bHip: 50, bKnee: 140, bAnkle: flat(20),
   });
   const HIT_AIR = P({ // tumbling back through the air
     x: -10, rot: -38, torso: 0, head: -14,
@@ -185,38 +185,38 @@
   // ---- front punch (jab) ----
   CHM.frontPunch = {
     stand: P({ fShoulder: 38, fElbow: 122, torso: 3 }),
-    low: P({ fShoulder: 30, fElbow: 120, torso: 30 }, DUCK),
+    low: P({ fShoulder: 30, fElbow: 120, torso: 44 }, DUCK),
     jump: P({ fShoulder: 40, fElbow: 120 }, AIR),
   };
   EXT.frontPunch = {
-    stand: P({ x: 0, torso: 14, head: -6, open: 0.35, fShoulder: 94, fElbow: 0, bShoulder: 44, bElbow: 104,
+    stand: P({ x: 22, torso: 14, head: -6, open: 0.35, fShoulder: 132, fElbow: 0, bShoulder: 44, bElbow: 104,
       fHip: 36, fKnee: 30, fAnkle: flat(), bHip: -14, bKnee: 22, bAnkle: flat(12) }),
-    low: P({ torso: 30, head: -10, open: 0.3, fShoulder: 74, fElbow: 0, bShoulder: 44, bElbow: 104 }, DUCK),
+    low: P({ torso: 42, head: -22, open: 0.3, fShoulder: 112, fElbow: 0, bShoulder: 44, bElbow: 104 }, DUCK),
     jump: P({ torso: 10, head: -6, open: 0.35, fShoulder: 98, fElbow: 0, bShoulder: 44, bElbow: 104 }, AIR),
   };
   // ---- back punch (rear straight) ----
   CHM.backPunch = {
     stand: P({ bShoulder: 20, bElbow: 118, fShoulder: 70, fElbow: 96, torso: 4, open: 0.4 }),
-    low: P({ bShoulder: 16, bElbow: 118, torso: 28, open: 0.4 }, DUCK),
+    low: P({ bShoulder: 16, bElbow: 118, torso: 44, open: 0.4 }, DUCK),
     jump: P({ bShoulder: 20, bElbow: 118, open: 0.4 }, AIR),
   };
   EXT.backPunch = {
-    stand: P({ x: 24, torso: 16, head: -8, open: 0.9, armSwap: 1, bShoulder: 91, bElbow: 0, fShoulder: 58, fElbow: 124,
+    stand: P({ x: 34, torso: 16, head: -8, open: 0.9, armSwap: 1, bShoulder: 132, bElbow: 0, fShoulder: 58, fElbow: 124,
       fHip: 42, fKnee: 42, fAnkle: flat(), bHip: -24, bKnee: 8, bAnkle: flat(26) }),
-    low: P({ x: 20, torso: 32, head: -10, open: 0.9, armSwap: 1, bShoulder: 76, bElbow: 0, fShoulder: 58, fElbow: 124 }, DUCK),
+    low: P({ x: 20, torso: 44, head: -24, open: 0.9, armSwap: 1, bShoulder: 114, bElbow: 0, fShoulder: 58, fElbow: 124 }, DUCK),
     jump: P({ x: 14, torso: 12, head: -6, open: 0.9, armSwap: 1, bShoulder: 96, bElbow: 0, fShoulder: 58, fElbow: 124 }, AIR),
   };
   // ---- front kick (front-leg roundhouse) ----
   CHM.frontKick = {
     stand: P({ torso: -4, fHip: 92, fKnee: 104, fAnkle: 50, bHip: -6, bKnee: 18, bAnkle: flat(),
       fShoulder: 96, fElbow: 84, bShoulder: 36, bElbow: 90, open: 0.2 }),
-    low: P({ torso: -4, fHip: 88, fKnee: 138, fAnkle: 40, bHip: 40, bKnee: 112, bAnkle: flat(), fShoulder: 96, fElbow: 84, bShoulder: 36, bElbow: 90 }, DUCK),
+    low: P({ torso: 30, head: -20, fHip: 100, fKnee: 140, fAnkle: 40, fShoulder: 96, fElbow: 84, bShoulder: 36, bElbow: 90 }, DUCK),
     jump: P({ torso: -6, fHip: 92, fKnee: 104, fAnkle: 50, bHip: 20, bKnee: 100, bAnkle: 40, fShoulder: 96, fElbow: 84 }, AIR),
   };
   EXT.frontKick = {
     stand: P({ x: 0, torso: -12, head: 0, open: 0.3, fHip: 108, fKnee: 6, fAnkle: 72, bHip: -6, bKnee: 18, bAnkle: flat(),
       fShoulder: 100, fElbow: 82, bShoulder: 38, bElbow: 92 }),
-    low: P({ x: 0, torso: -8, fHip: 84, fKnee: 4, fAnkle: 70, bHip: 40, bKnee: 112, bAnkle: flat(),
+    low: P({ x: 0, torso: 24, head: -16, fHip: 98, fKnee: 4, fAnkle: 70,
       fShoulder: 96, fElbow: 84, bShoulder: 36, bElbow: 90 }, DUCK),
     jump: P({ torso: -14, open: 0.3, fHip: 100, fKnee: 4, fAnkle: 72, bHip: 20, bKnee: 100, bAnkle: 40,
       fShoulder: 100, fElbow: 82, bShoulder: 38, bElbow: 92 }, AIR),
@@ -225,7 +225,7 @@
   CHM.backKick = {
     stand: P({ legSwap: 1, torso: -8, open: 0.6, bHip: 86, bKnee: 108, bAnkle: 50, fHip: 6, fKnee: 20, fAnkle: flat(),
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }),
-    low: P({ legSwap: 1, torso: -6, open: 0.6, bHip: 88, bKnee: 138, bAnkle: 40, fHip: 40, fKnee: 112, fAnkle: flat(),
+    low: P({ legSwap: 1, torso: 30, head: -20, open: 0.6, bHip: 100, bKnee: 140, bAnkle: 40,
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }, DUCK),
     jump: P({ legSwap: 1, torso: -8, open: 0.6, bHip: 86, bKnee: 108, bAnkle: 50, fHip: 26, fKnee: 98, fAnkle: 40,
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }, AIR),
@@ -233,7 +233,7 @@
   EXT.backKick = {
     stand: P({ x: 40, legSwap: 1, rot: -8, torso: -16, head: 4, open: 0.8, bHip: 100, bKnee: 4, bAnkle: 74, fHip: 6, fKnee: 22, fAnkle: flat(),
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }),
-    low: P({ x: 30, legSwap: 1, rot: -4, torso: -14, open: 0.8, bHip: 80, bKnee: 4, bAnkle: 70, fHip: 40, fKnee: 112, fAnkle: flat(),
+    low: P({ x: 30, legSwap: 1, rot: -4, torso: 20, head: -14, open: 0.8, bHip: 98, bKnee: 4, bAnkle: 70,
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }, DUCK),
     jump: P({ x: 26, legSwap: 1, rot: -10, torso: -16, open: 0.8, bHip: 96, bKnee: 4, bAnkle: 74, fHip: 26, fKnee: 98, fAnkle: 40,
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }, AIR),
@@ -305,7 +305,7 @@
   // Low spinning kicks = floor sweep: deep squat on the front leg, hands on the floor, rear leg straight along
   // the floor, circling a full turn (it points at the opponent at -180 and keeps sweeping round).
   const SWEEP = {
-    t1: { torso: 30, rot: 10, bHip: 0, bKnee: 60, fShoulder: 40, fElbow: 30 },
+    t1: { torso: 44, rot: 10, bHip: 30, bKnee: 120, fShoulder: 40, fElbow: 30 },
     t2: { torso: 40, rot: 18, fHip: 96, fKnee: 140, fAnkle: flat(), bHip: -40, bKnee: 30, fShoulder: 14, fElbow: 4, bShoulder: 6, bElbow: 4, fHand: 1, bHand: 1 },
     ext: { torso: 40, rot: 22, fHip: 100, fKnee: 146, fAnkle: flat(), bHip: -66, bKnee: 0, bAnkle: 10,
       fShoulder: 12, fElbow: 2, bShoulder: 4, bElbow: 2, fHand: 1, bHand: 1 },

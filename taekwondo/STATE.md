@@ -2,7 +2,7 @@
 
 1-player vs CPU side-view taekwondo fighting game. Spec: `SPEC.md`; plan and phases: `PLAN.md`; move notes: `research.md`.
 
-**Status (2026-11-20):** Review 2: rig has a continuous body `turn`; the 12 spinning moves in `poses.js` re-authored as real 360 spins (head spots first, dwit chagi thrust, hook sweep, backfist whip, low = floor sweep). Review 1 feedback applied (side-on balanced stance, `open` chest-turn key, boys short hair). P2 done (fighter rig, looks, stance/idle/walk, portraits, belt badges, review page).
+**Status (2026-11-20):** Review 2 poses pass: standing punches hit face height (HIGH), duck is a deep crouch (head ~145, under a standing HIGH punch) with all low moves lowered to match, high/mid blocks reach further forward. Review 2: rig has a continuous body `turn`; the 12 spinning moves in `poses.js` re-authored as real 360 spins (head spots first, dwit chagi thrust, hook sweep, backfist whip, low = floor sweep). Review 1 feedback applied (side-on balanced stance, `open` chest-turn key, boys short hair). P2 done (fighter rig, looks, stance/idle/walk, portraits, belt badges, review page).
 Waiting for **Review 1** (characters & arena). Verified headless only (no real browser in this env).
 
 ## Files
