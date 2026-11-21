@@ -32,8 +32,8 @@ test('move table covers 24 moves with PLAN levels', () => {
   const lv = id => Moves.moves[id].level;
   assert.strictEqual(lv('frontPunch_stand'), 'HIGH');
   assert.strictEqual(lv('backPunch_stand'), 'HIGH');
-  assert.strictEqual(lv('frontKick_stand'), 'MID');
-  assert.strictEqual(lv('backKick_stand'), 'HIGH');
+  assert.strictEqual(lv('frontKick_stand'), 'HIGH');
+  assert.strictEqual(lv('backKick_stand'), 'MID');
   assert.strictEqual(lv('backKick_jump'), 'HIGH');
   assert.strictEqual(lv('backKick_low'), 'LOW');
   assert.strictEqual(lv('frontKick_spin_stand'), 'HIGH');
@@ -92,8 +92,8 @@ test('standing block reduces to 20%: MID and HIGH, not LOW', () => {
 test('duck block reduce to 20%: LOW and MID, but HIGH is dodged', () => {
   const duckBlock = { right: true, down: true };
   let f = mk(); press(f, 0, 'backKick', { down: true }, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 2);
-  f = mk(); press(f, 0, 'frontKick', null, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 1.6);
-  f = mk(); press(f, 0, 'backKick', null, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 0);
+  f = mk(); press(f, 0, 'backKick', null, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 2);
+  f = mk(); press(f, 0, 'frontKick', null, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 0);
   f = mk(); press(f, 0, 'backKick', { up: true }, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 0);
 });
 
@@ -103,7 +103,7 @@ test('block emits a block event and blockstun', () => {
   let ev = [];
   for (let i = 0; i < 40; i++) { f.update(0.016, null, { right: true }); ev = ev.concat(f.drainEvents()); }
   const b = ev.find(e => e.type === 'block');
-  assert.ok(b); assert.strictEqual(b.level, 'MID'); assert.strictEqual(b.attacker, 0); near(b.damage, 1.6);
+  assert.ok(b); assert.strictEqual(b.level, 'HIGH'); assert.strictEqual(b.attacker, 0); near(b.damage, 1.6);
 });
 
 test('ducking dodges HIGH attacks', () => {

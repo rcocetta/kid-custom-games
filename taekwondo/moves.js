@@ -52,7 +52,7 @@
   function levelFor(limb, variant, spin) {
     if (variant === 'jump') return 'HIGH';
     if (variant === 'low') return 'LOW';
-    if (!spin) return limb === 'frontKick' ? 'MID' : 'HIGH'; // punches + rear roundhouse go for the head, front-leg kick for the body
+    if (!spin) return limb === 'backKick' ? 'MID' : 'HIGH'; // punches + front-leg kick go for the head, rear roundhouse for the body
     return limb.indexOf('front') === 0 ? 'HIGH' : 'MID'; // front limb spin -> head, back limb spin -> body
   }
 

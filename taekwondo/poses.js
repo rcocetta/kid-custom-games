@@ -208,13 +208,13 @@
   };
   // ---- front kick (front-leg roundhouse) ----
   CHM.frontKick = {
-    stand: P({ torso: -4, fHip: 92, fKnee: 104, fAnkle: 50, bHip: -6, bKnee: 18, bAnkle: flat(),
+    stand: P({ rot: -2, torso: -4, fHip: 112, fKnee: 116, fAnkle: 50, bHip: -6, bKnee: 18, bAnkle: flat(),
       fShoulder: 96, fElbow: 84, bShoulder: 36, bElbow: 90, open: 0.2 }),
     low: P({ torso: 30, head: -20, fHip: 100, fKnee: 140, fAnkle: 40, fShoulder: 96, fElbow: 84, bShoulder: 36, bElbow: 90 }, DUCK),
     jump: P({ torso: -6, fHip: 92, fKnee: 104, fAnkle: 50, bHip: 20, bKnee: 100, bAnkle: 40, fShoulder: 96, fElbow: 84 }, AIR),
   };
   EXT.frontKick = {
-    stand: P({ x: 0, torso: -12, head: 0, open: 0.3, fHip: 108, fKnee: 6, fAnkle: 72, bHip: -6, bKnee: 18, bAnkle: flat(),
+    stand: P({ x: 30, rot: -2, torso: -6, head: 4, open: 0.3, fHip: 145, fKnee: 6, fAnkle: 72, bHip: -6, bKnee: 18, bAnkle: flat(), // HIGH: foot at head height, upright
       fShoulder: 100, fElbow: 82, bShoulder: 38, bElbow: 92 }),
     low: P({ x: 0, torso: 24, head: -16, fHip: 98, fKnee: 4, fAnkle: 70,
       fShoulder: 96, fElbow: 84, bShoulder: 36, bElbow: 90 }, DUCK),
@@ -223,7 +223,7 @@
   };
   // ---- back kick (rear roundhouse, thrown with the rear leg: legSwap) ----
   CHM.backKick = {
-    stand: P({ legSwap: 1, rot: -2, torso: -4, open: 0.6, bHip: 110, bKnee: 120, bAnkle: 50, fHip: 6, fKnee: 20, fAnkle: flat(),
+    stand: P({ legSwap: 1, torso: -4, open: 0.6, bHip: 90, bKnee: 120, bAnkle: 50, fHip: 6, fKnee: 20, fAnkle: flat(),
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }),
     low: P({ legSwap: 1, torso: 30, head: -20, open: 0.6, bHip: 100, bKnee: 140, bAnkle: 40,
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }, DUCK),
@@ -231,7 +231,7 @@
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }, AIR),
   };
   EXT.backKick = {
-    stand: P({ x: 40, legSwap: 1, rot: -2, torso: -6, head: 4, open: 0.8, bHip: 140, bKnee: 4, bAnkle: 74, fHip: 6, fKnee: 22, fAnkle: flat(), // HIGH: foot at head height, body upright over the support foot
+    stand: P({ x: 40, legSwap: 1, torso: -4, head: 1, open: 0.8, bHip: 105, bKnee: 4, bAnkle: 74, fHip: 6, fKnee: 22, fAnkle: flat(), // MID, body upright over the support foot
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }),
     low: P({ x: 30, legSwap: 1, rot: -4, torso: 20, head: -14, open: 0.8, bHip: 98, bKnee: 4, bAnkle: 70,
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }, DUCK),
