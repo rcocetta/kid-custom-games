@@ -223,7 +223,7 @@
   };
   // ---- back kick (rear roundhouse, thrown with the rear leg: legSwap) ----
   CHM.backKick = {
-    stand: P({ legSwap: 1, rot: -6, torso: -12, open: 0.6, bHip: 108, bKnee: 120, bAnkle: 50, fHip: 6, fKnee: 20, fAnkle: flat(),
+    stand: P({ legSwap: 1, rot: -2, torso: -4, open: 0.6, bHip: 110, bKnee: 120, bAnkle: 50, fHip: 6, fKnee: 20, fAnkle: flat(),
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }),
     low: P({ legSwap: 1, torso: 30, head: -20, open: 0.6, bHip: 100, bKnee: 140, bAnkle: 40,
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }, DUCK),
@@ -231,7 +231,7 @@
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }, AIR),
   };
   EXT.backKick = {
-    stand: P({ x: 40, legSwap: 1, rot: -14, torso: -20, head: 14, open: 0.8, bHip: 128, bKnee: 4, bAnkle: 74, fHip: 6, fKnee: 22, fAnkle: flat(), // HIGH: foot at head height
+    stand: P({ x: 40, legSwap: 1, rot: -2, torso: -6, head: 4, open: 0.8, bHip: 140, bKnee: 4, bAnkle: 74, fHip: 6, fKnee: 22, fAnkle: flat(), // HIGH: foot at head height, body upright over the support foot
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }),
     low: P({ x: 30, legSwap: 1, rot: -4, torso: 20, head: -14, open: 0.8, bHip: 98, bKnee: 4, bAnkle: 70,
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }, DUCK),
