@@ -32,7 +32,7 @@
       action: 'idle', blockLevel: 'stand', blocking: false, ducking: false,
       move: null, moveId: null, phase: null, phaseT: 0, moveP: 0, moveT: 0, hitDone: false,
       stunT: 0, kbT: 0, kbV: 0, roundsWon: 0, hitsLanded: 0, speedMul: 1,
-      held: { fwd: false, back: false, up: false, down: false }, prevUp: false,
+      held: { fwd: false, back: false, up: false, down: false },
     };
   }
 
@@ -60,7 +60,7 @@
           x: mid + (i === 0 ? -1 : 1) * T.startOffset, y: 0, vx: 0, vy: 0, facing: i === 0 ? 1 : -1,
           energy: 100, action: 'idle', blockLevel: 'stand', blocking: false, ducking: false,
           move: null, moveId: null, phase: null, phaseT: 0, moveP: 0, moveT: 0, hitDone: false,
-          stunT: 0, kbT: 0, kbV: 0, prevUp: false,
+          stunT: 0, kbT: 0, kbV: 0,
         });
       });
       fight.timeLeft = practice ? null : roundTime;
@@ -135,7 +135,9 @@
             const airborne = f.y > 0;
             if (key) startAttack(f, key, h, airborne);
             else if (!airborne) {
-              if (h.up && !f.prevUp) { f.y = 1e-6; f.vy = JUMP_V; f.action = 'jump'; f.vx = h.fwd ? T.airSpeed * f.facing : h.back ? -T.airSpeed * f.facing : 0; }
+              // Up HELD (not just pressed this frame) jumps as soon as the fighter is free: an up+forward pressed during
+              // an attack's recovery, hit-stun or just before landing still jumps instead of being lost.
+              if (h.up) { f.y = 1e-6; f.vy = JUMP_V; f.action = 'jump'; f.vx = h.fwd ? T.airSpeed * f.facing : h.back ? -T.airSpeed * f.facing : 0; }
               else if (h.back) { f.action = 'block'; if (!h.down) walkV = -T.walkBack * f.facing * f.speedMul; }
               else if (h.down) f.action = 'duck';
               else if (h.fwd) { f.action = 'walkFwd'; walkV = T.walkFwd * f.facing * f.speedMul; }
@@ -146,7 +148,6 @@
             }
           }
         }
-        f.prevUp = h.up;
         f.blocking = h.back && !f.move && f.action !== 'hit';
         f.blockLevel = (h.down && f.y <= 0) ? 'duck' : 'stand';
         f.ducking = f.y <= 0 && f.action !== 'hit' && (f.move ? f.move.variant === 'low' : h.down);

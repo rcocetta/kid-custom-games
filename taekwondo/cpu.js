@@ -83,7 +83,7 @@
       const smart = rand() < p.smartLevel;
       let limbs = LIMBS;
       if (smart && o.y > 20) limbs = ['frontPunch', 'backPunch'];          // jumper: punch the face, low would miss
-      else if (smart && o.ducking) limbs = ['frontKick', 'backKick'];       // duck dodges HIGH: body kick
+      else if (smart && o.ducking) limbs = ['backKick'];                    // duck dodges HIGH: body kick
       else if (smart && o.blocking && rand() < 0.7) variant = 'low';        // standing block: go low
       else if (rand() < 0.12) variant = 'low';
       if (forced && forced.variant) variant = forced.variant;

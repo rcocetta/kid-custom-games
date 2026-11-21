@@ -32,7 +32,8 @@ test('move table covers 24 moves with PLAN levels', () => {
   const lv = id => Moves.moves[id].level;
   assert.strictEqual(lv('frontPunch_stand'), 'HIGH');
   assert.strictEqual(lv('backPunch_stand'), 'HIGH');
-  assert.strictEqual(lv('frontKick_stand'), 'MID');
+  assert.strictEqual(lv('frontKick_stand'), 'HIGH');
+  assert.strictEqual(lv('backKick_stand'), 'MID');
   assert.strictEqual(lv('backKick_jump'), 'HIGH');
   assert.strictEqual(lv('backKick_low'), 'LOW');
   assert.strictEqual(lv('frontKick_spin_stand'), 'HIGH');
@@ -92,6 +93,7 @@ test('duck block reduce to 20%: LOW and MID, but HIGH is dodged', () => {
   const duckBlock = { right: true, down: true };
   let f = mk(); press(f, 0, 'backKick', { down: true }, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 2);
   f = mk(); press(f, 0, 'backKick', null, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 2);
+  f = mk(); press(f, 0, 'frontKick', null, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 0);
   f = mk(); press(f, 0, 'backKick', { up: true }, 0); run(f, 0.9, null, duckBlock); near(energyLost(f), 0);
 });
 
@@ -101,7 +103,7 @@ test('block emits a block event and blockstun', () => {
   let ev = [];
   for (let i = 0; i < 40; i++) { f.update(0.016, null, { right: true }); ev = ev.concat(f.drainEvents()); }
   const b = ev.find(e => e.type === 'block');
-  assert.ok(b); assert.strictEqual(b.level, 'MID'); assert.strictEqual(b.attacker, 0); near(b.damage, 1.6);
+  assert.ok(b); assert.strictEqual(b.level, 'HIGH'); assert.strictEqual(b.attacker, 0); near(b.damage, 1.6);
 });
 
 test('ducking dodges HIGH attacks', () => {
@@ -220,4 +222,17 @@ test('dt is clamped to 0.05', () => {
   const f = mk({ roundTime: 120 });
   f.update(10, null, null);
   near(f.timeLeft, 120 - 0.05);
+});
+
+test('up held jumps as soon as the fighter is free (not lost during recovery / landing)', () => {
+  const f = mk(); f.fighters[1].x = 900;
+  f.update(0.016, { frontPunch: true }, {});
+  for (let i = 0; i < 6; i++) f.update(0.016, { up: true, right: true }, {}); // still in the punch
+  assert.strictEqual(f.fighters[0].y, 0);
+  run(f, 0.4, { up: true, right: true }, {});
+  assert.ok(f.fighters[0].y > 0, 'jumped after the punch');
+  assert.ok(f.fighters[0].vx > 0, 'diagonal forward');
+  let landings = 0, air = true;
+  for (let i = 0; i < 90; i++) { f.update(0.016, { up: true, left: true }, {}); const a = f.fighters[0].y > 0; if (air && !a) landings++; air = a; }
+  assert.ok(landings >= 1 && f.fighters[0].y > 0 || landings >= 2, 'holding up jumps again after landing');
 });

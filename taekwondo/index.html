@@ -81,7 +81,7 @@
 
   /* title */
   #title .card { display: flex; align-items: center; gap: clamp(10px, 3vw, 36px); }
-  #title .mid { gap: clamp(4px, 1.3vh, 12px); }
+  #title .mid { gap: clamp(4px, 1.3vh, 12px); flex: 1 1 0; min-width: 0; } /* shrink so the legend wraps instead of pushing Dani off-screen */
   .iconbtn { display: inline-flex; align-items: center; gap: 6px; }
   .iconbtn svg { width: 1.3em; height: 1.3em; }
   #titleStats { min-height: 1.2em; }
