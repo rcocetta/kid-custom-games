@@ -223,3 +223,16 @@ test('dt is clamped to 0.05', () => {
   f.update(10, null, null);
   near(f.timeLeft, 120 - 0.05);
 });
+
+test('up held jumps as soon as the fighter is free (not lost during recovery / landing)', () => {
+  const f = mk(); f.fighters[1].x = 900;
+  f.update(0.016, { frontPunch: true }, {});
+  for (let i = 0; i < 6; i++) f.update(0.016, { up: true, right: true }, {}); // still in the punch
+  assert.strictEqual(f.fighters[0].y, 0);
+  run(f, 0.4, { up: true, right: true }, {});
+  assert.ok(f.fighters[0].y > 0, 'jumped after the punch');
+  assert.ok(f.fighters[0].vx > 0, 'diagonal forward');
+  let landings = 0, air = true;
+  for (let i = 0; i < 90; i++) { f.update(0.016, { up: true, left: true }, {}); const a = f.fighters[0].y > 0; if (air && !a) landings++; air = a; }
+  assert.ok(landings >= 1 && f.fighters[0].y > 0 || landings >= 2, 'holding up jumps again after landing');
+});
