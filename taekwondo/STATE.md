@@ -2,7 +2,7 @@
 
 1-player vs CPU side-view taekwondo fighting game. Spec: `SPEC.md`; plan and phases: `PLAN.md`; move notes: `research.md`.
 
-**Status (2026-11-20):** Review 2 poses pass: standing punches hit face height (HIGH), duck is a deep crouch (head ~145, under a standing HIGH punch) with all low moves lowered to match, high/mid blocks reach further forward. Review 2: rig has a continuous body `turn`; the 12 spinning moves in `poses.js` re-authored as real 360 spins (head spots first, dwit chagi thrust, hook sweep, backfist whip, low = floor sweep). Review 1 feedback applied (side-on balanced stance, `open` chest-turn key, boys short hair). P2 done (fighter rig, looks, stance/idle/walk, portraits, belt badges, review page).
+**Status (2026-11-21):** Spins are sampled with a monotone cubic through their keyframes in real seconds (steady turn speed, no stall at each key) plus an automatic sideways arm/leg splay near front/back views; the standing rear roundhouse (back kick) is now HIGH (foot at head height). Earlier (2026-11-20): Review 2 poses pass: standing punches hit face height (HIGH), duck is a deep crouch (head ~145, under a standing HIGH punch) with all low moves lowered to match, high/mid blocks reach further forward. Review 2: rig has a continuous body `turn`; the 12 spinning moves in `poses.js` re-authored as real 360 spins (head spots first, dwit chagi thrust, hook sweep, backfist whip, low = floor sweep). Review 1 feedback applied (side-on balanced stance, `open` chest-turn key, boys short hair). P2 done (fighter rig, looks, stance/idle/walk, portraits, belt badges, review page).
 Waiting for **Review 1** (characters & arena). Verified headless only (no real browser in this env).
 
 ## Files
@@ -100,7 +100,7 @@ Full docs in the header of `poses.js`. Short version:
 
 - States: idle, walkFwd, walkBack, jump, duck, blockHigh/Mid/Low, hit, hitBody, hitLow, hitAir, blockstun, blockstunLow, bow, win, defeated, ko.
 - Poses never contain jump height: the shell draws at `floor - f.y`. `pose.x` is a visual forward lunge (kicks 30-55, spins up to 56) that flips with `facing`.
-- Moves: keyframes on phase axis 0..3 (startup/active/recovery); jump moves recover into the air tuck, low moves into the duck, spins go stance -> wind-up -> `back:1` -> extension (`open:1`).
+- Moves: keyframes on phase axis 0..3 (startup/active/recovery); spins are interpolated with a monotone cubic over real seconds (`makeSpline`), not the per-segment ease; jump moves recover into the air tuck, low moves into the duck, spins go stance -> wind-up -> `back:1` -> extension (`open:1`).
 - Heights checked headless against LEVEL_Y (HIGH 250 / MID 170 / LOW 60); spins and some kicks fall 20-40 units short of full `reach` (a slide-forward would look silly).
 
 ## Dev notes

@@ -223,7 +223,7 @@
   };
   // ---- back kick (rear roundhouse, thrown with the rear leg: legSwap) ----
   CHM.backKick = {
-    stand: P({ legSwap: 1, torso: -8, open: 0.6, bHip: 86, bKnee: 108, bAnkle: 50, fHip: 6, fKnee: 20, fAnkle: flat(),
+    stand: P({ legSwap: 1, rot: -6, torso: -12, open: 0.6, bHip: 108, bKnee: 120, bAnkle: 50, fHip: 6, fKnee: 20, fAnkle: flat(),
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }),
     low: P({ legSwap: 1, torso: 30, head: -20, open: 0.6, bHip: 100, bKnee: 140, bAnkle: 40,
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }, DUCK),
@@ -231,7 +231,7 @@
       fShoulder: 100, fElbow: 84, bShoulder: 10, bElbow: 60 }, AIR),
   };
   EXT.backKick = {
-    stand: P({ x: 40, legSwap: 1, rot: -8, torso: -16, head: 4, open: 0.8, bHip: 100, bKnee: 4, bAnkle: 74, fHip: 6, fKnee: 22, fAnkle: flat(),
+    stand: P({ x: 40, legSwap: 1, rot: -14, torso: -20, head: 14, open: 0.8, bHip: 128, bKnee: 4, bAnkle: 74, fHip: 6, fKnee: 22, fAnkle: flat(), // HIGH: foot at head height
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }),
     low: P({ x: 30, legSwap: 1, rot: -4, torso: 20, head: -14, open: 0.8, bHip: 98, bKnee: 4, bAnkle: 70,
       fShoulder: 102, fElbow: 84, bShoulder: -22, bElbow: 40 }, DUCK),
@@ -330,9 +330,9 @@
     const ext = K(-185, -90, Object.assign({}, part('t1'), part('t2'), S2, part('ext'), { x: 30 }));
     // sweep: keeps circling with the leg out; others: a short hold, slightly further round
     const hold = sweep ? K(-235, -90, Object.assign({}, ext, { turn: -235, headTurn: -90 })) : K(-200, -90, Object.assign({}, ext, part('hold'), { turn: -200, headTurn: -90 }), base);
-    const r1 = sweep ? K(-290, -70, Object.assign({}, ext, { turn: -290, headTurn: -70 }), base)
+    const r1 = sweep ? K(-280, -70, Object.assign({}, ext, { turn: -280, headTurn: -70 }), base)
       : K(-250, -70, Object.assign({}, ext, part('hold'), part('r1'), { x: 20 }));
-    const r2 = K(-310, -40, Object.assign({}, sweep ? mix(ext, base, 0.5) : mix(r1, base, 0.5), part('r2'), { turn: -310, headTurn: -40, x: 8 }), base);
+    const r2 = K(sweep ? -330 : -310, -40, Object.assign({}, sweep ? mix(ext, base, 0.5) : mix(r1, base, 0.5), part('r2'), { headTurn: -40, x: 8 }), base); // sweep: slows down evenly to -360
     const keys = [[0, base], [0.22, wind], [0.5, t1, 'lin'], [0.78, chamber, 'lin'], [1, ext, 'lin'],
       [2, hold, sweep ? 'lin' : undefined], [2.3, r1, 'lin'], [2.65, r2, 'lin'], [3, base]];
     return { keys, chamber, extension: ext, retract: r1 };
@@ -363,6 +363,66 @@
       MOVES[idOf(limb, v, true)] = buildMove(limb, v, true);
     });
   });
+
+  // ---------- smooth spins ----------
+  // Piecewise ease/linear segments make a spin stall at every keyframe and then lurch (the turn speed jumps).
+  // Spins instead use a monotone cubic (Fritsch-Carlson) through the keyframes, in REAL seconds (startup, active
+  // and recovery have different lengths): the speed changes smoothly, starts and ends at rest, never overshoots
+  // (no knee bending the wrong way between keys).  Angles are unwrapped key to key like lerpPose (the final
+  // stance is reached at turn -360).
+  const LIN = {};
+  (A.rigInfo.linearKeys || []).forEach((k) => { LIN[k] = 1; });
+  const wrapA = (a) => ((a + 180) % 360 + 360) % 360 - 180;
+  function phaseSec(id) {
+    const m = MV && MV.moves[id];
+    const s = m ? m.startup : 0.25, a = m ? m.active : 0.12, r = m ? m.recovery : 0.4;
+    return (c) => (c <= 1 ? c * s : c <= 2 ? s + (c - 1) * a : s + a + (c - 2) * r);
+  }
+  function makeSpline(keys, id) {
+    const sec = phaseSec(id);
+    const T = keys.map((k) => sec(k[0]));
+    const names = new Set();
+    keys.forEach((k) => Object.keys(k[1]).forEach((n) => { if (typeof k[1][n] === 'number') names.add(n); }));
+    const n = keys.length, ch = {};
+    names.forEach((name) => {
+      const raw = keys.map((k) => (typeof k[1][name] === 'number' ? k[1][name] : name === 'ground' ? 1 : 0));
+      const v = [raw[0]];
+      for (let i = 1; i < n; i++) v.push(LIN[name] ? raw[i] : v[i - 1] + wrapA(raw[i] - raw[i - 1]));
+      const d = [];
+      for (let i = 0; i < n - 1; i++) d.push((v[i + 1] - v[i]) / (T[i + 1] - T[i]));
+      const m = [0];
+      for (let i = 1; i < n - 1; i++) m.push(d[i - 1] * d[i] <= 0 ? 0 : (2 * d[i - 1] * d[i]) / (d[i - 1] + d[i]));
+      m.push(0);
+      ch[name] = { v, m };
+    });
+    return (c) => {
+      const t = Math.max(T[0], Math.min(T[n - 1], sec(c)));
+      let i = 0;
+      while (i < n - 2 && t > T[i + 1]) i++;
+      const h = T[i + 1] - T[i], u = h > 0 ? (t - T[i]) / h : 0;
+      const u2 = u * u, u3 = u2 * u;
+      const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+      const out = {};
+      for (const name in ch) {
+        const { v, m } = ch[name];
+        out[name] = h00 * v[i] + h10 * h * m[i] + h01 * v[i + 1] + h11 * h * m[i + 1];
+      }
+      // Seen from the front or the back (turn near -90 / -270) limb angles in the body's side plane project to
+      // vertical sticks.  Swing the arms (and a bit the legs) out sideways in proportion, so the guard and the
+      // chambered knee still read as bent, like a real body seen from the front.
+      const side = Math.abs(Math.sin((out.turn || 0) * Math.PI / 180));
+      out.fArmOut = Math.max(out.fArmOut || 0, 30 * side);
+      out.bArmOut = Math.max(out.bArmOut || 0, 30 * side);
+      out.fHipOut = Math.max(out.fHipOut || 0, 22 * side);
+      out.bHipOut = Math.max(out.bHipOut || 0, 22 * side);
+      return out;
+    };
+  }
+  LIMBS.forEach((limb) => VARIANTS.forEach((v) => {
+    const id = idOf(limb, v, true);
+    MOVES[id].spline = makeSpline(MOVES[id].keys, id);
+  }));
+  const sampleKeys = (mv, c) => (mv.spline ? mv.spline(c) : lerpKeys(mv.keys, c));
 
   // ---------- states ----------
   // State = { keys: [[t, pose], ...] (t 0..1), loop, dur (s), expr }
@@ -437,7 +497,7 @@
   function sampleMove(id, phase, phaseT) {
     const mv = MOVES[id];
     if (!mv) return S;
-    return lerpKeys(mv.keys, (PHASE0[phase] || 0) + clamp01(phaseT));
+    return sampleKeys(mv, (PHASE0[phase] || 0) + clamp01(phaseT));
   }
 
   function sampleState(st, t) {
@@ -453,7 +513,7 @@
   }
 
   function sample(name, t) {
-    if (MOVES[name]) return lerpKeys(MOVES[name].keys, coordFromT(name, t));
+    if (MOVES[name]) return sampleKeys(MOVES[name], coordFromT(name, t));
     const st = STATES[name];
     return st ? sampleState(st, t) : S;
   }

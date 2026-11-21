@@ -44,7 +44,7 @@ Three attack levels: **HIGH** (head), **MID** (body), **LOW** (legs).
 |---|---|---|---|
 | A/Q | back-hand punch (straight, to the face) | HIGH | 6 |
 | S | front-hand punch (jab, to the face) | HIGH | 4 |
-| Z/W | back-leg kick (roundhouse, *dollyo chagi*) | MID | 10 |
+| Z/W | back-leg kick (roundhouse, *dollyo chagi*, to the head) | HIGH | 10 |
 | X | front-leg kick (front-leg / cut kick) | MID | 8 |
 | Up + attack | jumping version | HIGH | same |
 | Down + attack | low version (low punch / low kick) | LOW | same |

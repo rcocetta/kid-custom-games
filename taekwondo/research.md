@@ -131,7 +131,7 @@ TKD term in these sources, so it is not used here.
 - Timing: fast — ~0.12 s out, ~0.1 s back.
 - Reach: medium-short (front leg covers less distance).
 
-### 5b. Rear-leg roundhouse (*dollyo chagi* / *dollyeo chagi*) — game key Z/W — MID
+### 5b. Rear-leg roundhouse (*dollyo chagi* / *dollyeo chagi*) — game key Z/W — HIGH (head kick)
 This is the "back kick" of the spec and the most powerful kick.
 - Stance: standing on the **front** leg, rear leg lifts.
 - Chamber: rear knee drawn up high and across the body, thigh horizontal, shin hanging down (~60-90
@@ -302,7 +302,7 @@ Sources: [Taekwondo Preschool bow page](https://taekwondopreschool.com/bow.html)
 |---|---|---|---|
 | Back punch (A) | *ap jireugi* (straight, rear) | MID | Real |
 | Front punch (S) | *jaeb jireugi* (jab) | MID | Real |
-| Back kick (Z/W) | *dollyo chagi* / *dollyeo chagi* (rear roundhouse) | MID | Real |
+| Back kick (Z/W) | *dollyo chagi* / *dollyeo chagi* (rear roundhouse) | HIGH | Real |
 | Front kick (X) | *ap dollyeo chagi* (front-leg roundhouse) | MID | Real (cut kick not a TKD term) |
 | Jumping punch/kick (up) | jump version | HIGH | Real (*ttwieo* ...) |
 | Low punch/kick (down) | low version | LOW | Not WT-legal (self-defence only) |
