@@ -613,7 +613,9 @@
     $('avatarSlot').classList.add('filled');
     $('splashFace').innerHTML = A.kidFace();
     $('splashHammer').innerHTML = A.hammer();
-    $('splashMolePeek').innerHTML = F.mole('emerge');
+    // splash mole: whole mole, walk1/walk2 alternating (both frames inline, toggled by a class)
+    $('splashMolePeek').innerHTML = `<div class="mf a">${F.mole('walk1')}</div><div class="mf b">${F.mole('walk2')}</div>`;
+    setInterval(() => $('splashMolePeek').classList.toggle('step'), 250);
   }
   function syncHud(force) {
     if (force || game.score !== lastScore) {
