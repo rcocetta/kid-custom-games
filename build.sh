@@ -295,6 +295,21 @@ cat <<'HEAD'
     text-align: center;
     box-shadow: 0 8px 0 var(--ink);
   }
+  /* Phone in landscape: little height, so a one-line header and the cards side by side. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    body { padding: 10px 12px 0; }
+    header { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 14px; }
+    h1 { font-size: clamp(26px, 5vw, 38px); margin: 0; }
+    .lead { font-size: 15px; padding: 4px 14px; margin: 0; flex: none; }
+    main { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; padding-top: 4px; }
+    .card { padding: 7px 7px 12px; gap: 7px; border-width: 3px; border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
+    .cover { border-radius: 14px; }
+    .title { font-size: 18px; }
+    .play { font-size: 18px; padding: 5px 22px 5px 18px; -webkit-text-stroke-width: 3px; }
+    .play::before { border-width: 7px 0 7px 12px; }
+    .shore { padding-top: 28px; }
+    footer { padding: 4px 16px 14px; }
+  }
   @media (prefers-reduced-motion: reduce) {
     *, *::before { animation: none !important; transition: none !important; }
   }
