@@ -49,7 +49,12 @@ Touch/mouse: drag moves the gondola (and sets facing), a short tap throws. Lands
 - Visual checks: `./build.sh`, serve `docs/`, Playwright screenshots at 1280×800, 844×390, 667×320 and portrait.
 - World: H = 400, W from the aspect, capped at 2.45:1 (letterboxed beyond).
 - HUD band (user: the cable must not run through the HUD): the shell measures the HUD's bottom and pushes the world down just
-  enough that the pylon tops start below it; `render(ctx, images, scale, top)` fills that band with sky.
+  enough that the pylon tops start below it.
+- Full-bleed background (user): the canvas always covers the whole screen; the playable area is fitted inside (centred sideways,
+  on the bottom edge) and `render(ctx, images, scale, {top, left, right, bottom})` fills the margins with sky, mountains, sea,
+  grass and soil.
+- Sprites are rasterised above their viewBox size (`load(..., res)`: 2.5 default, moles 3.5, food 4) so they stay sharp.
+- Eaten food: a 3-circle scalloped bite with an outline (`biteCircles`), also on the grey HUD icon.
 - Critter scale (user: moles/food too small on phones): `game.setCritterScale(k)` grows moles, food, mounds, puffs, stars,
   marker and the mole hit box. The shell sets k from the screen height: 800 px → 1, 390 px → 1.5, ≤ 320 px → 1.7.
 

@@ -329,24 +329,30 @@
     const OLI_VB = { x: -24, y: -72, w: 248, h: 288 }, OLI_ANCHOR = { x: 100, y: -40 };
     const PYLON_UNITS = Math.round((GRASS_Y - CABLE_Y) / S);
     const FOOD_DEF = { w: 60, h: 80 };
-    // top = extra sky (world units) drawn above y = 0, so the HUD sits in it and never covers the cable/pylons.
-    function render(ctx, images, scale, top) {
+    // view = extra margins (world units) around the playable area that the background (sky, mountains, sea,
+    // grass, soil) still fills, so it reaches the screen edges: top = sky band where the HUD sits (it never covers
+    // the cable/pylons), left/right = side margins on screens wider than the playable area, bottom = extra soil.
+    // A plain number is taken as `top`.
+    function render(ctx, images, scale, view) {
       const W = world.W;
-      top = top || 0;
+      const v = typeof view === 'number' ? { top: view } : (view || {});
+      const top = v.top || 0, left = v.left || 0, right = v.right || 0, bottom = v.bottom || 0;
+      const X0 = -left, X1 = W + right, Y0 = -top, Y1 = H + bottom;
       const im = (k, x, y, w, h) => { const i = images[k]; if (i) ctx.drawImage(i, x, y, w, h); };
-      ctx.setTransform(scale, 0, 0, scale, 0, top * scale);
-      ctx.clearRect(0, -top, W, H + top);
+      ctx.setTransform(scale, 0, 0, scale, left * scale, top * scale);
+      ctx.clearRect(X0, Y0, X1 - X0, Y1 - Y0);
       const sky = (images.sky || { top: '#8fd3ff', bottom: '#d9f3ff' });
-      const gr = ctx.createLinearGradient(0, -top, 0, GRASS_Y);
+      const gr = ctx.createLinearGradient(0, Y0, 0, GRASS_Y);
       gr.addColorStop(0, sky.top); gr.addColorStop(1, sky.bottom);
-      ctx.fillStyle = gr; ctx.fillRect(0, -top, W, H + top);
+      ctx.fillStyle = gr; ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
       im('sun', W * 0.8 - 45, 70, 90, 90);
       const tileH = (k, y, tw, th, off) => {
         if (!images[k]) return;
-        for (let x = -(((off % tw) + tw) % tw); x < W; x += tw) ctx.drawImage(images[k], x, y, tw + 0.6, th);
+        const o = ((off % tw) + tw) % tw;
+        for (let x = Math.floor((X0 + o) / tw) * tw - o; x < X1; x += tw) ctx.drawImage(images[k], x, y, tw + 0.6, th);
       };
       tileH('mountains', 168, 480, 112, animT * 2);
-      ctx.fillStyle = '#6FC1E8'; ctx.fillRect(0, 282, W, 80);
+      ctx.fillStyle = '#6FC1E8'; ctx.fillRect(X0, 282, X1 - X0, 80);
       im('town', 14, 206, 212, 80);
       tileH('sea', 276, 400, 48, animT * 14);
       const bx = ((animT * 12) % (W + 120)) - 60; im('boat', W - bx - 20, 284, 34, 28);
@@ -355,8 +361,8 @@
       const cw = 120 * S, ch = 16 * S;
       for (let x = 30; x < W - 30; x += cw) im('cable', x, CABLE_Y - 8 * S, Math.min(cw, W - 30 - x) + 0.6, ch);
       // grass (the tile ends a few units above the bottom edge; fill the rest with soil)
-      ctx.fillStyle = '#8A5E3A'; ctx.fillRect(0, GRASS_Y + 40, W, H - GRASS_Y - 40);
-      for (let x = 0; x < W; x += 400) im('grass', x, GRASS_Y - 16, 400.6, 60);
+      ctx.fillStyle = '#8A5E3A'; ctx.fillRect(X0, GRASS_Y + 40, X1 - X0, Y1 - GRASS_Y - 40);
+      for (let x = Math.floor(X0 / 400) * 400; x < X1; x += 400) im('grass', x, GRASS_Y - 16, 400.6, 60);
       // food
       for (const f of foods) {
         const vb = (images.foodVB && images.foodVB[f.kind]) || FOOD_DEF;
@@ -474,18 +480,25 @@
   const game = createGame({ best: readBest() });
   const images = { sky: A.background.sky };
   let phase = 'loading';           // loading | title | playing | paused | over
-  let scale = 1, aspectUsed = 0, topWorld = 0;
+  let scale = 1, aspectUsed = 0, view = { top: 0, left: 0, right: 0, bottom: 0 }, dprUsed = 1;
   let overT = 0, overShownAt = 0;
   const keys = { left: false, right: false, space: false };
   let tapBuf = 0, targetX;
   let pausedBy = '';
 
   // ----- images -----
-  function load(key, svg, lib) {
-    return new Promise((res) => {
+  // res: rasterise the SVG at res x its viewBox size, so sprites drawn bigger than that (food, moles on
+  // phones, retina screens) stay sharp instead of being upscaled bitmaps.
+  function load(key, svg, lib, res) {
+    res = res || 2.5;
+    const m = /viewBox="\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(svg);
+    if (m && !/^<svg[^>]*\swidth=/.test(svg)) {
+      svg = svg.replace('<svg ', `<svg width="${Math.round(+m[1] * res)}" height="${Math.round(+m[2] * res)}" `);
+    }
+    return new Promise((done) => {
       const i = new Image();
-      i.onload = () => { images[key] = i; res(); };
-      i.onerror = () => res();
+      i.onload = () => { images[key] = i; done(); };
+      i.onerror = () => done();
       i.src = lib.toDataUrl(svg);
     });
   }
@@ -501,13 +514,13 @@
     jobs.push(load('mountains', bg.mountains(), A), load('sea', bg.sea(), A), load('town', bg.oldTown(), A),
       load('sun', bg.sun(), A), load('boat', bg.boat(), A));
     jobs.push(load('grass', F.grass(), F));
-    for (const f of F.moleFrames) jobs.push(load('mole-' + f, F.mole(f), F));
+    for (const f of F.moleFrames) jobs.push(load('mole-' + f, F.mole(f), F, 3.5));
     for (let i = 0; i < 3; i++) jobs.push(load('puff' + i, F.dirtPuff(i), F));
     for (let i = 0; i < 6; i++) jobs.push(load('stars' + i, F.dizzyStars(i * Math.PI / 3), F));
     images.foodVB = {};
     for (const k of F.foodKinds) {
       images.foodVB[k] = F.foodViewBox(k);
-      jobs.push(load('food-' + k, F.food(k), F), load('eaten-' + k, F.foodEaten(k), F));
+      jobs.push(load('food-' + k, F.food(k), F, 4), load('eaten-' + k, F.foodEaten(k), F, 4));
     }
     return Promise.all(jobs);
   }
@@ -527,13 +540,16 @@
     // 800px tall -> 1, 390px (phone landscape) -> 1.5, 320px and below -> 1.7.
     game.setCritterScale(Math.max(1, Math.min(1.7, 1 + (520 - vh) / 260)));
     const W = game.world.W, H = game.world.H;
-    const cssW = Math.min(vw, worldPxH * W / H), cssH = cssW * H / W + topPx;
+    // The canvas always covers the whole screen; the playable area is fitted inside it (centred sideways,
+    // standing on the bottom edge) and the background fills the margins (see render's `view`).
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
-    canvas.style.left = (vw - cssW) / 2 + 'px'; canvas.style.top = (vh - cssH) / 2 + 'px';
-    canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr);
-    scale = (cssH - topPx) / H;
-    topWorld = topPx / scale;
+    canvas.style.width = vw + 'px'; canvas.style.height = vh + 'px';
+    canvas.style.left = '0px'; canvas.style.top = '0px';
+    canvas.width = Math.round(vw * dpr); canvas.height = Math.round(vh * dpr);
+    dprUsed = canvas.width / vw;
+    scale = Math.min(vw / W, worldPxH / H);
+    const side = (vw - W * scale) / 2 / scale;
+    view = { top: (vh - H * scale) / scale, left: side, right: side, bottom: 0 };
     const portrait = vh > vw;
     $('rotate').classList.toggle('show', portrait);
     if (portrait && phase === 'playing') pause('rotate');
@@ -698,7 +714,7 @@
     } else if (phase === 'title' || phase === 'loading') {
       game.update(dt, {});
     }
-    if (phase !== 'loading') game.render(ctx, images, canvas.width / game.world.W, topWorld);
+    if (phase !== 'loading') game.render(ctx, images, scale * dprUsed, view);
     requestAnimationFrame(frame);
   }
 

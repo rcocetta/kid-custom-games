@@ -380,7 +380,7 @@
   const FOODS = {
     carrot: {
       // carrot lies on its side? No: stands tip-down, so the tip is planted in the grass.
-      vb: [10, 0, 80, 98],
+      vb: [10, -6, 80, 104],   // top at -6: the leaf tips (with their outline) reach y = -3
       draw: (bite) =>
         `<g fill="${F.leaf}" stroke="${O}" stroke-width="3.5" stroke-linejoin="round">` +
         `<ellipse cx="40" cy="18" rx="6" ry="13" transform="rotate(-30 40 18)"/>` +
@@ -390,7 +390,8 @@
         `<path d="M54 56 L60 55 M50 72 L55 71 M40 60 L45 62 M47 80 L51 80" stroke="${F.carrotShade}" stroke-width="3" stroke-linecap="round"/>` +
         `<path d="M36 36 Q38 46 40 52" fill="none" stroke="#FFB673" stroke-width="3.5" stroke-linecap="round"/>` +
         (bite ? '' : foodFace(50, 42)),
-      bite: { cx: 71, cy: 56, r: 9 },
+      bite: { cx: 69, cy: 64, r: 10 },
+      sil: '<path d="M30 32 Q50 20 70 32 Q68 62 54 90 Q50 96 46 90 Q32 62 30 32 Z"/>',
     },
     broccoli: {
       vb: [12, 8, 76, 82],
@@ -404,7 +405,9 @@
         `<path d="M24 50 Q32 58 40 56 M60 58 Q70 58 76 48" fill="none" stroke="${F.brocShade}" stroke-width="3.5" stroke-linecap="round"/>` +
         `<circle cx="42" cy="22" r="3" fill="${F.brocShine}"/><circle cx="26" cy="36" r="2.5" fill="${F.brocShine}"/><circle cx="64" cy="32" r="2.5" fill="${F.brocShine}"/>` +
         (bite ? '' : foodFace(50, 42)),
-      bite: { cx: 76, cy: 36, r: 10 },
+      bite: { cx: 85, cy: 46, r: 12 },
+      sil: '<circle cx="32" cy="42" r="15"/><circle cx="50" cy="30" r="17"/><circle cx="68" cy="42" r="15"/>' +
+        '<circle cx="40" cy="54" r="12"/><circle cx="60" cy="54" r="12"/><circle cx="50" cy="46" r="14"/>',
     },
     steak: {
       vb: [6, 8, 88, 82],
@@ -415,7 +418,8 @@
         `<path d="M28 40 L44 30 M26 56 L50 38 M34 66 L54 52" stroke="${F.grill}" stroke-width="4" stroke-linecap="round" opacity="0.85"/>` +
         `<path d="M28 30 Q38 22 50 22" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.7"/>` +
         (bite ? '' : foodFace(44, 50)),
-      bite: { cx: 86, cy: 38, r: 11 },
+      bite: { cx: 88, cy: 44, r: 13 },
+      sil: '<path d="M14 48 C12 26 38 14 60 18 C84 22 92 44 86 62 C80 80 54 84 34 78 C18 72 16 62 14 48 Z"/>',
     },
   };
   const foodKinds = Object.keys(FOODS);
@@ -430,21 +434,27 @@
     return svgWrap(vbStr(kind), 'food food-' + kind, FOODS[kind].draw(false));
   }
 
-  // bitten: a bite cut from the silhouette with a mask, a frightened-but-cute face, crumbs on the ground.
+  // The bite: 3 overlapping circles (a scalloped cartoon bite) on the food's right side.
+  function biteCircles(b) {
+    const r = b.r;
+    return [[b.cx, b.cy - r * 1.05, r], [b.cx - r * 0.45, b.cy, r * 1.05], [b.cx, b.cy + r * 1.05, r]];
+  }
+  // bitten: the bite is cut from the food with a mask; its edge gets the usual dark outline
+  // (clipped to the food's silhouette so it never shows in the air); crumbs on the ground.
   function foodEaten(kind = 'carrot') {
     if (!FOODS[kind]) kind = 'carrot';
     const fd = FOODS[kind];
-    const b = fd.bite;
-    const id = 'bite-' + kind;
+    const cs = biteCircles(fd.bite);
+    const id = 'bite-' + kind, cid = 'bitesil-' + kind;
     const [vx, vy, vw, vh] = fd.vb;
     const bx = vx + vw / 2;
+    const circ = (fill, extra) => cs.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}"${extra || ''}/>`).join('');
     let s =
       `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="${vx - 10}" y="${vy - 10}" width="${vw + 20}" height="${vh + 20}">` +
-      `<rect x="${vx - 10}" y="${vy - 10}" width="${vw + 20}" height="${vh + 20}" fill="#fff"/>` +
-      `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}" fill="#000"/><circle cx="${b.cx - 7}" cy="${b.cy - 4}" r="${b.r * 0.6}" fill="#000"/></mask></defs>`;
-    s += `<g mask="url(#${id})">${fd.draw(true)}${foodFace(kind === 'carrot' ? 50 : kind === 'steak' ? 44 : 50, kind === 'steak' ? 50 : 42)}</g>`;
-    // bite edge outline
-    s += `<path d="M${b.cx - 7 - b.r * 0.6 * 0.7} ${b.cy - 4 + b.r * 0.6 * 0.7} A${b.r * 0.6} ${b.r * 0.6} 0 0 1 ${b.cx - 7 + b.r * 0.6 * 0.5} ${b.cy - 4 - b.r * 0.6 * 0.85} M${b.cx - b.r * 0.9} ${b.cy - b.r * 0.4} A${b.r} ${b.r} 0 0 0 ${b.cx - b.r * 0.4} ${b.cy + b.r * 0.9}" fill="none" stroke="${O}" stroke-width="0"/>`;
+      `<rect x="${vx - 10}" y="${vy - 10}" width="${vw + 20}" height="${vh + 20}" fill="#fff"/>${circ('#000')}</mask>` +
+      `<clipPath id="${cid}">${fd.sil}</clipPath></defs>`;
+    s += `<g mask="url(#${id})">${fd.draw(true)}${foodFace(kind === 'carrot' ? 50 : kind === 'steak' ? 44 : 50, kind === 'steak' ? 50 : 42)}` +
+      `<g clip-path="url(#${cid})">${circ('none', ` stroke="${O}" stroke-width="${SW * 2}"`)}</g></g>`;
     // crumbs at the base
     const base = vy + vh - 3;
     [[-26, 0, 3.2], [-14, -2, 2.4], [18, 0, 3], [30, -1, 2.2], [6, 0, 2]].forEach(([dx, dy, r]) => {
@@ -469,7 +479,7 @@
       '0 0 40 40',
       'food-icon food-icon-eaten food-icon-' + kind,
       `<defs><filter id="grey-${kind}"><feColorMatrix type="saturate" values="0"/></filter><mask id="${id}" maskUnits="userSpaceOnUse" x="-20" y="-20" width="160" height="160"><rect x="-20" y="-20" width="160" height="160" fill="#fff"/>` +
-        `<circle cx="${b.cx}" cy="${b.cy}" r="${b.r}" fill="#000"/><circle cx="${b.cx - 7}" cy="${b.cy - 4}" r="${b.r * 0.6}" fill="#000"/></mask></defs>` +
+        biteCircles(b).map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#000"/>`).join('') + `</mask></defs>` +
         `<g transform="translate(${f1(tx)} ${f1(ty)}) scale(${f1(k)})" mask="url(#${id})">` +
         `<g filter="url(#grey-${kind})" opacity="0.6">${fd.draw(true)}</g></g>`
     );
