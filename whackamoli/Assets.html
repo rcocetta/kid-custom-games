@@ -204,7 +204,7 @@
   const hammers = [], puffs = [], popups = [], keys = {};
   let banner = null, t = 0, nextCheer = 12, nextBonk = 6;
   let mole = null, food = null, nextMoleAt = 0.4;
-  const LAUNCH = { vx: 230, vy: -260 };
+  const LAUNCH = { vx: 100, vy: -180 };  // same soft lob as game.js
 
   function newRound() {
     const kind = F.foodKinds[Math.floor(Math.random() * F.foodKinds.length)];
@@ -284,8 +284,8 @@
       // scripted bonk: aim a hammer at where the mole will be
       nextBonk -= dt;
       if (mole && nextBonk <= 0 && oli.manualT <= 0 && m.state === 'back' && oli.pose === 'idle') {
-        const T = 0.8, tx = m.x + m.dir * sp * (T + 0.28);
-        if (tx > 40 && tx < W - 40) {
+        const T = 0.9, tx = m.x + m.dir * sp * (T + 0.28);
+        if (tx > 40 && tx < W - 40 && Math.abs(tx - oli.x) < 140) {
           oli.facing = tx < oli.x ? 'left' : 'right';
           if (startThrow({ x: tx, T })) nextBonk = 9;
         } else nextBonk = 1;
