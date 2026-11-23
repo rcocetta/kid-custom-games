@@ -47,6 +47,8 @@
   const FOOD_MIN_GAP = 160;    // two foods keep at least this distance
   const FOODS_TO_LOSE = 5;     // eaten foods = game over
   const FOOD_KINDS = ['carrot', 'broccoli', 'steak'];
+  const FOOD_DRAW = 0.9;       // food sprite scale (viewBox -> world units); user: doubled from 0.45 so it's bigger and nicer
+  const EAT_REACH = 30;        // moles stop this far from the food's centre (× critter scale) to eat: nose at the food's edge
 
   // Range of a still throw (flat ground at GRASS_Y), analytic.
   function flightTime() {
@@ -203,7 +205,8 @@
         const d = m.food.x - m.x;
         m.dir = d < 0 ? -1 : 1;
         const step = m.speed * dt;
-        if (Math.abs(d) <= step) { m.x = m.food.x; m.state = 'eat'; m.t = 0; }
+        const reach = EAT_REACH * critK;
+        if (Math.abs(d) - reach <= step) { m.x = m.food.x - m.dir * reach; m.state = 'eat'; m.t = 0; }
         else m.x += m.dir * step;
       } else if (m.state === 'eat') {
         if (m.t >= MOLE_EAT) {
@@ -321,7 +324,7 @@
     // images: map of loaded <img>/canvas by key (built by the shell, see index.html); scale = canvas px per world unit.
     // Keys: oli-<pose><facing>, hammer, trail, marker, cable, pylon, popup, banner<n>, mountains, sea, town, sun, boat,
     // grass, mole-<frame>, puff0-2, stars0-5, food-<kind>, eaten-<kind>.
-    const S = 0.46, MS = 0.5, FS = 0.45, HS = 0.44;
+    const S = 0.46, MS = 0.5, FS = FOOD_DRAW, HS = 0.44;
     const MOLE_VB = { x: -60, y: -80, w: 120, h: 80 };
     const OLI_VB = { x: -24, y: -72, w: 248, h: 288 }, OLI_ANCHOR = { x: 100, y: -40 };
     const PYLON_UNITS = Math.round((GRASS_Y - CABLE_Y) / S);

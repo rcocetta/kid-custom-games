@@ -29,6 +29,7 @@ sound done. Next: the user's play-test (Review 2) and the final hammer rules.
   Slow moves (< 25 u/s, touch jitter) don't flip the facing;
   gravity 1600, throw 135 forward / 240 up → a still throw lands ~117 units ahead in ~0.7 s. Cooldown 0.35 s, max 3 in the air.
   A dotted marker shows where it will land.
+- Food is drawn at `FOOD_DRAW` 0.9 (user: doubled, desktop and phone); moles stop `EAT_REACH` 30 (× critter scale) from its centre to eat.
 - Tuning constants are at the top of `game.js`.
 
 ## Controls
