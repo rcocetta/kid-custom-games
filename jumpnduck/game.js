@@ -566,7 +566,7 @@
 
     document.addEventListener('pointerdown', (e) => {
       const t = e.target;
-      if (t.closest && (t.closest('#resetBest') || t.closest('.tbtn'))) return;
+      if (t.closest && (t.closest('#resetBest') || t.closest('.tbtn') || t.closest('.home-btn'))) return;
       if (phase === 'splash') { startPlay(); return; }
       if (phase === 'over') { restart(); return; }
       if (phase !== 'playing' || paused) return;
