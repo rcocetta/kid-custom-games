@@ -329,15 +329,17 @@
     const OLI_VB = { x: -24, y: -72, w: 248, h: 288 }, OLI_ANCHOR = { x: 100, y: -40 };
     const PYLON_UNITS = Math.round((GRASS_Y - CABLE_Y) / S);
     const FOOD_DEF = { w: 60, h: 80 };
-    function render(ctx, images, scale) {
+    // top = extra sky (world units) drawn above y = 0, so the HUD sits in it and never covers the cable/pylons.
+    function render(ctx, images, scale, top) {
       const W = world.W;
+      top = top || 0;
       const im = (k, x, y, w, h) => { const i = images[k]; if (i) ctx.drawImage(i, x, y, w, h); };
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx.clearRect(0, 0, W, H);
+      ctx.setTransform(scale, 0, 0, scale, 0, top * scale);
+      ctx.clearRect(0, -top, W, H + top);
       const sky = (images.sky || { top: '#8fd3ff', bottom: '#d9f3ff' });
-      const gr = ctx.createLinearGradient(0, 0, 0, GRASS_Y);
+      const gr = ctx.createLinearGradient(0, -top, 0, GRASS_Y);
       gr.addColorStop(0, sky.top); gr.addColorStop(1, sky.bottom);
-      ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = gr; ctx.fillRect(0, -top, W, H + top);
       im('sun', W * 0.8 - 45, 70, 90, 90);
       const tileH = (k, y, tw, th, off) => {
         if (!images[k]) return;
@@ -465,14 +467,14 @@
   };
   const readBest = () => Math.max(0, parseInt(store.get(BEST_KEY), 10) || 0);
   const $ = (id) => document.getElementById(id);
-  const MAX_ASPECT = 2.1;          // world width is capped at ~840 units (letterbox beyond that)
+  const MAX_ASPECT = 2.45;         // world width cap (~980 units; letterbox beyond): phones minus the HUD band reach ~2.35:1
   const OVER_DELAY = 0.5, OVER_LOCK = 700;
 
   const canvas = $('game'), ctx = canvas.getContext('2d');
   const game = createGame({ best: readBest() });
   const images = { sky: A.background.sky };
   let phase = 'loading';           // loading | title | playing | paused | over
-  let scale = 1, aspectUsed = 0;
+  let scale = 1, aspectUsed = 0, topWorld = 0;
   let overT = 0, overShownAt = 0;
   const keys = { left: false, right: false, space: false };
   let tapBuf = 0, targetX;
@@ -513,18 +515,25 @@
   // ----- sizing -----
   function resize() {
     const vw = window.innerWidth, vh = window.innerHeight;
-    const aspect = Math.max(1.3, Math.min(MAX_ASPECT, vw / vh));
+    // HUD band: push the world down just enough that the pylon tops (and so the cable) start below the HUD pills.
+    // Pylon tops sit at world y ~26 of 400 (6.5 %): solve top + 0.065 * (vh - top) = hudBottom + 4.
+    const hudB = $('hud').getBoundingClientRect().bottom;
+    const PYLON_TOP = 26 / 400;
+    const topPx = Math.max(0, (hudB + 4 - PYLON_TOP * vh) / (1 - PYLON_TOP));
+    const worldPxH = vh - topPx;
+    const aspect = Math.max(1.3, Math.min(MAX_ASPECT, vw / worldPxH));
     if (aspect !== aspectUsed) { aspectUsed = aspect; game.resize(aspect); }
     // Phones (short screens): bigger moles and food so they stay visible and cute.
     // 800px tall -> 1, 390px (phone landscape) -> 1.5, 320px and below -> 1.7.
     game.setCritterScale(Math.max(1, Math.min(1.7, 1 + (520 - vh) / 260)));
     const W = game.world.W, H = game.world.H;
-    const cssW = Math.min(vw, vh * W / H), cssH = cssW * H / W;
+    const cssW = Math.min(vw, worldPxH * W / H), cssH = cssW * H / W + topPx;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
     canvas.style.left = (vw - cssW) / 2 + 'px'; canvas.style.top = (vh - cssH) / 2 + 'px';
     canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr);
-    scale = cssH / H;
+    scale = (cssH - topPx) / H;
+    topWorld = topPx / scale;
     const portrait = vh > vw;
     $('rotate').classList.toggle('show', portrait);
     if (portrait && phase === 'playing') pause('rotate');
@@ -689,7 +698,7 @@
     } else if (phase === 'title' || phase === 'loading') {
       game.update(dt, {});
     }
-    if (phase !== 'loading') game.render(ctx, images, canvas.width / game.world.W);
+    if (phase !== 'loading') game.render(ctx, images, canvas.width / game.world.W, topWorld);
     requestAnimationFrame(frame);
   }
 

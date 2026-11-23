@@ -47,7 +47,9 @@ Touch/mouse: drag moves the gondola (and sets facing), a short tap throws. Lands
   `update(1/60, input)`. Covered: movement/clamp/facing, landing = `markerX`, hit + bonk, emerge not hittable, the full mole walk, food
   stolen → retarget/dive, game over + best, levels + 2 foods, determinism, a bot outlives a no-op player.
 - Visual checks: `./build.sh`, serve `docs/`, Playwright screenshots at 1280×800, 844×390, 667×320 and portrait.
-- World: H = 400, W from the aspect, capped at 2.1:1 (letterboxed) so the moles stay big on wide screens.
+- World: H = 400, W from the aspect, capped at 2.45:1 (letterboxed beyond).
+- HUD band (user: the cable must not run through the HUD): the shell measures the HUD's bottom and pushes the world down just
+  enough that the pylon tops start below it; `render(ctx, images, scale, top)` fills that band with sky.
 - Critter scale (user: moles/food too small on phones): `game.setCritterScale(k)` grows moles, food, mounds, puffs, stars,
   marker and the mole hit box. The shell sets k from the screen height: 800 px → 1, 390 px → 1.5, ≤ 320 px → 1.7.
 
