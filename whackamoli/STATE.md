@@ -22,9 +22,11 @@ sound done. Next: the user's play-test (Review 2) and the final hammer rules.
 - Mole hit = 100 points. Lives = 5 carrots (HUD, top left); each food a mole eats costs one; 0 = game over.
 - Moles come out of a mound, walk away from the food (blind), turn at the screen edge, walk back and eat (~1 s, still hittable).
 - Level = 1 + score / 1000. Per level: spawn interval ×0.85 (from 3 s, min 0.9 s), mole speed ×1.12 (from 55, cap 150). 2 foods from level 3.
-- Hammer (user: short, soft throw that drops fast): thrown forward in the facing direction (last move direction). The gondola's
-  speed is NOT added (user: the target must match the throw), so the marker is always the same distance in front of Oli;
-  slow moves (< 25 u/s, touch jitter) don't flip the facing;
+- Hammer (user: short, soft throw that drops fast): thrown forward in the facing direction (last move direction) **plus the
+  gondola's speed** (user likes it: moving throws go further). That speed is smoothed (`AIM_SMOOTH` 0.12 s) and used by both the throw
+  and the marker, and the throw happens before the gondola moves in a frame, so a hammer lands exactly on the marker that was on screen.
+  Each flying hammer keeps its own marker (`landX`, solid); the marker for the next throw is faint while hammers fly.
+  Slow moves (< 25 u/s, touch jitter) don't flip the facing;
   gravity 1600, throw 135 forward / 240 up → a still throw lands ~117 units ahead in ~0.7 s. Cooldown 0.35 s, max 3 in the air.
   A dotted marker shows where it will land.
 - Tuning constants are at the top of `game.js`.

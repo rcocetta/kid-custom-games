@@ -17,8 +17,9 @@
   const GONDOLA_EASE = 12;     // 1/s: how hard the gondola chases targetX
   const HAND_DX = 30;          // hammer starts this far in front of the gondola centre...
   const HAND_Y = CABLE_Y + 78; // ...at this height (Oli's hand in the sprite: WAMAssets.oliHand)
-  const HAMMER_VX = 135;       // throw speed along the facing direction (u/s). The gondola's own speed is NOT added,
-                               // so the landing marker always sits the same distance in front of Oli (user: aim must match).
+  const HAMMER_VX = 135;       // throw speed along the facing direction (u/s), plus the gondola's (smoothed) speed
+  const AIM_SMOOTH = 0.12;     // s: time constant smoothing the gondola speed used by the throw AND the marker,
+                               // so the marker doesn't jitter and always shows exactly where a throw lands
   const FACING_DEADZONE = 25;  // u/s: slower moves (touch jitter) don't flip the facing
   const HAMMER_VY = -240;      // initial vertical speed (negative = up): small lob, then a fast drop
   const GRAVITY = 1600;        // u/s^2 (strong: the hammer accelerates down hard) -> still throw lands ~117 units ahead (see launchRange)
@@ -65,6 +66,7 @@
     // Critter scale: moles, food and their effects are drawn (and hit-tested) this much bigger.
     // The shell raises it on small (phone) screens so they stay visible and cute.
     let critK = 1;
+    let aimVx = 0;               // smoothed gondola speed (see AIM_SMOOTH)
     const moleW = () => MOLE_W * critK, moleH = () => MOLE_H * critK;
     let hammers, moles, foods, events = [];
     // visual-only state (animation timers, effects); never read by the rules
@@ -79,12 +81,12 @@
     }
     const markerOf = () => {
       const dir = facing === 'left' ? -1 : 1;
-      return gx + dir * (HAND_DX + HAMMER_VX * flightTime());
+      return gx + dir * HAND_DX + (dir * HAMMER_VX + aimVx) * flightTime();
     };
 
     function reset() {
       state = 'ready'; score = 0; level = 1; foodLeft = FOODS_TO_LOSE;
-      gx = world.W / 2; gvx = 0; facing = 'right'; cooldown = 0; overT = 0; playT = 0;
+      gx = world.W / 2; gvx = 0; aimVx = 0; facing = 'right'; cooldown = 0; overT = 0; playT = 0;
       spawnT = FIRST_SPAWN; foodTimers = [];
       hammers = []; moles = []; foods = []; events = [];
       g.newBest = false;
@@ -220,7 +222,8 @@
       const dir = facing === 'left' ? -1 : 1;
       hammers.push({
         x: gx + dir * HAND_DX, y: HAND_Y,
-        vx: dir * HAMMER_VX, vy: HAMMER_VY, angle: 0, dir,
+        vx: dir * HAMMER_VX + aimVx, vy: HAMMER_VY, angle: 0, dir,
+        landX: markerOf(),   // where it will land: drawn as its own marker while it flies
       });
       cooldown = THROW_COOLDOWN;
       emit({ type: 'throw', x: gx, dir });
@@ -288,6 +291,9 @@
 
     function step(dt, input, wantThrow) {
       playT += dt;
+      // throw first, from the state that was on screen, so the hammer lands exactly on the marker the player saw
+      cooldown = Math.max(0, cooldown - dt);
+      if (wantThrow && cooldown <= 0 && hammers.length < MAX_HAMMERS) throwHammer();
       // gondola
       const oldX = gx;
       let vx = 0;
@@ -298,10 +304,8 @@
       }
       gx = clamp(gx + vx * dt, GONDOLA_W / 2, world.W - GONDOLA_W / 2);
       gvx = (gx - oldX) / dt;
+      aimVx += (gvx - aimVx) * Math.min(1, dt / AIM_SMOOTH);
       if (gvx > FACING_DEADZONE) facing = 'right'; else if (gvx < -FACING_DEADZONE) facing = 'left';
-
-      cooldown = Math.max(0, cooldown - dt);
-      if (wantThrow && cooldown <= 0 && hammers.length < MAX_HAMMERS) throwHammer();
 
       // spawning
       spawnT -= dt;
@@ -357,7 +361,12 @@
         im((eating ? 'eaten-' : 'food-') + f.kind, f.x - w / 2, GRASS_Y - h, w, h);
       }
       // landing marker
-      if (state === 'playing') { const mx = markerOf(); if (mx > 10 && mx < W - 10) im('marker', mx - 20 * critK, GRASS_Y - 7 * critK, 40 * critK, 14 * critK); }
+      // landing markers: one (solid) under each flying hammer's real landing spot, one (faint) for the next throw
+      const mark = (mx, alpha) => {
+        if (mx < 10 || mx > W - 10) return;
+        ctx.globalAlpha = alpha; im('marker', mx - 20 * critK, GRASS_Y - 7 * critK, 40 * critK, 14 * critK); ctx.globalAlpha = 1;
+      };
+      if (state === 'playing') { for (const h of hammers) mark(h.landX, 1); mark(markerOf(), hammers.length ? 0.55 : 1); }
       // moles
       for (const m of moles) {
         let frame = 'walk1';
