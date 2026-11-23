@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Whack-a-m-Oli Assets</title>
+<style>
+  @font-face { font-family: 'Fredoka'; src: url('fonts/Fredoka.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
+  :root {
+    --bg: #FFF8EC; --card: #FFFFFF; --ink: #2E2A36; --muted: #7A7486; --line: #F0E4CF;
+    --accent: #FF8A1F; --sky-top: #BFE6FF; --sky-bottom: #EAF7FF; --radius: 28px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Fredoka', ui-rounded, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--ink); overflow-x: hidden; }
+  header { padding: 28px 16px 4px; text-align: center; }
+  h1 { margin: 0; font-size: clamp(28px, 6vw, 48px); font-weight: 700; letter-spacing: .5px; }
+  h1 span { color: var(--accent); }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 17px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 16px 40px; }
+  section { margin: 28px 0 40px; }
+  h2 { display: inline-flex; font-size: 24px; font-weight: 600; margin: 0 0 16px; background: var(--card); padding: 6px 20px; border-radius: 999px; box-shadow: 0 4px 0 var(--line); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border-radius: var(--radius); padding: 14px; box-shadow: 0 6px 0 var(--line); border: 3px solid var(--line); min-width: 0; }
+  .stage { background: linear-gradient(var(--sky-top), var(--sky-bottom)); border-radius: 18px; height: 190px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 8px; }
+  .stage.grass { align-items: flex-end; padding-bottom: 28px; }
+  .stage.grass::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 28px; background: #7BD35A; border-top: 3px solid #5DB246; }
+  .stage.dark { background: #5C6B86; }
+  .stage.wideimg { padding: 0; }
+  .stage .wrap { position: relative; display: inline-block; line-height: 0; max-width: 100%; max-height: 100%; z-index: 1; }
+  .stage img { display: block; max-width: 100%; max-height: 172px; }
+  .stage img.fill { width: 100%; height: 100%; max-height: none; }
+  .anchor { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #E8413C; border: 2px solid #fff; }
+  .hand { background: #7B3FE4; }
+  .base { position: absolute; left: -6px; right: -6px; bottom: 0; height: 2px; background: rgba(232,65,60,.7); }
+  .card h3 { margin: 12px 4px 2px; font-size: 18px; font-weight: 600; }
+  .card p { margin: 0 4px; color: var(--muted); font-size: 13px; line-height: 1.3; }
+
+  .preview { background: var(--card); border-radius: var(--radius); padding: 12px; border: 3px solid var(--line); box-shadow: 0 6px 0 var(--line); }
+  #scene-wrap { width: 100%; border-radius: 18px; overflow: hidden; line-height: 0; }
+  canvas#scene { display: block; touch-action: none; }
+  .ctrls { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+  .ctrls button { font: inherit; font-weight: 600; font-size: 18px; color: var(--ink); background: #FFE2B8; border: 3px solid var(--ink); border-radius: 16px; padding: 6px 18px; cursor: pointer; box-shadow: 0 4px 0 var(--ink); touch-action: none; user-select: none; }
+  .ctrls button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+  .ctrls .throw { background: #FF8A1F; }
+  .hint { color: var(--muted); font-size: 14px; text-align: center; margin: 8px 0 0; }
+  @media (max-height: 500px) { header { padding: 6px 16px 0; } header p { display: none; } h1 { font-size: 22px; } main { padding-top: 2px; } section { margin-top: 10px; } h2 { margin-bottom: 8px; } .hint { display: none; } .ctrls { margin-top: 8px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Whack-a-m-<span>Oli</span> assets</h1>
+  <p>Review page for the art: animated preview first, then every sprite.</p>
+</header>
+<main>
+  <section>
+    <h2>Preview</h2>
+    <div class="preview">
+      <div id="scene-wrap"><canvas id="scene"></canvas></div>
+      <div class="ctrls">
+        <button id="bL" aria-label="Move left">&larr;</button>
+        <button id="bT" class="throw">Throw</button>
+        <button id="bR" aria-label="Move right">&rarr;</button>
+        <button id="bC">Cheer</button>
+      </div>
+      <p class="hint">Arrow keys or A/D move, Space throws. On the scene: drag to move, tap to throw. It goes back to auto after a few seconds.</p>
+    </div>
+  </section>
+  <div id="sections"></div>
+</main>
+
+<script src="assets.js"></script>
+<script src="field.js"></script>
+<script>
+(function () {
+  'use strict';
+  const A = window.WAMAssets, F = window.WAMField;
+  const url = (svg) => A.toDataUrl(svg);
+
+  // ======================= Sprite cards =======================
+  const sections = [];
+  const sec = (title) => { const s = { title, items: [] }; sections.push(s); return s; };
+  const add = (s, name, svg, note, opt) => s.items.push(Object.assign({ name, svg, note }, opt));
+
+  const sOli = sec('Oli in the gondola');
+  for (const facing of ['right', 'left'])
+    for (const pose of A.oliPoses)
+      add(sOli, pose + ' / ' + facing, A.oli(pose, facing), pose === 'throw' ? 'red = cable anchor, purple = hand' : 'red dot = cable anchor', { anchor: true, facing, pose });
+
+  const sHam = sec('Hammer, trail, marker');
+  add(sHam, 'hammer', A.hammer(), 'pivot at centre');
+  add(sHam, 'hammerTrail', A.hammerTrail(), 'drawn under the hammer');
+  add(sHam, 'hammer + trail', '', 'rotated 40 degrees', { combo: true });
+  add(sHam, 'marker', A.marker(), 'landing spot', { grass: true, baseline: true });
+
+  const sCab = sec('Cable and pylon');
+  add(sCab, 'cable', A.cable(), 'tile 120 x 16, repeated', { tile: true });
+  add(sCab, 'pylon', A.pylon(400), 'height 400', {});
+
+  const sHud = sec('HUD and popups');
+  add(sHud, 'kidFace', A.kidFace(), 'score pill avatar');
+  add(sHud, 'scorePopup', A.scorePopup(), '+100 BONK!');
+  add(sHud, 'levelBanner', A.levelBanner(2), 'LEVEL 2!');
+
+  const sBg = sec('Background');
+  add(sBg, 'mountains', A.background.mountains(), 'tile 800 x 160', { stretch: true });
+  add(sBg, 'sea', A.background.sea(), 'tile 800 x 60', { stretch: true });
+  add(sBg, 'oldTown', A.background.oldTown(), '');
+  add(sBg, 'sun', A.background.sun(), '');
+  add(sBg, 'boat', A.background.boat(), '');
+
+  const sGr = sec('Grass');
+  add(sGr, 'grass tile', F.grass(), 'tile 400 x 60, red line = grassLine (repeated)', { grassTile: true });
+
+  const sMole = sec('Mole frames (face right)');
+  for (const fr of F.moleFrames) add(sMole, fr, F.mole(fr), 'red line = grass line', { baseline: true, grass: true });
+
+  const sFx = sec('Mound, dirt, stars');
+  add(sFx, 'mound', F.mound(), '', { baseline: true, grass: true });
+  for (let i = 0; i < 3; i++) add(sFx, 'dirtPuff ' + i, F.dirtPuff(i), '', { baseline: true, grass: true });
+  add(sFx, 'dizzyStars 0', F.dizzyStars(0), '');
+  add(sFx, 'dizzyStars 2', F.dizzyStars(2), '');
+
+  const sFood = sec('Food');
+  for (const k of F.foodKinds) {
+    add(sFood, k, F.food(k), 'on the grass line', { baseline: true, grass: true });
+    add(sFood, k + ' eaten', F.foodEaten(k), 'bitten', { baseline: true, grass: true });
+  }
+  for (const k of F.foodKinds) {
+    add(sFood, 'icon ' + k, F.foodIcon(k, false), 'HUD', { dark: true, small: true });
+    add(sFood, 'icon ' + k + ' eaten', F.foodIcon(k, true), 'HUD, greyed', { dark: true, small: true });
+  }
+
+  const root = document.getElementById('sections');
+  for (const s of sections) {
+    const el = document.createElement('section');
+    const h = document.createElement('h2'); h.textContent = s.title; el.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'grid'; el.appendChild(grid);
+    for (const it of s.items) {
+      const card = document.createElement('div'); card.className = 'card';
+      const stage = document.createElement('div');
+      stage.className = 'stage' + (it.grass ? ' grass' : '') + (it.dark ? ' dark' : '') + (it.stretch || it.tile || it.grassTile ? ' wideimg' : '');
+      const wrap = document.createElement('div'); wrap.className = 'wrap';
+      if (it.combo) {
+        const mk = (svg) => { const i = new Image(); i.src = url(svg); i.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;transform:rotate(40deg)'; return i; };
+        wrap.style.width = '130px'; wrap.style.height = '130px';
+        wrap.appendChild(mk(A.hammerTrail())); wrap.appendChild(mk(A.hammer()));
+      } else if (it.tile || it.grassTile) {
+        const w = it.grassTile ? '400px 60px' : '120px 16px';
+        wrap.style.cssText = 'width:100%;height:100%;background:url("' + url(it.svg) + '") repeat-x;background-size:' + w + ';background-position:0 ' + (it.grassTile ? '100%' : '50%');
+        if (it.grassTile) { const l = document.createElement('div'); l.className = 'base'; l.style.bottom = (60 - F.grassLine) + 'px'; wrap.appendChild(l); }
+      } else {
+        const img = new Image(); img.src = url(it.svg); img.alt = it.name;
+        if (it.stretch) { img.className = 'fill'; wrap.style.cssText = 'width:100%;height:100%'; }
+        else {
+          const m = /viewBox="([-\d. ]+)"/.exec(it.svg).slice(1)[0].trim().split(/\s+/).map(Number);
+          const k = it.small ? 64 / m[2] : Math.min(150 / m[2], 150 / m[3]);
+          wrap.style.width = Math.round(m[2] * k) + 'px'; wrap.style.height = Math.round(m[3] * k) + 'px';
+          img.style.width = '100%'; img.style.height = '100%'; img.style.maxHeight = 'none';
+        }
+        wrap.appendChild(img);
+        if (it.anchor) {
+          const vb = A.oliViewBox, a = A.oliAnchor, hd = A.oliHand;
+          const fx = (x) => (it.facing === 'left' ? 2 * a.x - x : x);
+          const dot = (cx, cy, cls) => { const d = document.createElement('div'); d.className = 'anchor ' + cls; d.style.left = ((cx - vb.x) / vb.w * 100) + '%'; d.style.top = ((cy - vb.y) / vb.h * 100) + '%'; wrap.appendChild(d); };
+          dot(a.x, a.y, ''); if (it.pose === 'throw') dot(fx(hd.x), hd.y, 'hand');
+        }
+        if (it.baseline) { const b = document.createElement('div'); b.className = 'base'; wrap.appendChild(b); }
+      }
+      stage.appendChild(wrap); card.appendChild(stage);
+      const h3 = document.createElement('h3'); h3.textContent = it.name; card.appendChild(h3);
+      if (it.note) { const p = document.createElement('p'); p.textContent = it.note; card.appendChild(p); }
+      grid.appendChild(card);
+    }
+    root.appendChild(el);
+  }
+
+  // ======================= Animated preview =======================
+  const H = 400;
+  const CABLE_Y = 40, GROUND_Y = 356;
+  const S = A.oliScale;               // gondola / cable / pylon scale
+  const MS = 0.5, FS = 0.45, HS = 0.44;
+  const G = 900;                      // gravity, world units / s^2
+  const canvas = document.getElementById('scene');
+  const wrapEl = document.getElementById('scene-wrap');
+  const ctx = canvas.getContext('2d');
+  let W = 800, scale = 1, dpr = 1;
+
+  const imgs = {};
+  const load = (key, svg) => new Promise((res) => { const i = new Image(); i.onload = () => { imgs[key] = i; res(); }; i.onerror = () => res(); i.src = url(svg); });
+  const pylonUnits = Math.round((GROUND_Y - CABLE_Y) / S);
+  const jobs = [];
+  for (const p of A.oliPoses) for (const f of ['left', 'right']) jobs.push(load('oli-' + p + f, A.oli(p, f)));
+  jobs.push(load('hammer', A.hammer()), load('trail', A.hammerTrail()), load('marker', A.marker()));
+  jobs.push(load('cable', A.cable()), load('pylon', A.pylon(pylonUnits)));
+  jobs.push(load('popup', A.scorePopup()), load('banner', A.levelBanner(2)));
+  jobs.push(load('mountains', A.background.mountains()), load('sea', A.background.sea()), load('town', A.background.oldTown()), load('sun', A.background.sun()), load('boat', A.background.boat()));
+  jobs.push(load('grass', F.grass()), load('mound', F.mound()));
+  for (const f of F.moleFrames) jobs.push(load('mole-' + f, F.mole(f)));
+  for (let i = 0; i < 3; i++) jobs.push(load('puff' + i, F.dirtPuff(i)));
+  for (let i = 0; i < 6; i++) jobs.push(load('stars' + i, F.dizzyStars(i * Math.PI / 3)));
+  for (const k of F.foodKinds) { jobs.push(load('food-' + k, F.food(k))); jobs.push(load('eaten-' + k, F.foodEaten(k))); }
+
+  const oli = { x: 200, vel: 0, facing: 'right', pose: 'idle', poseT: 0, cool: 0, manualT: 0, cheerT: 0, aim: null, autoDir: 1 };
+  const hammers = [], puffs = [], popups = [], keys = {};
+  let banner = null, t = 0, nextCheer = 12, nextBonk = 6;
+  let mole = null, food = null, nextMoleAt = 0.4;
+  const LAUNCH = { vx: 230, vy: -260 };
+
+  function newRound() {
+    const kind = F.foodKinds[Math.floor(Math.random() * F.foodKinds.length)];
+    const fx = W * (0.35 + Math.random() * 0.3);
+    const away = Math.random() < 0.5 ? -1 : 1;
+    const sx = Math.max(60, Math.min(W - 60, fx - away * W * 0.18));
+    food = { kind, x: fx, eaten: false };
+    mole = { state: 'emerge', t: 0, x: sx, dir: away, away, edge: away < 0 ? 34 : W - 34, anim: 0 };
+    puffs.push({ x: sx, t: 0 });
+  }
+  function handWorld() {
+    const a = A.oliAnchor, h = A.oliHand, f = oli.facing === 'left' ? -1 : 1;
+    return { x: oli.x + f * (h.x - a.x) * S, y: CABLE_Y + (h.y - a.y) * S };
+  }
+  function landingX(hx, hy, vx, vy) {
+    const tt = (-vy + Math.sqrt(vy * vy + 2 * G * (GROUND_Y - hy))) / G;
+    return hx + vx * tt;
+  }
+  function startThrow(aim) {
+    if (oli.cool > 0 || oli.pose === 'windup' || oli.pose === 'throw' || oli.cheerT > 0) return false;
+    oli.pose = 'windup'; oli.poseT = 0.28; oli.aim = aim || null; oli.cool = 0.6;
+    return true;
+  }
+  function releaseHammer() {
+    const h = handWorld(), d = oli.facing === 'left' ? -1 : 1;
+    let vx, vy;
+    if (oli.aim) { const T = oli.aim.T; vx = (oli.aim.x - h.x) / T; vy = (GROUND_Y - h.y - 0.5 * G * T * T) / T; }
+    else { vx = d * LAUNCH.vx + oli.vel * 0.6; vy = LAUNCH.vy; }
+    hammers.push({ x: h.x, y: h.y, vx, vy, rot: 0, spin: (vx >= 0 ? 1 : -1) * 11 });
+    oli.pose = 'throw'; oli.poseT = 0.3; oli.aim = null;
+  }
+  function bonkMole() {
+    mole.state = 'bonk'; mole.t = 0;
+    popups.push({ x: mole.x, y: GROUND_Y - 36, t: 0 });
+  }
+
+  function update(dt) {
+    t += dt;
+    const input = (keys.ArrowLeft || keys.a || keys.A ? -1 : 0) + (keys.ArrowRight || keys.d || keys.D ? 1 : 0);
+    const minX = 70, maxX = W - 70, prevX = oli.x;
+    if (input) oli.manualT = 5;
+    if (oli.manualT > 0) oli.manualT -= dt;
+    const busy = oli.pose === 'windup' || oli.pose === 'throw' || oli.cheerT > 0;
+    if (input) { oli.x += input * 170 * dt; oli.facing = input < 0 ? 'left' : 'right'; }
+    else if (oli.manualT <= 0 && !busy) {
+      oli.x += oli.autoDir * 75 * dt;
+      if (oli.x > maxX) { oli.x = maxX; oli.autoDir = -1; }
+      if (oli.x < minX) { oli.x = minX; oli.autoDir = 1; }
+      oli.facing = oli.autoDir < 0 ? 'left' : 'right';
+    }
+    oli.x = Math.max(minX, Math.min(maxX, oli.x));
+    oli.vel = (oli.x - prevX) / Math.max(dt, 1e-4);
+    oli.cool -= dt;
+    if (oli.cheerT > 0) { oli.cheerT -= dt; oli.pose = oli.cheerT > 0 ? 'cheer' : 'idle'; }
+    else if (oli.pose === 'windup' || oli.pose === 'throw') {
+      oli.poseT -= dt;
+      if (oli.poseT <= 0) { if (oli.pose === 'windup') releaseHammer(); else oli.pose = 'idle'; }
+    }
+    nextCheer -= dt;
+    if (nextCheer <= 0 && oli.pose === 'idle') { nextCheer = 16; oli.cheerT = 2.2; banner = { t: 0 }; }
+    if (banner) { banner.t += dt; if (banner.t > 2.6) banner = null; }
+
+    if (!mole) { nextMoleAt -= dt; if (nextMoleAt <= 0) newRound(); }
+    else {
+      const m = mole, sp = 55; m.t += dt; m.anim += dt;
+      if (m.state === 'emerge') { if (m.t > 0.55) { m.state = 'away'; m.t = 0; } }
+      else if (m.state === 'away') {
+        m.x += m.away * sp * dt; m.dir = m.away;
+        if ((m.away < 0 && m.x <= m.edge) || (m.away > 0 && m.x >= m.edge)) { m.state = 'turn'; m.t = 0; }
+      } else if (m.state === 'turn') { if (m.t > 0.4) { m.state = 'back'; m.t = 0; m.dir = -m.away; } }
+      else if (m.state === 'back') {
+        m.x += m.dir * sp * dt;
+        if ((m.dir < 0 && m.x <= food.x) || (m.dir > 0 && m.x >= food.x)) { m.x = food.x; m.state = 'eat'; m.t = 0; food.eaten = true; }
+      } else if (m.state === 'eat') { if (m.t > 1.8) { m.state = 'dive'; m.t = 0; puffs.push({ x: m.x, t: 0 }); } }
+      else if (m.state === 'bonk') { if (m.t > 1.0) { m.state = 'dive'; m.t = 0; puffs.push({ x: m.x, t: 0 }); } }
+      else if (m.state === 'dive') { if (m.t > 0.4) { mole = null; food = null; nextMoleAt = 1.3; } }
+      // scripted bonk: aim a hammer at where the mole will be
+      nextBonk -= dt;
+      if (mole && nextBonk <= 0 && oli.manualT <= 0 && m.state === 'back' && oli.pose === 'idle') {
+        const T = 0.8, tx = m.x + m.dir * sp * (T + 0.28);
+        if (tx > 40 && tx < W - 40) {
+          oli.facing = tx < oli.x ? 'left' : 'right';
+          if (startThrow({ x: tx, T })) nextBonk = 9;
+        } else nextBonk = 1;
+      }
+    }
+
+    for (let i = hammers.length - 1; i >= 0; i--) {
+      const h = hammers[i];
+      h.vy += G * dt; h.x += h.vx * dt; h.y += h.vy * dt; h.rot += h.spin * dt;
+      if (mole && ['away', 'turn', 'back', 'eat'].indexOf(mole.state) >= 0 && h.vy > 0 && Math.abs(h.x - mole.x) < 30 && h.y > GROUND_Y - 44) { bonkMole(); hammers.splice(i, 1); continue; }
+      if (h.y >= GROUND_Y - 4 || h.x < -40 || h.x > W + 40) { if (h.y >= GROUND_Y - 4) puffs.push({ x: h.x, t: 0 }); hammers.splice(i, 1); }
+    }
+    for (const p of puffs) p.t += dt;
+    for (let i = puffs.length - 1; i >= 0; i--) if (puffs[i].t > 0.4) puffs.splice(i, 1);
+    for (const p of popups) p.t += dt;
+    for (let i = popups.length - 1; i >= 0; i--) if (popups[i].t > 1.2) popups.splice(i, 1);
+  }
+
+  const im = (k, x, y, w, h) => { const i = imgs[k]; if (i) ctx.drawImage(i, x, y, w, h); };
+  // draw a sprite whose viewBox x=0 / y=0 sits at world (px, py); flip mirrors around px
+  function drawAt(k, vb, px, py, s, flip) {
+    const i = imgs[k]; if (!i) return;
+    ctx.save(); ctx.translate(px, py); if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(i, vb.x * s, vb.y * s, vb.w * s, vb.h * s); ctx.restore();
+  }
+  function tileH(k, y, tw, th, off) {
+    const i = imgs[k]; if (!i) return;
+    let x = -(((off % tw) + tw) % tw);
+    for (; x < W; x += tw) ctx.drawImage(i, x, y, tw + 0.6, th);
+  }
+
+  function draw() {
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const g = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    g.addColorStop(0, A.background.sky.top); g.addColorStop(1, A.background.sky.bottom);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    im('sun', W * 0.8 - 45, 70, 90, 90);
+    tileH('mountains', 168, 480, 112, t * 2);
+    ctx.fillStyle = '#6FC1E8'; ctx.fillRect(0, 282, W, 80);
+    im('town', 14, 206, 212, 80);
+    tileH('sea', 276, 400, 48, t * 14);
+    const bx = ((t * 12) % (W + 120)) - 60; im('boat', W - bx - 20, 284, 34, 28);
+    // pylons (behind the grass) and cable
+    for (const px of [30, W - 30]) im('pylon', px - 60 * S, CABLE_Y - 30 * S, 120 * S, (pylonUnits + 30) * S);
+    const cw = 120 * S, ch = 16 * S;
+    for (let x = 30; x < W - 30; x += cw) im('cable', x, CABLE_Y - A.cableCentre * S, Math.min(cw, W - 30 - x) + 0.6, ch);
+    for (let x = 0; x < W; x += 400) im('grass', x, GROUND_Y - F.grassLine, 400.6, 60);
+    // food
+    if (food) {
+      const vb = F.foodViewBox(food.kind), w = vb.w * FS, h = vb.h * FS;
+      const eaten = food.eaten && mole && ['eat', 'bonk', 'dive'].indexOf(mole.state) >= 0;
+      im((eaten ? 'eaten-' : 'food-') + food.kind, food.x - w / 2, GROUND_Y - h, w, h);
+    }
+    // landing marker for a throw from here
+    if (!hammers.length && oli.pose === 'idle') {
+      const h = handWorld(), d = oli.facing === 'left' ? -1 : 1;
+      const mx = landingX(h.x, h.y, d * LAUNCH.vx, LAUNCH.vy);
+      if (mx > 10 && mx < W - 10) im('marker', mx - 20, GROUND_Y - 7, 40, 14);
+    }
+    if (mole) {
+      const m = mole; let frame = 'walk1';
+      if (m.state === 'emerge') frame = 'emerge';
+      else if (m.state === 'away' || m.state === 'back') frame = Math.floor(m.anim / 0.16) % 2 ? 'walk2' : 'walk1';
+      else if (m.state === 'turn') frame = 'turn';
+      else if (m.state === 'eat') frame = Math.floor(m.anim / 0.25) % 2 ? 'eat2' : 'eat1';
+      else if (m.state === 'bonk') frame = 'bonk';
+      else if (m.state === 'dive') frame = 'dive';
+      if (m.state === 'emerge' && m.t < 0.12) im('mound', m.x - 22.5, GROUND_Y - 17, 45, 17);
+      else drawAt('mole-' + frame, F.moleViewBox, m.x, GROUND_Y, MS, m.dir < 0);
+      if (m.state === 'bonk') im('stars' + (Math.floor(m.t * 8) % 6), m.x - 17 + m.dir * 6, GROUND_Y - 44, 34, 14);
+    }
+    for (const p of puffs) im('puff' + Math.min(2, Math.floor(p.t / 0.12)), p.x - 25, GROUND_Y - 32, 50, 32);
+    for (const h of hammers) {
+      const sz = 112 * HS;
+      ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.rot);
+      if (h.spin < 0) ctx.scale(-1, 1);
+      im('trail', -sz / 2, -sz / 2, sz, sz); ctx.restore();
+      ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.rot);
+      im('hammer', -sz / 2, -sz / 2, sz, sz); ctx.restore();
+    }
+    const vb = A.oliViewBox, a = A.oliAnchor;
+    im('oli-' + oli.pose + oli.facing, oli.x - (a.x - vb.x) * S, CABLE_Y - (a.y - vb.y) * S, vb.w * S, vb.h * S);
+    for (const p of popups) {
+      const u = p.t / 1.2, s = u < 0.2 ? 0.3 + u / 0.2 * 0.7 : 1, w = 110 * s, h = 65 * s;
+      ctx.globalAlpha = u > 0.7 ? 1 - (u - 0.7) / 0.3 : 1;
+      im('popup', p.x - w / 2, p.y - u * 44 - h - 6, w, h); ctx.globalAlpha = 1;
+    }
+    if (banner) {
+      const u = banner.t, s = u < 0.3 ? u / 0.3 : 1, w = 220 * s, h = w * 130 / 300;
+      ctx.globalAlpha = u > 2.2 ? 1 - (u - 2.2) / 0.4 : 1;
+      im('banner', W / 2 - w / 2, 130 - h / 2, w, h); ctx.globalAlpha = 1;
+    }
+  }
+
+  function resize() {
+    const cw = wrapEl.clientWidth;
+    const ch = Math.max(200, Math.min(cw / 1.9, window.innerHeight - 150));
+    scale = ch / H; W = cw / scale; dpr = window.devicePixelRatio || 1;
+    canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
+    canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
+    oli.x = Math.max(70, Math.min(W - 70, oli.x));
+    mole = null; food = null; nextMoleAt = 0.3;
+  }
+  window.addEventListener('resize', resize);
+
+  const manualThrow = () => { oli.manualT = 5; startThrow(null); };
+  window.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.preventDefault();
+    if (e.key === ' ') { if (!e.repeat) manualThrow(); return; }
+    keys[e.key] = true;
+  });
+  window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+  window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+  const hold = (id, key) => {
+    const b = document.getElementById(id), off = () => { keys[key] = false; };
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); keys[key] = true; });
+    b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+  };
+  hold('bL', 'ArrowLeft'); hold('bR', 'ArrowRight');
+  document.getElementById('bT').addEventListener('click', manualThrow);
+  document.getElementById('bC').addEventListener('click', () => { if (oli.pose === 'idle') { oli.cheerT = 2.2; banner = { t: 0 }; } });
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, moved: 0 }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = (e.clientX - drag.x) / scale; drag.x = e.clientX; drag.moved += Math.abs(dx);
+    if (dx) { oli.x += dx; oli.manualT = 5; oli.facing = dx < 0 ? 'left' : 'right'; }
+  });
+  canvas.addEventListener('pointerup', () => { if (drag && drag.moved < 8) manualThrow(); drag = null; });
+  canvas.addEventListener('pointercancel', () => { drag = null; });
+
+  let last = 0;
+  function frame(ts) {
+    const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
+    update(dt); draw(); requestAnimationFrame(frame);
+  }
+  Promise.all(jobs).then(() => {
+    resize();
+    window.__wam = { oli, hammers, skip(sec) { for (let i = 0; i < sec * 60; i++) update(1 / 60); }, get mole() { return mole; }, startThrow };
+    requestAnimationFrame(frame);
+  });
+})();
+</script>
+</body>
+</html>
