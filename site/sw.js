@@ -2,8 +2,8 @@
 // played open offline. Network first (so updates show up right away), falling back
 // to the copy cached on this device. It only handles this site's own files; nothing
 // is sent anywhere.
-const CACHE = 'kid-games-v1';
-const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'favicon-32.png'];
+const CACHE = 'kid-games-v2';
+const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'favicon-32.png', 'Fredoka.ttf'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
