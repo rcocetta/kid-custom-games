@@ -38,7 +38,10 @@ Branch: `whackamoli`. Folder: `whackamoli/`. Title: **Whack-a-m-Oli**. Card emoj
   (at a different place). Food doesn't move. If several moles want the same food, they all go for it.
 - **Levels:** every level the spawn interval ×0.85 (min 0.9 s) and mole speed ×1.12 (with a cap). 2 foods from **level 3**.
   "LEVEL 2!" banner on level up.
-- **HUD:** score pill with `kidFace()` (like jumpnduck), level, and **5 food icons** (they grey out as food is eaten).
+- **HUD:** score pill with `kidFace()` (like jumpnduck), level, and the **lives: 5 carrots** (user, 2026-11-23) in a white
+  pill, top left (`WAMField.foodIcon('carrot', eaten)`); each food a mole eats turns one carrot grey with a bite, with a little pop.
+- **Hammer throw (user, 2026-11-23):** shorter, softer throw, and it must accelerate down hard: gravity 1600, throw 135 forward /
+  240 up → a still throw lands ~117 units ahead in ~0.7 s.
 - **Best score** in `localStorage` key `whackamoli:best`, mute in `whackamoli:mute`, reset button on the title screen.
 - **Keyboard:** ←/→ (and A/D) move, Space throws (keydown edge, holding repeats at the cooldown rate), Space/Enter
   starts and restarts, P / Esc pause.

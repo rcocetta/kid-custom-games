@@ -17,9 +17,9 @@
   const GONDOLA_EASE = 12;     // 1/s: how hard the gondola chases targetX
   const HAND_DX = 20;          // hammer starts this far in front of the gondola centre...
   const HAND_Y = CABLE_Y + 70; // ...at this height (Oli's hand)
-  const HAMMER_VX = 100;       // throw speed along the facing direction (u/s), added to gondola velocity
-  const HAMMER_VY = -180;      // initial vertical speed (negative = up); a soft lob
-  const GRAVITY = 900;         // u/s^2  -> still throw lands ~116 units ahead (see launchRange)
+  const HAMMER_VX = 135;       // throw speed along the facing direction (u/s), added to gondola velocity
+  const HAMMER_VY = -240;      // initial vertical speed (negative = up): small lob, then a fast drop
+  const GRAVITY = 1600;        // u/s^2 (strong: the hammer accelerates down hard) -> still throw lands ~117 units ahead (see launchRange)
   const HAMMER_SPIN = 14;      // rad/s
   const HAMMER_R = 13;         // hammer hit radius
   const THROW_COOLDOWN = 0.35; // s between throws
