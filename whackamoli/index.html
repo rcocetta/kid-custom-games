@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="game-emoji" content="🔨">
+<title>Whack-a-m-Oli</title>
+<style>
+  @font-face { font-family: 'Fredoka'; src: url('fonts/Fredoka.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
+  :root {
+    --ink: #2E2A36; --accent: #2DC653; --accent-dark: #178A3A; --sky: #BFE6FF; --red: #E5483D;
+    --safe-t: env(safe-area-inset-top, 0px); --safe-r: env(safe-area-inset-right, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px); --safe-l: env(safe-area-inset-left, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: var(--sky);
+    font-family: 'Fredoka', ui-rounded, 'Segoe UI', system-ui, sans-serif; color: var(--ink);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  #game { position: fixed; display: block; touch-action: none; }
+  [hidden] { display: none !important; }
+  button { font-family: inherit; }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    position: fixed; top: calc(var(--safe-t) + 6px); left: calc(var(--safe-l) + 8px); right: calc(var(--safe-r) + 8px);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; pointer-events: none;
+    opacity: 0; transition: opacity .3s; z-index: 5;
+  }
+  #hud.show { opacity: 1; }
+  .hud-group { display: flex; align-items: center; gap: 8px; }
+  .pill {
+    display: flex; align-items: center; gap: 8px; background: #fff; border: 3px solid var(--ink);
+    border-radius: 999px; box-shadow: 0 3px 0 rgba(46,42,54,.25); height: clamp(34px, 10vh, 50px);
+  }
+  .pill.score { padding: 0 14px 0 2px; }
+  #avatarSlot { height: calc(100% + 0px); aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: var(--sky); border: 2px solid var(--ink); flex: none; margin: 0; }
+  #avatarSlot svg { width: 118%; height: 118%; margin: -9% 0 0 -9%; display: block; opacity: 0; }
+  #avatarSlot.filled svg { opacity: 1; }
+  #score { font-size: clamp(20px, 6vh, 28px); font-weight: 700; min-width: 3ch; font-variant-numeric: tabular-nums; display: inline-block; }
+  #score.pop { animation: pop .3s; }
+  @keyframes pop { 50% { transform: scale(1.3); color: var(--accent-dark); } }
+  .pill.lives { padding: 0 8px; gap: 0; }
+  #lives img { width: clamp(24px, 7.5vh, 34px); height: clamp(24px, 7.5vh, 34px); display: block; }
+  #lives { display: flex; }
+  #lives img.pop { animation: lost .8s; }
+  @keyframes lost { 30% { transform: scale(1.6) rotate(-14deg); } 100% { transform: scale(1); } }
+  .pill.level { padding: 0 14px; font-weight: 700; font-size: clamp(15px, 4.6vh, 22px); background: #FFD34E; }
+  .round-btn {
+    pointer-events: auto; width: clamp(34px, 10vh, 50px); height: clamp(34px, 10vh, 50px); border-radius: 50%;
+    background: #fff; border: 3px solid var(--ink); box-shadow: 0 3px 0 rgba(46,42,54,.25); color: var(--ink);
+    font-size: clamp(14px, 4.4vh, 20px); font-weight: 700; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .round-btn:active { transform: translateY(2px); }
+  #mute { position: fixed; bottom: calc(var(--safe-b) + 8px); right: calc(var(--safe-r) + 8px); z-index: 12; }
+
+  /* ---------- Title ---------- */
+  #splash {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10;
+    padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+    background: rgba(255,255,255,.18); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  }
+  .splash-inner {
+    display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 44px); max-width: 96vw;
+    background: rgba(255,255,255,.78); border: 4px solid var(--ink); border-radius: clamp(20px, 6vh, 40px);
+    padding: clamp(10px, 3.5vh, 30px) clamp(16px, 4vw, 44px); box-shadow: 0 8px 0 rgba(46,42,54,.22);
+  }
+  #splashOli { position: relative; flex: none; margin-right: min(6vh, 5vw); }  /* room for the hammer */
+  #splashFace { width: min(34vh, 30vw); height: min(34vh, 30vw); flex: none; filter: drop-shadow(0 6px 0 rgba(46,42,54,.25)); animation: bob 1.8s ease-in-out infinite; }
+  /* the hammer Oli is about to swing, at his lower right */
+  #splashHammer {
+    position: absolute; width: 52%; height: 52%; right: -16%; bottom: -2%; transform-origin: 50% 85%;
+    filter: drop-shadow(0 5px 0 rgba(46,42,54,.25)); animation: swing 1.8s ease-in-out infinite;
+  }
+  #splashHammer svg, #splashMole svg { width: 100%; height: 100%; display: block; }
+  @keyframes swing { 0%, 100% { transform: rotate(28deg); } 50% { transform: rotate(8deg); } }
+  /* a whole mole on the right, trotting on the spot towards Oli (walk frames swapped in JS) */
+  #splashMole {
+    width: min(36vh, 24vw); height: calc(min(36vh, 24vw) * 2 / 3); flex: none; align-self: center;
+    transform: scaleX(-1); filter: drop-shadow(0 5px 0 rgba(46,42,54,.2));
+  }
+  #splashMole .peek { width: 100%; height: 100%; animation: trot .5s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes trot { 50% { transform: translateY(-3%); } }
+  #splashMole .mf { position: absolute; inset: 0; }
+  #splashMole .peek { position: relative; }
+  #splashMole .mf.b, #splashMole .step .mf.a { visibility: hidden; }
+  #splashMole .step .mf.b { visibility: visible; }
+  #splashFace svg { width: 100%; height: 100%; display: block; }
+  @keyframes bob { 50% { transform: translateY(-6px) rotate(-3deg); } }
+  .splash-text { display: flex; flex-direction: column; align-items: flex-start; gap: clamp(5px, 1.6vh, 12px); }
+  h1 {
+    margin: 0; font-size: clamp(28px, 10.5vh, 62px); line-height: 1.05; font-weight: 700; color: #3CC75A; letter-spacing: 1px; white-space: nowrap;
+    /* bright fill + thick dark outline (drawn behind the fill): readable on the light card */
+    -webkit-text-stroke: clamp(6px, 2vh, 11px) var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(46,42,54,.3);
+  }
+  h1 .oli { color: #FF8A1F;
+  }
+  .how { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: clamp(3px, 1vh, 8px); }
+  .how li {
+    background: var(--accent-dark); color: #fff; border: 3px solid var(--ink); border-radius: 999px;
+    padding: 2px 14px; font-size: clamp(13px, 4.2vh, 20px); font-weight: 600; white-space: nowrap; box-shadow: 0 3px 0 rgba(46,42,54,.3);
+  }
+  .how b { color: #FFD34E; }
+  .big-btn {
+    font-weight: 700; color: #fff; background: var(--accent); border: 4px solid var(--ink); border-radius: 999px; cursor: pointer;
+    box-shadow: 0 6px 0 var(--accent-dark); text-shadow: 0 2px 0 var(--accent-dark); line-height: 1.1;
+  }
+  .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-dark); }
+  .big-btn:disabled { opacity: .7; cursor: default; }
+  #playBtn { font-size: clamp(22px, 8vh, 36px); padding: clamp(4px, 1.4vh, 10px) clamp(30px, 6vh, 56px); animation: wob 1.4s ease-in-out infinite; }
+  #playBtn:disabled, #playBtn:active { animation: none; }
+  @keyframes wob { 50% { transform: scale(1.05); } }
+  .best-line { display: flex; align-items: center; gap: 10px; min-height: 1.2em; font-weight: 600; font-size: clamp(13px, 4vh, 18px); }
+  #resetRow { display: flex; align-items: center; gap: 6px; }
+  .small-btn {
+    font-size: clamp(11px, 3vh, 13px); background: rgba(255,255,255,.8); color: #5b5566; border: 2px solid var(--ink);
+    border-radius: 999px; padding: 1px 10px; cursor: pointer;
+  }
+  .small-btn.danger { background: var(--red); color: #fff; }
+
+  /* ---------- Game over / pause cards ---------- */
+  .card {
+    position: fixed; top: calc(var(--safe-t) + 6vh); left: 50%; z-index: 9; transform: translate(-50%, -30px) scale(.9); opacity: 0; pointer-events: none;
+    background: #fff; border: 5px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 rgba(46,42,54,.3);
+    padding: clamp(8px, 2.4vh, 18px) clamp(24px, 6vw, 48px); text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: clamp(2px, .8vh, 8px);
+    transition: opacity .25s, transform .3s cubic-bezier(.2, 1.4, .4, 1);
+  }
+  .card.show { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
+  .card h2 { margin: 0; font-size: clamp(24px, 8vh, 42px); color: var(--red); line-height: 1.05; }
+  #over { top: calc(var(--safe-t) + 34vh); }
+  #overScore { font-size: clamp(28px, 11vh, 56px); font-weight: 700; line-height: 1; }
+  .line { font-size: clamp(13px, 4vh, 20px); font-weight: 600; color: #5b5566; }
+  #overNew {
+    display: inline-block; background: #FFD34E; color: var(--ink); border: 3px solid var(--ink); border-radius: 999px;
+    padding: 0 12px; font-weight: 700; transform: rotate(-3deg); animation: wob 1s ease-in-out infinite;
+  }
+  .card .big-btn { font-size: clamp(18px, 6vh, 26px); padding: clamp(3px, 1vh, 8px) clamp(24px, 5vh, 44px); margin-top: 4px; }
+  #pause {
+    position: fixed; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center;
+    background: rgba(46,42,54,.35);
+  }
+  #pause .card { position: static; transform: none; opacity: 1; pointer-events: auto; }
+  #pause h2 { color: var(--accent-dark); }
+
+  /* ---------- Rotate notice ---------- */
+  #rotate {
+    position: fixed; inset: 0; z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+    background: var(--sky); text-align: center; padding: 24px; font-size: 26px; font-weight: 700;
+  }
+  #rotate.show { display: flex; }
+  .phone { width: 56px; height: 96px; border: 6px solid var(--ink); border-radius: 14px; background: #fff; position: relative; animation: turn 2.4s ease-in-out infinite; }
+  .phone::after { content: ''; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--accent); }
+  @keyframes turn { 0%, 15% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+</style>
+</head>
+<body data-phase="loading">
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="hud-group">
+    <div class="pill score"><div id="avatarSlot"></div><span id="score">0</span></div>
+    <div class="pill lives" id="lives" aria-label="Food left"></div>
+  </div>
+  <div class="hud-group">
+    <div class="pill level" id="level">Level 1</div>
+    <button class="round-btn" id="pauseBtn" type="button" aria-label="Pause">&#10074;&#10074;</button>
+  </div>
+</div>
+
+<div id="splash">
+  <div class="splash-inner">
+    <div id="splashOli"><div id="splashFace"></div><div id="splashHammer"></div></div>
+    <div class="splash-text">
+      <h1>Whack-a-m-<span class="oli">Oli</span></h1>
+      <ul class="how">
+        <li id="howKeys">&larr; / &rarr; move &middot; <b>Space</b> throw</li>
+        <li id="howTouch" hidden>Drag to move &middot; <b>Tap</b> to throw</li>
+        <li>Stop the moles eating your food!</li>
+      </ul>
+      <button class="big-btn" id="playBtn" type="button" disabled>Play</button>
+      <div class="best-line">
+        <span id="splashBest"></span>
+        <span id="resetRow" hidden>
+          <button class="small-btn" id="resetBtn" type="button">reset scores</button>
+          <span id="resetSure" hidden>Sure?
+            <button class="small-btn danger" id="resetYes" type="button">Yes</button>
+            <button class="small-btn" id="resetNo" type="button">No</button>
+          </span>
+        </span>
+      </div>
+    </div>
+    <div id="splashMole"><div class="peek" id="splashMolePeek"></div></div>
+  </div>
+</div>
+
+<div class="card" id="over">
+  <h2>Oh no!</h2>
+  <div id="overScore">0</div>
+  <div class="line"><span id="overBest">Best 0</span> <span id="overNew" hidden>New best!</span></div>
+  <button class="big-btn" id="againBtn" type="button">Play again</button>
+</div>
+
+<div id="pause" hidden>
+  <div class="card">
+    <h2>Paused</h2>
+    <button class="big-btn" id="resumeBtn" type="button">Resume</button>
+  </div>
+</div>
+
+<button class="round-btn" id="mute" type="button" aria-label="Sound" hidden>&#128266;</button>
+
+<div id="rotate"><div class="phone"></div><div>Turn your phone sideways to play</div></div>
+
+<script src="assets.js"></script>
+<script src="field.js"></script>
+<script src="audio.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
