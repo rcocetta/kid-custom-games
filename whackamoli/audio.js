@@ -29,6 +29,11 @@
   // Create the context on a user gesture, or resume it (iOS/Safari suspend it).
   function unlock() {
     try {
+      // Only inside a real user activation: Chrome logs "The AudioContext was not allowed to start" for a
+      // context created/resumed on events that don't count (a touch's pointerdown, Escape, modifier keys...).
+      var ua = navigator.userActivation;
+      if (ua && !ua.isActive) return;
+      if (ctx && ctx.state === 'running') return;
       if (!ctx) {
         var Ctor = window.AudioContext || window.webkitAudioContext;
         if (!Ctor) return;
@@ -167,7 +172,7 @@
   };
 
   // Unlock on the first gesture (touch, click or key). Harmless to repeat.
-  ['pointerdown', 'touchend', 'keydown'].forEach(function (type) {
+  ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach(function (type) {
     window.addEventListener(type, unlock, { capture: true, passive: true });
   });
 
