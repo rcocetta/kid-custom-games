@@ -3,8 +3,8 @@
 A kid's arcade game: Oli rides a cable-car basket across the top of the screen and throws spinning hammers
 at moles that come out of the grass to eat his food. Brief: `SPEC.md`. Decisions and phases: `PLAN.md`.
 
-**Status (2026-11-23):** art done and reviewed once; game playable (title, play, level up, pause, game over);
-sound done. Next: the user's play-test (Review 2) and the final hammer rules.
+**Status (2026-11-23):** done and play-tested by the user (desktop + phone); PR opened. The final hammer rules are still to
+come from the user (currently "arc forward" + gondola speed).
 
 ## Files
 
