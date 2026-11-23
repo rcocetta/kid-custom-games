@@ -4,7 +4,7 @@ A kid's arcade game: Oli rides a cable-car basket across the top of the screen a
 at moles that come out of the grass to eat his food. Brief: `SPEC.md`. Decisions and phases: `PLAN.md`.
 
 **Status (2026-11-23):** art done and reviewed once; game playable (title, play, level up, pause, game over);
-sound in progress. Next: the user's play-test (Review 2) and the final hammer rules.
+sound done. Next: the user's play-test (Review 2) and the final hammer rules.
 
 ## Files
 
@@ -14,7 +14,7 @@ sound in progress. Next: the user's play-test (Review 2) and the final hammer ru
 | `assets.js` | `window.WAMAssets`: Oli in the gondola (`oli(pose, facing)`, poses idle/windup/throw/cheer/sad), cable, pylon, hammer, marker, `kidFace`, `scorePopup`, `levelBanner`, Antibes background (copied from jumpnduck). API doc at the top. |
 | `field.js` | `window.WAMField`: grass tile, mole frames (emerge, walk1/2, turn, eat1/2, bonk, dive), mound, dirt puffs, dizzy stars, food (carrot, broccoli, steak), eaten food, HUD food icons. API doc at the top. |
 | `game.js` | DOM-free core `createGame()` (rules, sprite render) + browser shell. `window.WhackAMOli`. |
-| `audio.js` | WebAudio synthesised sounds + mute (in progress). |
+| `audio.js` | `window.WAMAudio`: WebAudio synthesised sounds (throw, bonk, thud, pop, munch, sparkle, level up, game over, start) + mute (M key or button, bottom right). |
 | `Assets.html` | Art review page: every sprite + an animated preview you can drive (←/→, Space, drag/tap). |
 
 ## Rules as built
