@@ -153,6 +153,16 @@
   .phone { width: 56px; height: 96px; border: 6px solid var(--ink); border-radius: 14px; background: #fff; position: relative; animation: turn 2.4s ease-in-out infinite; }
   .phone::after { content: ''; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--accent); }
   @keyframes turn { 0%, 15% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+  /* home button (splash only): back to the list of games */
+  .home-btn {
+    position: absolute; top: calc(var(--safe-t, 0px) + 8px); left: calc(var(--safe-l, 0px) + 8px); z-index: 2;
+    width: clamp(40px, 11vh, 54px); height: clamp(40px, 11vh, 54px); border-radius: 50%;
+    background: #fff; border: 3px solid #2E2A36; box-shadow: 0 4px 0 rgba(46,42,54,.3);
+    display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+  }
+  .home-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(46,42,54,.3); }
+  .home-btn:focus-visible { outline: 4px solid #2DC653; outline-offset: 2px; }
+  .home-btn svg { width: 66%; height: 66%; display: block; }
 </style>
 </head>
 <body data-phase="loading">
@@ -170,6 +180,7 @@
 </div>
 
 <div id="splash">
+  <a class="home-btn" href="../index.html" aria-label="All games"><svg viewBox="1.5 2 21 19.5" aria-hidden="true"><path d="M5.5 10.5V20h13v-9.5" fill="#FFD34E" stroke="#2E2A36" stroke-width="2" stroke-linejoin="round"/><path d="M10 20v-5.5h4V20" fill="#4A9BE8" stroke="#2E2A36" stroke-width="2" stroke-linejoin="round"/><path d="M2.5 12 12 3.5l9.5 8.5" fill="none" stroke="#FF5C5C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
   <div class="splash-inner">
     <div id="splashOli"><div id="splashFace"></div><div id="splashHammer"></div></div>
     <div class="splash-text">

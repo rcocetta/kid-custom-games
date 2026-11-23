@@ -53,8 +53,9 @@
     max-width: 97vw; max-height: 96vh; text-align: center;
   }
   h1 {
-    margin: 0; font-size: clamp(28px, 11vh, 62px); line-height: 1; font-weight: 700; color: var(--accent-dark);
-    -webkit-text-stroke: clamp(5px, 1.6vh, 9px) var(--accent); paint-order: stroke fill; text-shadow: 0 5px 0 rgba(46,42,54,.35);
+    margin: 0; font-size: clamp(28px, 11vh, 62px); line-height: 1; font-weight: 700; color: #3CC75A; letter-spacing: 1px;
+    /* bright fill + thick dark outline (drawn behind the fill), as in Whack-a-m-Oli: readable on the light card */
+    -webkit-text-stroke: clamp(6px, 2vh, 11px) var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(46,42,54,.3);
   }
   h2 { margin: 0; font-size: clamp(22px, 8vh, 40px); line-height: 1.05; color: var(--accent-dark); }
   .sub { font-size: clamp(13px, 4vh, 20px); font-weight: 600; color: #5b5566; }
@@ -204,6 +205,16 @@
   }
   .tbtn svg { width: 52%; height: 52%; }
   .tbtn.down { background: rgba(255,255,255,.9); transform: scale(.94); }
+  /* home button (splash only): back to the list of games */
+  .home-btn {
+    position: absolute; top: calc(var(--safe-t, 0px) + 8px); left: calc(var(--safe-l, 0px) + 8px); z-index: 2;
+    width: clamp(40px, 11vh, 54px); height: clamp(40px, 11vh, 54px); border-radius: 50%;
+    background: #fff; border: 3px solid #2E2A36; box-shadow: 0 4px 0 rgba(46,42,54,.3);
+    display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+  }
+  .home-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(46,42,54,.3); }
+  .home-btn:focus-visible { outline: 4px solid #2DC653; outline-offset: 2px; }
+  .home-btn svg { width: 66%; height: 66%; display: block; }
 </style>
 </head>
 <body data-screen="title">
@@ -228,6 +239,7 @@
 
 <!-- title -->
 <section class="screen" id="title">
+  <a class="home-btn" href="../index.html" aria-label="All games"><svg viewBox="1.5 2 21 19.5" aria-hidden="true"><path d="M5.5 10.5V20h13v-9.5" fill="#FFD34E" stroke="#2E2A36" stroke-width="2" stroke-linejoin="round"/><path d="M10 20v-5.5h4V20" fill="#4A9BE8" stroke="#2E2A36" stroke-width="2" stroke-linejoin="round"/><path d="M2.5 12 12 3.5l9.5 8.5" fill="none" stroke="#FF5C5C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
   <div class="card">
     <div class="face bob" id="titleOli"></div>
     <div class="col mid">
