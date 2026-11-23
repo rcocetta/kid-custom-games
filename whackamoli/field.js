@@ -257,7 +257,7 @@
     if (mouth === 'smile') s += `<path d="M${mx - 6} ${my - 3} Q${mx - 1} ${my + 3} ${mx + 5} ${my - 2}" fill="none" stroke="${O}" stroke-width="2.6" stroke-linecap="round"/>`;
     else if (mouth === 'chew1') s += `<path d="M${mx - 7} ${my - 3} Q${mx - 1} ${my + 6} ${mx + 6} ${my - 2} Q${mx - 1} ${my} ${mx - 7} ${my - 3} Z" fill="${C.mouth}" stroke="${O}" stroke-width="2.4" stroke-linejoin="round"/>`;
     else if (mouth === 'chew2') s += `<path d="M${mx - 6} ${my - 2} Q${mx} ${my + 1} ${mx + 5} ${my - 2}" fill="none" stroke="${O}" stroke-width="2.8" stroke-linecap="round"/>`;
-    else s += `<ellipse cx="${mx}" cy="${my - 1}" rx="3.2" ry="3.8" fill="${C.mouth}" stroke="${O}" stroke-width="2.4"/>`;
+    else s += `<path d="M${mx - 7} ${my - 3} L${mx + 6} ${my - 3} Q${mx - 0.5} ${my + 8} ${mx - 7} ${my - 3} Z" fill="${C.mouth}" stroke="${O}" stroke-width="2.4" stroke-linejoin="round"/>`; // open grin (wide D, reads as a mouth, not an eye)
     s += `</g>`;
     return s;
   }
@@ -302,23 +302,29 @@
   }
 
   function moleEmerge() {
-    // head + paws poking out of a mound: the body is hidden behind the pile
-    let s = head(2, -36, { mouth: 'smile', cheek: 1.1 });
-    s += `<g transform="translate(0 4) scale(1.3 1.15)">${moundShapes()}</g>`;
-    s += paw(-34, -32, -100, { s: 1.05 }) + paw(36, -30, -80, { s: 1.05 });
-    s += clod(-50, -44, 5, 10) + clod(54, -50, 4.5, 30) + clod(-40, -60, 3.5, 0) + clod(44, -66, 3.2, 0);
+    // head + two paws peeking over a clean dirt mound (body hidden behind it)
+    let s = head(2, -38, { mouth: 'smile', cheek: 1.1 });
+    s += `<g transform="translate(0 4) scale(1.3 1.1)">` +
+      `<path d="M-40 0 C-38 -12 -24 -24 -8 -26 C8 -28 26 -18 40 0 Z" fill="${C.soil}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="M-28 -6 C-24 -13 -18 -18 -11 -20" fill="none" stroke="${C.soilLight}" stroke-width="3.5" stroke-linecap="round"/></g>`;
+    s += paw(-30, -30, -105, { s: 1 }) + paw(34, -28, -75, { s: 1 });
+    s += clod(-56, -26, 4.5, 10) + clod(60, -30, 4, 30);
     return s;
   }
 
   function moleDive() {
-    // head-first into the ground: whole mole rotated nose-down, clipped at the grass line
-    let s = `<defs><clipPath id="diveclip"><rect x="-90" y="-120" width="180" height="120"/></clipPath></defs>`;
-    s += `<g clip-path="url(#diveclip)"><g transform="translate(-16 26) rotate(52 22 -42)">`;
-    s += foot(-30, -6) + body(-8, -32) + foot(-26, -6) + head(22, -42, { mouth: 'o' });
-    s += limb([[16, -24], [30, -10]], C.fur, 11) + paw(34, -8, 40);
-    s += `</g></g>`;
-    s += `<ellipse cx="22" cy="-1" rx="22" ry="7" fill="${C.soilDark}" stroke="${O}" stroke-width="3"/>`;
-    s += clod(0, -7, 6, 0) + clod(44, -8, 5.5, 20) + clod(52, -24, 4, 0) + clod(-6, -22, 3.5, 30);
+    // head-first dive: only the bum, tail and kicking back feet stick up out of a dirt hole
+    let s = `<ellipse cx="0" cy="-3" rx="46" ry="10" fill="${C.soilDark}" stroke="${O}" stroke-width="${SW}"/>`;
+    // body: round bum up, front end down in the hole
+    s += `<g transform="rotate(-8 0 -26)">` + blob(`<ellipse cx="0" cy="-26" rx="27" ry="30"/>`, C.fur) +
+      `<path d="M-16 -46 Q-8 -54 4 -52" fill="none" stroke="${C.furLight}" stroke-width="4" stroke-linecap="round"/></g>`;
+    // little tail on the bum, back feet kicking up (soles up, toes pointing to the sky)
+    s += limb([[-26, -34], [-36, -40]], C.pink, 5);
+    s += foot(-18, -62, -105) + foot(20, -58, -75);
+    // front lip of the hole hides where the mole goes in
+    s += `<path d="M-48 -3 C-40 12 40 12 48 -3 C42 -16 28 -20 0 -20 C-28 -20 -42 -16 -48 -3 Z" fill="${C.soil}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>`;
+    s += `<path d="M-34 -8 Q-24 -14 -10 -14" fill="none" stroke="${C.soilLight}" stroke-width="3.5" stroke-linecap="round"/>`;
+    s += clod(-50, -34, 6, 10) + clod(52, -40, 6.5, 30) + clod(44, -62, 4.5, 0) + clod(-44, -56, 4, 0);
     return s;
   }
 
