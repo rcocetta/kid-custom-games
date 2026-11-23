@@ -61,6 +61,16 @@
 
     let state, score, level, foodLeft, gx, gvx, facing, cooldown, spawnT, foodTimers, overT, playT;
     let hammers, moles, foods, events = [];
+    // visual-only state (animation timers, effects); never read by the rules
+    let animT = 0, poseClock = 99, cheerT = 0, lostT = 0, banner = null, puffs = [], popups = [];
+    function emit(e) {
+      events.push(e);
+      if (e.type === 'throw') poseClock = 0;
+      else if (e.type === 'hit') popups.push({ x: e.x, t: 0 });
+      else if (e.type === 'ground' || e.type === 'emerge') puffs.push({ x: e.x, t: 0 });
+      else if (e.type === 'eat') { puffs.push({ x: e.x, t: 0 }); lostT = 0.8; }
+      else if (e.type === 'levelUp') { banner = { t: 0, level: e.level }; cheerT = 1.8; }
+    }
     const markerOf = () => {
       const dir = facing === 'left' ? -1 : 1;
       return gx + dir * HAND_DX + (dir * HAMMER_VX + gvx) * flightTime();
@@ -72,6 +82,7 @@
       spawnT = FIRST_SPAWN; foodTimers = [];
       hammers = []; moles = []; foods = []; events = [];
       g.newBest = false;
+      poseClock = 99; cheerT = 0; lostT = 0; banner = null; puffs = []; popups = [];
     }
 
     function resize(aspect) {
@@ -101,7 +112,7 @@
       const kind = FOOD_KINDS[Math.floor(rand() * FOOD_KINDS.length) % FOOD_KINDS.length];
       const f = { x, y: GRASS_Y, kind, age: 0 };
       foods.push(f);
-      events.push({ type: 'foodSpawn', x, kind });
+      emit({ type: 'foodSpawn', x, kind });
     }
     function updateFoods(dt) {
       for (const f of foods) f.age += dt;
@@ -138,7 +149,7 @@
         speed: moleSpeed() * rr(0.92, 1.08), depth: 0, id: ++moleId,
       };
       moles.push(m);
-      events.push({ type: 'emerge', x });
+      emit({ type: 'emerge', x });
       return true;
     }
     let moleId = 0;
@@ -191,7 +202,7 @@
           const f = m.food;
           foods.splice(foods.indexOf(f), 1);
           foodLeft--;
-          events.push({ type: 'eat', x: f.x, kind: f.kind });
+          emit({ type: 'eat', x: f.x, kind: f.kind });
           dive(m);
           if (foodLeft <= 0) gameOver();
         }
@@ -206,7 +217,7 @@
         vx: dir * HAMMER_VX + gvx, vy: HAMMER_VY, angle: 0, dir,
       });
       cooldown = THROW_COOLDOWN;
-      events.push({ type: 'throw', x: gx, dir });
+      emit({ type: 'throw', x: gx, dir });
     }
 
     function stepHammers(dt) {
@@ -223,13 +234,13 @@
             h.done = true;
             m.state = 'bonk'; m.t = 0;
             score += MOLE_POINTS;
-            events.push({ type: 'hit', x: m.x, y: GRASS_Y - MOLE_H, points: MOLE_POINTS });
+            emit({ type: 'hit', x: m.x, y: GRASS_Y - MOLE_H, points: MOLE_POINTS });
             checkLevel();
             break;
           }
         }
         if (h.done) continue;
-        if (h.y >= GRASS_Y) { h.done = true; events.push({ type: 'ground', x: h.x, y: GRASS_Y }); }
+        if (h.y >= GRASS_Y) { h.done = true; emit({ type: 'ground', x: h.x, y: GRASS_Y }); }
         else if (h.x < -30 || h.x > world.W + 30) h.done = true;
       }
       hammers = hammers.filter((h) => !h.done);
@@ -237,20 +248,26 @@
 
     function checkLevel() {
       const lv = 1 + Math.floor(score / LEVEL_POINTS);
-      while (level < lv) { level++; events.push({ type: 'levelUp', level }); }
+      while (level < lv) { level++; emit({ type: 'levelUp', level }); }
     }
 
     function gameOver() {
       if (state === 'gameover') return;
       state = 'gameover'; overT = 0;
       if (score > g.best) { g.best = score; g.newBest = true; }
-      events.push({ type: 'gameover', score });
+      emit({ type: 'gameover', score });
     }
 
     // ----- update -----
     function update(dt, input) {
       dt = Math.min(dt, 0.1);
       input = input || {};
+      animT += dt; poseClock += dt; cheerT -= dt; lostT -= dt;
+      if (banner && (banner.t += dt) > 2) banner = null;
+      for (const p of puffs) p.t += dt;
+      for (const p of popups) p.t += dt;
+      puffs = puffs.filter((p) => p.t < 0.4);
+      popups = popups.filter((p) => p.t < 1.2);
       if (state === 'gameover') {
         overT += dt;
         for (const m of moles) updateMole(m, dt);   // moles finish their animation (food gone, they dive)
@@ -290,77 +307,100 @@
       if (state === 'playing') updateFoods(dt);
     }
 
-    // ---------- Render (placeholder shapes; C2 swaps in sprites) ----------
-    function drawSky(ctx) {
-      ctx.fillStyle = '#9ad7ff'; ctx.fillRect(0, 0, world.W, GRASS_Y);
-    }
-    function drawGrass(ctx) {
-      ctx.fillStyle = '#5cb85c'; ctx.fillRect(0, GRASS_Y, world.W, H - GRASS_Y);
-      ctx.fillStyle = '#3f9a3f'; ctx.fillRect(0, GRASS_Y, world.W, 5);
-    }
-    function drawCable(ctx) {
-      ctx.strokeStyle = '#2E2A36'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(0, CABLE_Y); ctx.lineTo(world.W, CABLE_Y); ctx.stroke();
-    }
-    function drawGondola(ctx) {
-      ctx.strokeStyle = '#2E2A36'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(gx, CABLE_Y); ctx.lineTo(gx, CABLE_Y + 20); ctx.stroke();
-      ctx.fillStyle = '#c0392b'; ctx.fillRect(gx - GONDOLA_W / 2, CABLE_Y + 50, GONDOLA_W, 40);
-      ctx.fillStyle = '#f2c9a0'; ctx.beginPath(); ctx.arc(gx, CABLE_Y + 38, 16, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#2E2A36'; // facing marker
-      const d = facing === 'left' ? -1 : 1;
-      ctx.fillRect(gx + d * 20 - 3, CABLE_Y + 66, 6, 6);
-    }
-    function drawMarker(ctx) {
-      if (state !== 'playing') return;
-      const mx = markerOf();
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.arc(mx + i * 9, GRASS_Y + 8, 2.5, 0, Math.PI * 2); ctx.fill(); }
-    }
-    function drawHammer(ctx, h) {
-      ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.angle);
-      ctx.fillStyle = '#8b5a2b'; ctx.fillRect(-3, -14, 6, 28);
-      ctx.fillStyle = '#7f8c8d'; ctx.fillRect(-12, -16, 24, 10);
-      ctx.restore();
-    }
-    const MOLE_COLOR = {
-      emerge: '#a0724a', away: '#8b5e3c', turn: '#d9a066', toFood: '#8b5e3c', eat: '#e67e22', bonk: '#f1c40f', dive: '#6e4a2e',
-    };
-    function drawMole(ctx, m) {
-      const cy = GRASS_Y - (MOLE_H / 2) * m.depth + 2;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(0, 0, world.W, GRASS_Y + 4); ctx.clip(); // hide the part still underground
-      ctx.fillStyle = MOLE_COLOR[m.state] || '#8b5e3c';
-      ctx.beginPath(); ctx.ellipse(m.x, cy + (MOLE_H / 2) * (1 - m.depth) + 0, MOLE_W / 2, MOLE_H / 2, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-      ctx.fillStyle = '#2E2A36';
-      ctx.fillRect(m.x + m.dir * 10 - 2, cy - 8, 4, 4);
-      if (m.state === 'bonk') {
-        ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('* * *', m.x, GRASS_Y - MOLE_H - 6);
+    // ---------- Render (sprites) ----------
+    // images: map of loaded <img>/canvas by key (built by the shell, see index.html); scale = canvas px per world unit.
+    // Keys: oli-<pose><facing>, hammer, trail, marker, cable, pylon, popup, banner<n>, mountains, sea, town, sun, boat,
+    // grass, mole-<frame>, puff0-2, stars0-5, food-<kind>, eaten-<kind>.
+    const S = 0.46, MS = 0.5, FS = 0.45, HS = 0.44;
+    const MOLE_VB = { x: -60, y: -80, w: 120, h: 80 };
+    const OLI_VB = { x: -24, y: -72, w: 248, h: 288 }, OLI_ANCHOR = { x: 100, y: -40 };
+    const PYLON_UNITS = Math.round((GRASS_Y - CABLE_Y) / S);
+    const FOOD_DEF = { w: 60, h: 80 };
+    function render(ctx, images, scale) {
+      const W = world.W;
+      const im = (k, x, y, w, h) => { const i = images[k]; if (i) ctx.drawImage(i, x, y, w, h); };
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      const sky = (images.sky || { top: '#8fd3ff', bottom: '#d9f3ff' });
+      const gr = ctx.createLinearGradient(0, 0, 0, GRASS_Y);
+      gr.addColorStop(0, sky.top); gr.addColorStop(1, sky.bottom);
+      ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+      im('sun', W * 0.8 - 45, 70, 90, 90);
+      const tileH = (k, y, tw, th, off) => {
+        if (!images[k]) return;
+        for (let x = -(((off % tw) + tw) % tw); x < W; x += tw) ctx.drawImage(images[k], x, y, tw + 0.6, th);
+      };
+      tileH('mountains', 168, 480, 112, animT * 2);
+      ctx.fillStyle = '#6FC1E8'; ctx.fillRect(0, 282, W, 80);
+      im('town', 14, 206, 212, 80);
+      tileH('sea', 276, 400, 48, animT * 14);
+      const bx = ((animT * 12) % (W + 120)) - 60; im('boat', W - bx - 20, 284, 34, 28);
+      // pylons + cable
+      for (const px of [30, W - 30]) im('pylon', px - 60 * S, CABLE_Y - 30 * S, 120 * S, (PYLON_UNITS + 30) * S);
+      const cw = 120 * S, ch = 16 * S;
+      for (let x = 30; x < W - 30; x += cw) im('cable', x, CABLE_Y - 8 * S, Math.min(cw, W - 30 - x) + 0.6, ch);
+      // grass (the tile ends a few units above the bottom edge; fill the rest with soil)
+      ctx.fillStyle = '#8A5E3A'; ctx.fillRect(0, GRASS_Y + 40, W, H - GRASS_Y - 40);
+      for (let x = 0; x < W; x += 400) im('grass', x, GRASS_Y - 16, 400.6, 60);
+      // food
+      for (const f of foods) {
+        const vb = (images.foodVB && images.foodVB[f.kind]) || FOOD_DEF;
+        const eating = moles.some((m) => m.food === f && m.state === 'eat');
+        const u = Math.min(1, f.age / 0.25), pop = u < 1 ? 1 + 0.25 * Math.sin(u * Math.PI) : 1;
+        const w = vb.w * FS * u * pop, h = vb.h * FS * u * pop;
+        im((eating ? 'eaten-' : 'food-') + f.kind, f.x - w / 2, GRASS_Y - h, w, h);
+      }
+      // landing marker
+      if (state === 'playing') { const mx = markerOf(); if (mx > 10 && mx < W - 10) im('marker', mx - 20, GRASS_Y - 7, 40, 14); }
+      // moles
+      for (const m of moles) {
+        let frame = 'walk1';
+        const a = Math.floor((animT + m.id * 0.07) / 0.16) % 2;
+        if (m.state === 'emerge') frame = 'emerge';
+        else if (m.state === 'away' || m.state === 'toFood') frame = a ? 'walk2' : 'walk1';
+        else if (m.state === 'turn') frame = 'turn';
+        else if (m.state === 'eat') frame = Math.floor((animT + m.id * 0.07) / 0.25) % 2 ? 'eat2' : 'eat1';
+        else if (m.state === 'bonk') frame = 'bonk';
+        else if (m.state === 'dive') frame = 'dive';
+        const i = images['mole-' + frame];
+        if (i) {
+          ctx.save(); ctx.translate(m.x, GRASS_Y); if (m.dir < 0) ctx.scale(-1, 1);
+          ctx.drawImage(i, MOLE_VB.x * MS, MOLE_VB.y * MS, MOLE_VB.w * MS, MOLE_VB.h * MS); ctx.restore();
+        }
+        if (m.state === 'bonk') im('stars' + (Math.floor(m.t * 8) % 6), m.x - 17 + m.dir * 6, GRASS_Y - 44, 34, 14);
+        if (m.state === 'dive' && m.t < 0.36) im('puff' + Math.min(2, Math.floor(m.t / 0.12)), m.x - 25, GRASS_Y - 32, 50, 32);
+      }
+      for (const p of puffs) im('puff' + Math.min(2, Math.floor(p.t / 0.12)), p.x - 25, GRASS_Y - 32, 50, 32);
+      // hammers
+      const hs = 112 * HS;
+      for (const h of hammers) {
+        ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.angle);
+        if (h.dir < 0) ctx.scale(-1, 1);
+        im('trail', -hs / 2, -hs / 2, hs, hs); ctx.restore();
+        ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.angle);
+        im('hammer', -hs / 2, -hs / 2, hs, hs); ctx.restore();
+      }
+      // Oli in the gondola (on the title screen he drifts along the cable)
+      let ox = gx, face = facing, pose = 'idle';
+      if (state === 'ready') { ox = W / 2 + Math.sin(animT * 0.6) * W * 0.28; face = Math.cos(animT * 0.6) >= 0 ? 'right' : 'left'; }
+      else if (state === 'gameover') pose = 'sad';
+      else if (cheerT > 0) pose = 'cheer';
+      else if (poseClock < 0.25) pose = 'throw';
+      else if (poseClock < 0.35) pose = 'windup';
+      const bob = state === 'ready' ? Math.sin(animT * 2.4) * 2 : 0;
+      im('oli-' + pose + face, ox - (OLI_ANCHOR.x - OLI_VB.x) * S, CABLE_Y - (OLI_ANCHOR.y - OLI_VB.y) * S + bob, OLI_VB.w * S, OLI_VB.h * S);
+      // "+100" popups and the level banner
+      for (const p of popups) {
+        const u = p.t / 1.2, s = u < 0.2 ? 0.3 + u / 0.2 * 0.7 : 1, w = 110 * s, h = 65 * s;
+        ctx.globalAlpha = u > 0.7 ? 1 - (u - 0.7) / 0.3 : 1;
+        im('popup', p.x - w / 2, GRASS_Y - 36 - u * 44 - h - 6, w, h); ctx.globalAlpha = 1;
+      }
+      if (banner) {
+        const u = banner.t, s = u < 0.3 ? u / 0.3 : 1, w = 220 * s, h = w * 130 / 300;
+        ctx.globalAlpha = u > 1.6 ? Math.max(0, 1 - (u - 1.6) / 0.4) : 1;
+        im('banner' + banner.level, W / 2 - w / 2, 140 - h / 2, w, h); ctx.globalAlpha = 1;
       }
     }
-    const FOOD_COLOR = { carrot: '#f39c12', broccoli: '#27ae60', steak: '#c0392b' };
-    function drawFood(ctx, f) {
-      ctx.fillStyle = FOOD_COLOR[f.kind] || '#fff';
-      ctx.beginPath(); ctx.arc(f.x, GRASS_Y - 12, 12, 0, Math.PI * 2); ctx.fill();
-    }
-    function drawHud(ctx) {
-      ctx.fillStyle = '#2E2A36'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText('Score ' + score + '   Level ' + level + '   Food ' + foodLeft + '   Best ' + g.best, 10, H - 12);
-    }
-
-    function render(ctx, images, scale) {
-      void images; void scale;
-      drawSky(ctx); drawCable(ctx); drawGrass(ctx);
-      for (const f of foods) drawFood(ctx, f);
-      drawMarker(ctx);
-      for (const m of moles) drawMole(ctx, m);
-      drawGondola(ctx);
-      for (const h of hammers) drawHammer(ctx, h);
-      drawHud(ctx);
-    }
-
     const g = {
       world, resize, start, reset, update, render,
       best: opts.best || 0, newBest: false,
@@ -369,6 +409,7 @@
       get level() { return level; },
       get foodLeft() { return foodLeft; },
       get facing() { return facing; },
+      get lostT() { return lostT; },
       get events() { const e = events; events = []; return e; },
       // test/debug access
       get gondola() { return { x: gx, vx: gvx, facing, cooldown, w: GONDOLA_W, handY: HAND_Y }; },
@@ -390,7 +431,273 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 
   // ---------- Browser shell ----------
-  // TODO (phase C2): input (keyboard + touch), canvas sizing, sprites via assets.js/field.js,
-  // screens (title, HUD, pause, game over, rotate notice), localStorage (whackamoli:best / :mute), game loop.
-  // Must only start when `typeof document !== 'undefined'`.
+  if (typeof document === 'undefined') return;
+  const A = window.WAMAssets, F = window.WAMField;
+  if (!A || !F) return;
+
+  const BEST_KEY = 'whackamoli:best', MUTE_KEY = 'whackamoli:mute';
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
+  };
+  const readBest = () => Math.max(0, parseInt(store.get(BEST_KEY), 10) || 0);
+  const $ = (id) => document.getElementById(id);
+  const MAX_ASPECT = 2.1;          // world width is capped at ~840 units (letterbox beyond that)
+  const OVER_DELAY = 0.5, OVER_LOCK = 700;
+
+  const canvas = $('game'), ctx = canvas.getContext('2d');
+  const game = createGame({ best: readBest() });
+  const images = { sky: A.background.sky };
+  let phase = 'loading';           // loading | title | playing | paused | over
+  let scale = 1, aspectUsed = 0;
+  let overT = 0, overShownAt = 0;
+  const keys = { left: false, right: false, space: false };
+  let tapBuf = 0, targetX;
+  let pausedBy = '';
+
+  // ----- images -----
+  function load(key, svg, lib) {
+    return new Promise((res) => {
+      const i = new Image();
+      i.onload = () => { images[key] = i; res(); };
+      i.onerror = () => res();
+      i.src = lib.toDataUrl(svg);
+    });
+  }
+  function ensureBanner(n) { if (!images['banner' + n]) load('banner' + n, A.levelBanner(n), A); }
+  function loadAll() {
+    const jobs = [];
+    for (const p of A.oliPoses) for (const f of ['left', 'right']) jobs.push(load('oli-' + p + f, A.oli(p, f), A));
+    jobs.push(load('hammer', A.hammer(), A), load('trail', A.hammerTrail(), A), load('marker', A.marker(), A));
+    jobs.push(load('cable', A.cable(), A), load('pylon', A.pylon(Math.round((game.CONST.GRASS_Y - game.CONST.CABLE_Y) / A.oliScale)), A));
+    jobs.push(load('popup', A.scorePopup(), A));
+    for (let n = 2; n <= 12; n++) jobs.push(load('banner' + n, A.levelBanner(n), A));
+    const bg = A.background;
+    jobs.push(load('mountains', bg.mountains(), A), load('sea', bg.sea(), A), load('town', bg.oldTown(), A),
+      load('sun', bg.sun(), A), load('boat', bg.boat(), A));
+    jobs.push(load('grass', F.grass(), F));
+    for (const f of F.moleFrames) jobs.push(load('mole-' + f, F.mole(f), F));
+    for (let i = 0; i < 3; i++) jobs.push(load('puff' + i, F.dirtPuff(i), F));
+    for (let i = 0; i < 6; i++) jobs.push(load('stars' + i, F.dizzyStars(i * Math.PI / 3), F));
+    images.foodVB = {};
+    for (const k of F.foodKinds) {
+      images.foodVB[k] = F.foodViewBox(k);
+      jobs.push(load('food-' + k, F.food(k), F), load('eaten-' + k, F.foodEaten(k), F));
+    }
+    return Promise.all(jobs);
+  }
+
+  // ----- sizing -----
+  function resize() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const aspect = Math.max(1.3, Math.min(MAX_ASPECT, vw / vh));
+    if (aspect !== aspectUsed) { aspectUsed = aspect; game.resize(aspect); }
+    const W = game.world.W, H = game.world.H;
+    const cssW = Math.min(vw, vh * W / H), cssH = cssW * H / W;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+    canvas.style.left = (vw - cssW) / 2 + 'px'; canvas.style.top = (vh - cssH) / 2 + 'px';
+    canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr);
+    scale = cssH / H;
+    const portrait = vh > vw;
+    $('rotate').classList.toggle('show', portrait);
+    if (portrait && phase === 'playing') pause('rotate');
+  }
+
+  // ----- screens -----
+  function setPhase(p) {
+    phase = p;
+    document.body.dataset.phase = p;
+    $('splash').hidden = p !== 'title' && p !== 'loading';
+    $('hud').classList.toggle('show', p === 'playing' || p === 'paused');
+    $('pause').hidden = p !== 'paused';
+    $('over').classList.toggle('show', false);
+  }
+  function showTitle() {
+    setPhase('title');
+    const b = game.best;
+    $('splashBest').textContent = b > 0 ? 'Best: ' + b : '';
+    $('resetRow').hidden = b <= 0;
+    resetAsk(false);
+  }
+  function play() {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    keys.left = keys.right = keys.space = false; tapBuf = 0; targetX = undefined;
+    game.start();
+    syncHud(true);
+    setPhase('playing');
+    if (window.WAMAudio && WAMAudio.play) WAMAudio.play('start');
+  }
+  function pause(why) {
+    if (phase !== 'playing') return;
+    pausedBy = why || '';
+    keys.left = keys.right = keys.space = false;
+    setPhase('paused');
+  }
+  function resume() {
+    if (phase !== 'paused' || $('rotate').classList.contains('show')) return;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    setPhase('playing');
+  }
+  function showOver() {
+    $('overScore').textContent = game.score;
+    $('overBest').textContent = 'Best ' + game.best;
+    $('overNew').hidden = !game.newBest;
+    $('over').classList.add('show');
+    overShownAt = performance.now();
+  }
+  function againOk() { return phase === 'over' && $('over').classList.contains('show') && performance.now() - overShownAt > OVER_LOCK; }
+
+  function resetAsk(on) { $('resetBtn').hidden = on; $('resetSure').hidden = !on; }
+
+  // ----- HUD -----
+  const lifeImgs = [];
+  let lastLeft = -1, lastScore = -1, lastLevel = -1;
+  function buildHud() {
+    const url = (eaten) => F.toDataUrl(F.foodIcon('carrot', eaten));
+    const row = $('lives');
+    window.__lifeUrl = [url(false), url(true)];
+    for (let i = 0; i < 5; i++) { const im = new Image(); im.alt = ''; im.src = window.__lifeUrl[0]; row.appendChild(im); lifeImgs.push(im); }
+    $('avatarSlot').innerHTML = A.kidFace();
+    $('avatarSlot').classList.add('filled');
+    $('splashFace').innerHTML = A.kidFace();
+  }
+  function syncHud(force) {
+    if (force || game.score !== lastScore) {
+      $('score').textContent = game.score;
+      if (!force) { const el = $('score'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+      lastScore = game.score;
+    }
+    if (force || game.level !== lastLevel) { $('level').textContent = 'Level ' + game.level; lastLevel = game.level; }
+    const left = game.foodLeft;
+    if (force || left !== lastLeft) {
+      for (let i = 0; i < lifeImgs.length; i++) {
+        const lost = i >= left;
+        lifeImgs[i].src = window.__lifeUrl[lost ? 1 : 0];
+        lifeImgs[i].classList.remove('pop');
+        if (!force && lost && i === left) { void lifeImgs[i].offsetWidth; lifeImgs[i].classList.add('pop'); }
+      }
+      lastLeft = left;
+    }
+  }
+
+  // ----- sound hook (audio.js is optional) -----
+  const hasAudio = () => !!(window.WAMAudio && typeof WAMAudio.play === 'function');
+  let muted = store.get(MUTE_KEY) === '1';
+  function applyMute() {
+    if (window.WAMAudio) { try { if (WAMAudio.setMuted) WAMAudio.setMuted(muted); else WAMAudio.muted = muted; } catch (e) { /* ignore */ } }
+    $('mute').textContent = muted ? '🔇' : '🔊';
+    $('mute').setAttribute('aria-label', muted ? 'Sound off' : 'Sound on');
+  }
+
+  function handleEvents() {
+    for (const e of game.events) {
+      if (hasAudio() && !muted) { try { WAMAudio.play(e.type, e); } catch (err) { /* ignore */ } }
+      if (e.type === 'levelUp') ensureBanner(e.level + 1);
+      if (e.type === 'gameover') {
+        if (game.newBest) store.set(BEST_KEY, String(game.best));
+        phase = 'over'; document.body.dataset.phase = 'over'; overT = 0;
+        keys.left = keys.right = keys.space = false;
+      }
+    }
+  }
+
+  // ----- input -----
+  function onKeyDown(e) {
+    const k = e.key;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (k === ' ' || k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown') e.preventDefault();
+    if (phase === 'title') { if ((k === 'Enter' || k === ' ') && !e.repeat) play(); return; }
+    if (phase === 'over') { if ((k === 'Enter' || k === ' ') && !e.repeat && againOk()) play(); return; }
+    if (phase === 'paused') { if ((k === 'p' || k === 'P' || k === 'Escape' || k === 'Enter' || k === ' ') && !e.repeat) resume(); return; }
+    if (phase !== 'playing') return;
+    if (k === 'p' || k === 'P' || k === 'Escape') { if (!e.repeat) pause('key'); return; }
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') { keys.left = true; targetX = undefined; }
+    else if (k === 'ArrowRight' || k === 'd' || k === 'D') { keys.right = true; targetX = undefined; }
+    else if (k === ' ') keys.space = true;
+  }
+  function onKeyUp(e) {
+    const k = e.key;
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = false;
+    else if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = false;
+    else if (k === ' ') keys.space = false;
+  }
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (phase !== 'playing' || drag) return;
+    e.preventDefault();
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    drag = { id: e.pointerId, x0: e.clientX, gx0: game.gondola.x, moved: 0, t0: performance.now() };
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id || phase !== 'playing') return;
+    const dx = e.clientX - drag.x0;
+    drag.moved = Math.max(drag.moved, Math.abs(dx));
+    if (drag.moved >= 10) targetX = drag.gx0 + dx / scale;
+  });
+  const endDrag = (e, cancel) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!cancel && phase === 'playing' && drag.moved < 10 && performance.now() - drag.t0 < 400) tapBuf = 0.15;
+    drag = null;
+  };
+  canvas.addEventListener('pointerup', (e) => endDrag(e, false));
+  canvas.addEventListener('pointercancel', (e) => endDrag(e, true));
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  // ----- loop -----
+  let last = 0;
+  function frame(ts) {
+    const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
+    if (phase === 'playing') {
+      tapBuf = Math.max(0, tapBuf - dt);
+      const input = { left: keys.left, right: keys.right, throw: keys.space || tapBuf > 0 };
+      if (typeof targetX === 'number') input.targetX = targetX;
+      game.update(dt, input);
+      if (input.throw && game.gondola.cooldown > 0) tapBuf = 0;
+      handleEvents();
+      if (phase === 'playing') syncHud(false);
+    } else if (phase === 'over') {
+      game.update(dt, {}); handleEvents(); syncHud(false);
+      overT += dt;
+      if (overT >= OVER_DELAY && !$('over').classList.contains('show')) showOver();
+    } else if (phase === 'title' || phase === 'loading') {
+      game.update(dt, {});
+    }
+    if (phase !== 'loading') game.render(ctx, images, canvas.width / game.world.W);
+    requestAnimationFrame(frame);
+  }
+
+  function checkPause() { if (document.hidden) pause('hidden'); }
+
+  // ----- boot -----
+  $('playBtn').addEventListener('click', play);
+  $('againBtn').addEventListener('click', () => { if (againOk()) play(); });
+  $('resumeBtn').addEventListener('click', resume);
+  $('pauseBtn').addEventListener('click', () => pause('button'));
+  $('resetBtn').addEventListener('click', () => resetAsk(true));
+  $('resetNo').addEventListener('click', () => resetAsk(false));
+  $('resetYes').addEventListener('click', () => { store.del(BEST_KEY); game.best = 0; showTitle(); });
+  $('mute').addEventListener('click', () => { muted = !muted; store.set(MUTE_KEY, muted ? '1' : '0'); applyMute(); });
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+  window.addEventListener('blur', () => { keys.left = keys.right = keys.space = false; });
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 150));
+  document.addEventListener('visibilitychange', checkPause);
+
+  const coarse = !!(window.matchMedia && matchMedia('(any-pointer: coarse)').matches);
+  $('howKeys').hidden = coarse; $('howTouch').hidden = !coarse;
+  $('mute').hidden = !hasAudio();
+  applyMute();
+  buildHud();
+  setPhase('loading');
+  resize();
+  requestAnimationFrame(frame);
+  loadAll().then(() => {
+    $('playBtn').disabled = false;
+    showTitle();
+    resize();
+  });
+  window.__wam = { game, images, get phase() { return phase; } };
 })();
