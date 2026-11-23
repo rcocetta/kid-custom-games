@@ -612,6 +612,8 @@
     $('avatarSlot').innerHTML = A.kidFace();
     $('avatarSlot').classList.add('filled');
     $('splashFace').innerHTML = A.kidFace();
+    $('splashHammer').innerHTML = A.hammer();
+    $('splashMolePeek').innerHTML = F.mole('emerge');
   }
   function syncHud(force) {
     if (force || game.score !== lastScore) {
