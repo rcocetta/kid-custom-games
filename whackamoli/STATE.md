@@ -22,7 +22,9 @@ sound done. Next: the user's play-test (Review 2) and the final hammer rules.
 - Mole hit = 100 points. Lives = 5 carrots (HUD, top left); each food a mole eats costs one; 0 = game over.
 - Moles come out of a mound, walk away from the food (blind), turn at the screen edge, walk back and eat (~1 s, still hittable).
 - Level = 1 + score / 1000. Per level: spawn interval ×0.85 (from 3 s, min 0.9 s), mole speed ×1.12 (from 55, cap 150). 2 foods from level 3.
-- Hammer (user: short, soft throw that drops fast): thrown forward in the facing direction (last move direction) plus the gondola's speed;
+- Hammer (user: short, soft throw that drops fast): thrown forward in the facing direction (last move direction). The gondola's
+  speed is NOT added (user: the target must match the throw), so the marker is always the same distance in front of Oli;
+  slow moves (< 25 u/s, touch jitter) don't flip the facing;
   gravity 1600, throw 135 forward / 240 up → a still throw lands ~117 units ahead in ~0.7 s. Cooldown 0.35 s, max 3 in the air.
   A dotted marker shows where it will land.
 - Tuning constants are at the top of `game.js`.
@@ -43,6 +45,8 @@ Touch/mouse: drag moves the gondola (and sets facing), a short tap throws. Lands
   stolen → retarget/dive, game over + best, levels + 2 foods, determinism, a bot outlives a no-op player.
 - Visual checks: `./build.sh`, serve `docs/`, Playwright screenshots at 1280×800, 844×390, 667×320 and portrait.
 - World: H = 400, W from the aspect, capped at 2.1:1 (letterboxed) so the moles stay big on wide screens.
+- Critter scale (user: moles/food too small on phones): `game.setCritterScale(k)` grows moles, food, mounds, puffs, stars,
+  marker and the mole hit box. The shell sets k from the screen height: 800 px → 1, 390 px → 1.5, ≤ 320 px → 1.7.
 
 ## Open / to review
 

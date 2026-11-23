@@ -15,16 +15,18 @@
   const GONDOLA_SPEED = 230;   // u/s when left/right is held
   const GONDOLA_TOUCH_MAX = 420; // u/s cap while easing toward a touch targetX
   const GONDOLA_EASE = 12;     // 1/s: how hard the gondola chases targetX
-  const HAND_DX = 20;          // hammer starts this far in front of the gondola centre...
-  const HAND_Y = CABLE_Y + 70; // ...at this height (Oli's hand)
-  const HAMMER_VX = 135;       // throw speed along the facing direction (u/s), added to gondola velocity
+  const HAND_DX = 30;          // hammer starts this far in front of the gondola centre...
+  const HAND_Y = CABLE_Y + 78; // ...at this height (Oli's hand in the sprite: WAMAssets.oliHand)
+  const HAMMER_VX = 135;       // throw speed along the facing direction (u/s). The gondola's own speed is NOT added,
+                               // so the landing marker always sits the same distance in front of Oli (user: aim must match).
+  const FACING_DEADZONE = 25;  // u/s: slower moves (touch jitter) don't flip the facing
   const HAMMER_VY = -240;      // initial vertical speed (negative = up): small lob, then a fast drop
   const GRAVITY = 1600;        // u/s^2 (strong: the hammer accelerates down hard) -> still throw lands ~117 units ahead (see launchRange)
   const HAMMER_SPIN = 14;      // rad/s
   const HAMMER_R = 13;         // hammer hit radius
   const THROW_COOLDOWN = 0.35; // s between throws
   const MAX_HAMMERS = 3;       // hammers in the air at once
-  const MOLE_W = 50, MOLE_H = 40; // mole hit box size
+  const MOLE_W = 50, MOLE_H = 40; // mole hit box size at critter scale 1 (see setCritterScale)
   const MOLE_EMERGE = 0.4;     // s popping out of the grass (not hittable)
   const MOLE_TURN = 0.3;       // s pause at the screen edge before heading for the food
   const MOLE_EAT = 1.0;        // s munching before the food is gone (still hittable)
@@ -60,6 +62,10 @@
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
     let state, score, level, foodLeft, gx, gvx, facing, cooldown, spawnT, foodTimers, overT, playT;
+    // Critter scale: moles, food and their effects are drawn (and hit-tested) this much bigger.
+    // The shell raises it on small (phone) screens so they stay visible and cute.
+    let critK = 1;
+    const moleW = () => MOLE_W * critK, moleH = () => MOLE_H * critK;
     let hammers, moles, foods, events = [];
     // visual-only state (animation timers, effects); never read by the rules
     let animT = 0, poseClock = 99, cheerT = 0, lostT = 0, banner = null, puffs = [], popups = [];
@@ -73,7 +79,7 @@
     }
     const markerOf = () => {
       const dir = facing === 'left' ? -1 : 1;
-      return gx + dir * HAND_DX + (dir * HAMMER_VX + gvx) * flightTime();
+      return gx + dir * (HAND_DX + HAMMER_VX * flightTime());
     };
 
     function reset() {
@@ -89,7 +95,7 @@
       const a = Math.min(2.6, Math.max(1.3, aspect || 1.78));
       world.W = Math.round(H * a);
       gx = clamp(gx, GONDOLA_W / 2, world.W - GONDOLA_W / 2);
-      for (const m of moles) m.x = clamp(m.x, MOLE_W / 2, world.W - MOLE_W / 2);
+      for (const m of moles) m.x = clamp(m.x, moleW() / 2, world.W - moleW() / 2);
       for (const f of foods) f.x = clamp(f.x, FOOD_MARGIN * 0.5, world.W - FOOD_MARGIN * 0.5);
     }
 
@@ -137,7 +143,7 @@
       if (!foods.length) return false;
       const W = world.W;
       const food = foods.length > 1 ? foods[Math.floor(rand() * foods.length) % foods.length] : foods[0];
-      const lo = MOLE_W / 2, hi = W - MOLE_W / 2;
+      const lo = moleW() / 2, hi = W - moleW() / 2;
       let x = null;
       for (let i = 0; i < 20 && x === null; i++) {
         const c = rr(lo, hi);
@@ -156,7 +162,7 @@
 
     const HITTABLE = { away: 1, turn: 1, toFood: 1, eat: 1 };
     function moleBox(m) {
-      return { x0: m.x - MOLE_W / 2, x1: m.x + MOLE_W / 2, y0: GRASS_Y - MOLE_H, y1: GRASS_Y + 4 };
+      return { x0: m.x - moleW() / 2, x1: m.x + moleW() / 2, y0: GRASS_Y - moleH(), y1: GRASS_Y + 4 };
     }
 
     function dive(m) { m.state = 'dive'; m.t = 0; }
@@ -168,7 +174,7 @@
 
     function updateMole(m, dt) {
       m.t += dt;
-      const W = world.W, lo = MOLE_W / 2, hi = W - MOLE_W / 2;
+      const W = world.W, lo = moleW() / 2, hi = W - moleW() / 2;
       switch (m.state) {
         case 'emerge':
           m.depth = Math.min(1, m.t / MOLE_EMERGE);
@@ -214,7 +220,7 @@
       const dir = facing === 'left' ? -1 : 1;
       hammers.push({
         x: gx + dir * HAND_DX, y: HAND_Y,
-        vx: dir * HAMMER_VX + gvx, vy: HAMMER_VY, angle: 0, dir,
+        vx: dir * HAMMER_VX, vy: HAMMER_VY, angle: 0, dir,
       });
       cooldown = THROW_COOLDOWN;
       emit({ type: 'throw', x: gx, dir });
@@ -234,7 +240,7 @@
             h.done = true;
             m.state = 'bonk'; m.t = 0;
             score += MOLE_POINTS;
-            emit({ type: 'hit', x: m.x, y: GRASS_Y - MOLE_H, points: MOLE_POINTS });
+            emit({ type: 'hit', x: m.x, y: GRASS_Y - moleH(), points: MOLE_POINTS });
             checkLevel();
             break;
           }
@@ -292,7 +298,7 @@
       }
       gx = clamp(gx + vx * dt, GONDOLA_W / 2, world.W - GONDOLA_W / 2);
       gvx = (gx - oldX) / dt;
-      if (gx - oldX > 1e-6) facing = 'right'; else if (gx - oldX < -1e-6) facing = 'left';
+      if (gvx > FACING_DEADZONE) facing = 'right'; else if (gvx < -FACING_DEADZONE) facing = 'left';
 
       cooldown = Math.max(0, cooldown - dt);
       if (wantThrow && cooldown <= 0 && hammers.length < MAX_HAMMERS) throwHammer();
@@ -347,11 +353,11 @@
         const vb = (images.foodVB && images.foodVB[f.kind]) || FOOD_DEF;
         const eating = moles.some((m) => m.food === f && m.state === 'eat');
         const u = Math.min(1, f.age / 0.25), pop = u < 1 ? 1 + 0.25 * Math.sin(u * Math.PI) : 1;
-        const w = vb.w * FS * u * pop, h = vb.h * FS * u * pop;
+        const w = vb.w * FS * critK * u * pop, h = vb.h * FS * critK * u * pop;
         im((eating ? 'eaten-' : 'food-') + f.kind, f.x - w / 2, GRASS_Y - h, w, h);
       }
       // landing marker
-      if (state === 'playing') { const mx = markerOf(); if (mx > 10 && mx < W - 10) im('marker', mx - 20, GRASS_Y - 7, 40, 14); }
+      if (state === 'playing') { const mx = markerOf(); if (mx > 10 && mx < W - 10) im('marker', mx - 20 * critK, GRASS_Y - 7 * critK, 40 * critK, 14 * critK); }
       // moles
       for (const m of moles) {
         let frame = 'walk1';
@@ -365,12 +371,14 @@
         const i = images['mole-' + frame];
         if (i) {
           ctx.save(); ctx.translate(m.x, GRASS_Y); if (m.dir < 0) ctx.scale(-1, 1);
-          ctx.drawImage(i, MOLE_VB.x * MS, MOLE_VB.y * MS, MOLE_VB.w * MS, MOLE_VB.h * MS); ctx.restore();
+          const ms = MS * critK;
+          ctx.drawImage(i, MOLE_VB.x * ms, MOLE_VB.y * ms, MOLE_VB.w * ms, MOLE_VB.h * ms); ctx.restore();
         }
-        if (m.state === 'bonk') im('stars' + (Math.floor(m.t * 8) % 6), m.x - 17 + m.dir * 6, GRASS_Y - 44, 34, 14);
-        if (m.state === 'dive' && m.t < 0.36) im('puff' + Math.min(2, Math.floor(m.t / 0.12)), m.x - 25, GRASS_Y - 32, 50, 32);
+        const k = critK;
+        if (m.state === 'bonk') im('stars' + (Math.floor(m.t * 8) % 6), m.x - 17 * k + m.dir * 6 * k, GRASS_Y - 44 * k, 34 * k, 14 * k);
+        if (m.state === 'dive' && m.t < 0.36) im('puff' + Math.min(2, Math.floor(m.t / 0.12)), m.x - 25 * k, GRASS_Y - 32 * k, 50 * k, 32 * k);
       }
-      for (const p of puffs) im('puff' + Math.min(2, Math.floor(p.t / 0.12)), p.x - 25, GRASS_Y - 32, 50, 32);
+      for (const p of puffs) im('puff' + Math.min(2, Math.floor(p.t / 0.12)), p.x - 25 * critK, GRASS_Y - 32 * critK, 50 * critK, 32 * critK);
       // hammers
       const hs = 112 * HS;
       for (const h of hammers) {
@@ -393,7 +401,7 @@
       for (const p of popups) {
         const u = p.t / 1.2, s = u < 0.2 ? 0.3 + u / 0.2 * 0.7 : 1, w = 110 * s, h = 65 * s;
         ctx.globalAlpha = u > 0.7 ? 1 - (u - 0.7) / 0.3 : 1;
-        im('popup', p.x - w / 2, GRASS_Y - 36 - u * 44 - h - 6, w, h); ctx.globalAlpha = 1;
+        im('popup', p.x - w / 2, GRASS_Y - 36 * critK - u * 44 - h - 6, w, h); ctx.globalAlpha = 1;
       }
       if (banner) {
         const u = banner.t, s = u < 0.3 ? u / 0.3 : 1, w = 220 * s, h = w * 130 / 300;
@@ -403,6 +411,8 @@
     }
     const g = {
       world, resize, start, reset, update, render,
+      setCritterScale(k) { critK = Math.max(0.5, Math.min(2, +k || 1)); },
+      get critterScale() { return critK; },
       best: opts.best || 0, newBest: false,
       get state() { return state; },
       get score() { return score; },
@@ -493,6 +503,9 @@
     const vw = window.innerWidth, vh = window.innerHeight;
     const aspect = Math.max(1.3, Math.min(MAX_ASPECT, vw / vh));
     if (aspect !== aspectUsed) { aspectUsed = aspect; game.resize(aspect); }
+    // Phones (short screens): bigger moles and food so they stay visible and cute.
+    // 800px tall -> 1, 390px (phone landscape) -> 1.5, 320px and below -> 1.7.
+    game.setCritterScale(Math.max(1, Math.min(1.7, 1 + (520 - vh) / 260)));
     const W = game.world.W, H = game.world.H;
     const cssW = Math.min(vw, vh * W / H), cssH = cssW * H / W;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
