@@ -410,16 +410,16 @@
         '<circle cx="40" cy="54" r="12"/><circle cx="60" cy="54" r="12"/><circle cx="50" cy="46" r="14"/>',
     },
     steak: {
-      vb: [6, 8, 88, 82],
+      vb: [4, 8, 94, 82],
       draw: (bite) =>
-        `<path d="M14 48 C12 26 38 14 60 18 C84 22 92 44 86 62 C80 80 54 84 34 78 C18 72 16 62 14 48 Z" fill="${F.fat}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
-        `<path d="M22 48 C21 32 40 24 58 26 C76 29 82 45 78 58 C73 72 54 75 38 70 C26 66 23 58 22 48 Z" fill="${F.steak}"/>` +
-        `<path d="M60 34 Q68 40 66 50 M70 60 Q62 64 58 70" fill="none" stroke="${F.fat}" stroke-width="3" stroke-linecap="round" opacity="0.8"/>` +
-        `<path d="M28 40 L44 30 M26 56 L50 38 M34 66 L54 52" stroke="${F.grill}" stroke-width="4" stroke-linecap="round" opacity="0.85"/>` +
-        `<path d="M28 30 Q38 22 50 22" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.7"/>` +
-        (bite ? '' : foodFace(44, 50)),
-      bite: { cx: 88, cy: 44, r: 13 },
-      sil: '<path d="M14 48 C12 26 38 14 60 18 C84 22 92 44 86 62 C80 80 54 84 34 78 C18 72 16 62 14 48 Z"/>',
+        `<path d="M20 26 C34 10 62 14 70 30 C74 38 82 42 90 50 C96 57 92 68 82 67 C72 66 64 70 56 76 C42 88 14 82 11 60 C9 46 12 34 20 26 Z" fill="${F.fat}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+        `<path d="M25 32 C37 20 58 22 63 35 C67 43 75 48 82 54 C85 58 83 61 79 61 C70 61 62 65 54 70 C42 79 21 75 18 58 C17 48 19 39 25 32 Z" fill="${F.steak}"/>` +
+        `<path d="M66 44 Q70 50 76 52" fill="none" stroke="${F.fat}" stroke-width="3" stroke-linecap="round" opacity="0.8"/>` +
+        `<path d="M24 46 L40 34 M24 62 L52 40 M36 70 L58 52 M58 62 L72 52" stroke="${F.grill}" stroke-width="4" stroke-linecap="round" opacity="0.85"/>` +
+        `<path d="M28 28 Q40 18 54 20" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.7"/>` +
+        (bite ? '' : foodFace(38, 50)),
+      bite: { cx: 94, cy: 58, r: 11 },
+      sil: '<path d="M20 26 C34 10 62 14 70 30 C74 38 82 42 90 50 C96 57 92 68 82 67 C72 66 64 70 56 76 C42 88 14 82 11 60 C9 46 12 34 20 26 Z"/>',
     },
   };
   const foodKinds = Object.keys(FOODS);
@@ -453,7 +453,7 @@
       `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="${vx - 10}" y="${vy - 10}" width="${vw + 20}" height="${vh + 20}">` +
       `<rect x="${vx - 10}" y="${vy - 10}" width="${vw + 20}" height="${vh + 20}" fill="#fff"/>${circ('#000')}</mask>` +
       `<clipPath id="${cid}">${fd.sil}</clipPath></defs>`;
-    s += `<g mask="url(#${id})">${fd.draw(true)}${foodFace(kind === 'carrot' ? 50 : kind === 'steak' ? 44 : 50, kind === 'steak' ? 50 : 42)}` +
+    s += `<g mask="url(#${id})">${fd.draw(true)}${foodFace(kind === 'carrot' ? 50 : kind === 'steak' ? 38 : 50, kind === 'steak' ? 50 : 42)}` +
       `<g clip-path="url(#${cid})">${circ('none', ` stroke="${O}" stroke-width="${SW * 2}"`)}</g></g>`;
     // crumbs at the base
     const base = vy + vh - 3;
