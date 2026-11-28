@@ -724,15 +724,15 @@
       foodFace(50, 42),
 
     steak: () =>
-      // fat rim + meat
-      `<path d="M14 48 C12 26 38 14 60 18 C84 22 92 44 86 62 C80 80 54 84 34 78 C18 72 16 62 14 48 Z" fill="${F.fat}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
-      `<path d="M22 48 C21 32 40 24 58 26 C76 29 82 45 78 58 C73 72 54 75 38 70 C26 66 23 58 22 48 Z" fill="${F.steak}"/>` +
+      // fat rim + meat: wide end on the left, narrow tail on the right
+      `<path d="M20 26 C34 10 62 14 70 30 C74 38 82 42 90 50 C96 57 92 68 82 67 C72 66 64 70 56 76 C42 88 14 82 11 60 C9 46 12 34 20 26 Z" fill="${F.fat}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
+      `<path d="M25 32 C37 20 58 22 63 35 C67 43 75 48 82 54 C85 58 83 61 79 61 C70 61 62 65 54 70 C42 79 21 75 18 58 C17 48 19 39 25 32 Z" fill="${F.steak}"/>` +
       // marbling
-      `<path d="M60 34 Q68 40 66 50 M70 60 Q62 64 58 70" fill="none" stroke="${F.fat}" stroke-width="3" stroke-linecap="round" opacity="0.8"/>` +
+      `<path d="M66 44 Q70 50 76 52" fill="none" stroke="${F.fat}" stroke-width="3" stroke-linecap="round" opacity="0.8"/>` +
       // grill marks
-      `<path d="M28 40 L44 30 M26 56 L50 38 M34 66 L54 52" stroke="${F.grill}" stroke-width="4" stroke-linecap="round" opacity="0.85"/>` +
-      `<path d="M28 30 Q38 22 50 22" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.7"/>` +
-      foodFace(44, 50),
+      `<path d="M24 46 L40 34 M24 62 L52 40 M36 70 L58 52 M58 62 L72 52" stroke="${F.grill}" stroke-width="4" stroke-linecap="round" opacity="0.85"/>` +
+      `<path d="M28 28 Q40 18 54 20" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.7"/>` +
+      foodFace(38, 50),
 
     egg: () =>
       `<path d="M18 52 C12 32 30 16 48 22 C64 12 88 24 84 44 C92 62 76 82 56 78 C38 88 14 74 18 52 Z" fill="${F.eggWhite}" stroke="${O}" stroke-width="${SW}" stroke-linejoin="round"/>` +
